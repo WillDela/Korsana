@@ -1,10 +1,10 @@
-# AllInRun 🏃
+# Korsana 🏃
 
 > **AI-Powered Running Coach** — Get race-ready with personalized training powered by your data.
 
 ## Mission Statement
 
-"AllInRun is an AI-powered coaching platform that analyzes a runner's unified training data to create and adapt a personalized plan for their specific race goals."
+"Korsana is an AI-powered coaching platform that analyzes a runner's unified training data to create and adapt a personalized plan for their specific race goals."
 
 ## Tech Stack
 
@@ -14,7 +14,7 @@
 | **Backend** | Go + Gin |
 | **Database** | PostgreSQL |
 | **Cache** | Redis |
-| **AI** | OpenAI GPT-4 |
+| **AI** | Google Gemini / Anthropic Claude |
 
 ## Project Structure
 

@@ -9,7 +9,7 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="nav">
         <Link to="/" className="nav-brand">
-          AllInRun
+          Korsana
         </Link>
         <div className="nav-links">
           {!user ? (
@@ -53,7 +53,7 @@ const Landing = () => {
             margin: '0 auto 2.5rem',
             lineHeight: '1.6'
           }}>
-            AllInRun analyzes your training data to build a personalized plan for your race goals. No guesswork. Just results.
+            Korsana analyzes your training data to build a personalized plan for your race goals. No guesswork. Just results.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -186,7 +186,7 @@ const Landing = () => {
         }}>
           <h2 style={{ marginBottom: '1rem', color: 'inherit' }}>Ready to train smarter?</h2>
           <p style={{ marginBottom: '2rem', opacity: 0.8, maxWidth: '500px', margin: '0 auto 2rem' }}>
-            Connect your Strava, set your goal, and let AllInRun guide you to the finish line.
+            Connect your Strava, set your goal, and let Korsana guide you to the finish line.
           </p>
           <Link to="/signup" className="btn" style={{
             background: 'var(--color-text-inverse)',
@@ -207,7 +207,7 @@ const Landing = () => {
         color: 'var(--color-text-muted)',
         fontSize: '0.875rem'
       }}>
-        AllInRun — Built for the Miami Marathon 2026
+        Korsana — Built for the Miami Marathon 2026
       </footer>
     </div>
   );

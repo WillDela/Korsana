@@ -85,3 +85,78 @@ func (c *Client) ExchangeToken(code string) (*TokenResponse, error) {
 
 	return &tokenResp, nil
 }
+
+// Activity represents a Strava activity response
+type Activity struct {
+	ID                 int64   `json:"id"`
+	Name               string  `json:"name"`
+	Distance           float64 `json:"distance"`           // meters
+	MovingTime         int     `json:"moving_time"`        // seconds
+	ElapsedTime        int     `json:"elapsed_time"`       // seconds
+	TotalElevationGain float64 `json:"total_elevation_gain"` // meters
+	Type               string  `json:"type"`               // "Run", "Ride", etc.
+	StartDate          string  `json:"start_date"`         // ISO 8601 format
+	AverageHeartrate   float64 `json:"average_heartrate"`
+	MaxHeartrate       float64 `json:"max_heartrate"`
+}
+
+// GetActivities fetches recent activities for the authenticated athlete
+func (c *Client) GetActivities(accessToken string, page int, perPage int) ([]Activity, error) {
+	if perPage == 0 {
+		perPage = 30
+	}
+	if page == 0 {
+		page = 1
+	}
+
+	url := fmt.Sprintf("%s/athlete/activities?page=%d&per_page=%d", baseURL, page, perPage)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("strava api returned status: %d", resp.StatusCode)
+	}
+
+	var activities []Activity
+	if err := json.NewDecoder(resp.Body).Decode(&activities); err != nil {
+		return nil, err
+	}
+
+	return activities, nil
+}
+
+// RefreshToken refreshes an expired access token
+func (c *Client) RefreshToken(refreshToken string) (*TokenResponse, error) {
+	params := url.Values{}
+	params.Add("client_id", c.ClientID)
+	params.Add("client_secret", c.ClientSecret)
+	params.Add("refresh_token", refreshToken)
+	params.Add("grant_type", "refresh_token")
+
+	resp, err := c.HTTPClient.PostForm(tokenURL, params)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("strava api returned status: %d", resp.StatusCode)
+	}
+
+	var tokenResp TokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return nil, err
+	}
+
+	return &tokenResp, nil
+}

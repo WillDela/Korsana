@@ -19,6 +19,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 import Dashboard from './pages/Dashboard';
+import CreateGoal from './pages/CreateGoal';
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/goals/new"
+            element={
+              <ProtectedRoute>
+                <CreateGoal />
               </ProtectedRoute>
             }
           />

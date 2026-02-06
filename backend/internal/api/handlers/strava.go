@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/allinrun/backend/internal/services"
+	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -50,4 +50,45 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 
 	// Redirect back to frontend
 	c.Redirect(http.StatusFound, "http://localhost:5173/dashboard?strava_connected=true")
+}
+
+// SyncActivities syncs activities from Strava
+func (h *StravaHandler) SyncActivities(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	count, err := h.stravaService.SyncActivities(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "activities synced successfully",
+		"count":   count,
+	})
+}
+
+// GetActivities retrieves user's activities
+func (h *StravaHandler) GetActivities(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	activities, err := h.stravaService.GetUserActivities(c.Request.Context(), userID, 20)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"activities": activities,
+	})
 }

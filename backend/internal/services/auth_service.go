@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/allinrun/backend/internal/config"
-	"github.com/allinrun/backend/internal/database"
-	"github.com/allinrun/backend/internal/models"
+	"github.com/korsana/backend/internal/config"
+	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -88,6 +88,16 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 
 	return token, &user, nil
+}
+
+// GetUserByID retrieves a user by their ID
+func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+	var user models.User
+	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+	return &user, nil
 }
 
 // generateToken creates a JWT token

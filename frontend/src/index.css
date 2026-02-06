@@ -4,27 +4,29 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ============================================
-   AllInRun Design System: Athletic Precision
+   Korsana Design System: Athletic Precision
+   Blue-Green Palette - Natural, Grounded, Professional
    ============================================ */
 
 :root {
-  /* Track & Field Palette */
-  --color-primary: #1a2332;        /* Deep Navy - professional, trustworthy */
-  --color-secondary: #e85d04;      /* Burnt Orange - athletic energy, CTAs */
-  --color-accent: #06ffa5;         /* Electric Teal - achievements, success */
-  --color-neutral: #f4f4f2;        /* Warm Gray - backgrounds */
-  --color-text: #1a1a1a;           /* Near-black - primary text */
-  
+  /* Blue-Green Athletic Precision Palette */
+  --color-primary: #242E7B;        /* Deep Blue - primary brand, professional */
+  --color-secondary: #618B4A;      /* Sage Green - secondary actions, success */
+  --color-accent: #06ffa5;         /* Electric Teal - achievements, highlights */
+  --color-deep-green: #13230B;     /* Deep Green - dark backgrounds, emphasis */
+  --color-cream: #EEF5DB;          /* Cream - warm surfaces */
+  --color-slate: #465362;          /* Slate - muted elements */
+
   /* Extended Palette */
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-dark: #1a2332;
+  --color-bg-secondary: #F8FAF5;   /* Very light green-tinted white */
+  --color-bg-dark: #13230B;        /* Deep green for dark sections */
   --color-border: #e5e7eb;
   --color-border-dark: #d1d5db;
   
   /* Text Hierarchy */
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #4b5563;
+  --color-text-primary: #13230B;   /* Deep green for primary text */
+  --color-text-secondary: #465362; /* Slate for secondary text */
   --color-text-muted: #9ca3af;
   --color-text-inverse: #ffffff;
   
@@ -163,7 +165,7 @@ h4 { font-size: 1rem; font-weight: 600; }
 }
 
 .btn-primary:hover {
-  background: #d54f00;
+  background: #4f7136;
 }
 
 .btn-secondary {
@@ -172,7 +174,7 @@ h4 { font-size: 1rem; font-weight: 600; }
 }
 
 .btn-secondary:hover {
-  background: #0f1520;
+  background: #1a2257;
 }
 
 .btn-outline {
@@ -427,7 +429,7 @@ h4 { font-size: 1rem; font-weight: 600; }
    ============================================ */
 
 .coach-insight {
-  background: var(--color-bg-secondary);
+  background: var(--color-cream);
   border-left: 3px solid var(--color-secondary);
   padding: 1rem 1.25rem;
   border-radius: 0 0.375rem 0.375rem 0;
