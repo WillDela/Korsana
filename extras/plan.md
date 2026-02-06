@@ -20,7 +20,8 @@
   - [ ] Scaffold with Vite + React + TypeScript
   - [ ] Install TailwindCSS and configure
   - [ ] Install React Router, React Query (TanStack)
-  - [ ] Set up basic folder structure: `/components`, `/pages`, `/hooks`, `/api`, `/lib`
+  - [ ] Install Framer Motion (`npm install framer-motion`)
+  - [ ] Set up basic folder structure: `/components`, `/pages`, `/hooks`, `/api`, `/lib`, `/animations`
 - [ ] Configure development environment
   - [ ] Docker Compose for local Postgres + Redis (optional but recommended)
   - [ ] `.env.example` files for both frontend and backend
@@ -269,6 +270,31 @@
 | 5-7 | M4: Dashboard | "Am I on track?" answered with real data |
 | 7-8 | M5: AI Coach | Conversational coaching grounded in training data |
 | 9 | M6: Ship It | Deployed, polished, documented, portfolio-ready |
+
+---
+
+## UI/UX Enhancement Track (Parallel Work)
+
+> **Full details in `ui-ux-plan.md`.** This work runs in parallel with feature milestones. The phases below map to the detailed plan in that file.
+
+**Animation Library:** Framer Motion (`framer-motion`)
+
+| Phase | Focus | When to Start |
+|-------|-------|---------------|
+| **Phase A** | Fix critical path: skeleton loaders, onboarding flow, page transitions, dashboard layout | Alongside M1-M3 completion |
+| **Phase B** | Dashboard comes alive: animated metrics, charts, activity feed, goal header | Alongside M4 |
+| **Phase C** | Interaction polish: micro-interactions, auth polish, AI chat animations, nav | Alongside M5 |
+| **Phase D** | Landing page & wow factor: hero, scroll animations, "how it works" section | Alongside M6 |
+
+**Critical fix:** After signup, users currently see a blank screen. Phase A introduces a guided onboarding flow (connect data → set goal → dashboard) that fixes this immediately.
+
+**Key deliverables from UI/UX plan:**
+- Reusable animated component library (PageTransition, SkeletonCard, AnimatedNumber, etc.)
+- Onboarding flow (3-4 step guided setup)
+- Animated dashboard with number counters, chart animations, staggered content
+- AI Coach chat with message animations and suggested prompts
+- Scroll-triggered landing page with hero animation
+- Consistent animation system: timing rules, easing standards, reduced-motion support
 
 ---
 

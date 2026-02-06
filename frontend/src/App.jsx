@@ -1,8 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import PageTransition from './components/PageTransition';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import CreateGoal from './pages/CreateGoal';
+import Onboarding from './pages/Onboarding';
 import './App.css';
 
 // Protected Route Component
@@ -18,34 +23,50 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-import Dashboard from './pages/Dashboard';
-import CreateGoal from './pages/CreateGoal';
+// Animated Routes wrapper
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Onboarding /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Dashboard /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goals/new"
+          element={
+            <ProtectedRoute>
+              <PageTransition><CreateGoal /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </AnimatePresence>
+  );
+};
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/goals/new"
-            element={
-              <ProtectedRoute>
-                <CreateGoal />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <AnimatedRoutes />
       </AuthProvider>
     </Router>
   );

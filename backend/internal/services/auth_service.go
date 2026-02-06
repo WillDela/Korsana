@@ -82,7 +82,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	}
 
 	// 3. Generate Token
-	token, err := s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID, user.Email)
 	if err != nil {
 		return "", nil, err
 	}
@@ -101,10 +101,11 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*model
 }
 
 // generateToken creates a JWT token
-func (s *AuthService) generateToken(userID uuid.UUID) (string, error) {
+func (s *AuthService) generateToken(userID uuid.UUID, email string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID.String(),
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
+		"sub":   userID.String(),
+		"email": email,
+		"exp":   time.Now().Add(24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

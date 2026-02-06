@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx vite build)",
+      "Bash(go build:*)"
+    ]
+  }
+}

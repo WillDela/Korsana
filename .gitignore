@@ -42,3 +42,5 @@ backend/.env
 # Local Docker volumes (if locally mapped)
 postgres_data/
 redis_data/
+
+extras

@@ -20,9 +20,10 @@
 | `CLAUDE.md` | You're here. Project instructions + progress tracker. |
 | `context.md` | Full project context: vision, decisions, tech stack, design system, competitive landscape. |
 | `plan.md` | Step-by-step MVP execution plan with milestones and task checklists. |
+| `ui-ux-plan.md` | Detailed UI/UX enhancement plan: animations, page designs, component library, implementation phases. |
 | `README.md` | Public-facing project documentation (once created). |
 
-**Always read `context.md` and `plan.md` before starting any new work session.** They are the source of truth.
+**Always read `context.md`, `plan.md`, and `ui-ux-plan.md` before starting any new work session.** They are the source of truth.
 
 ---
 
@@ -100,15 +101,15 @@
 
 | Milestone | Status | Started | Completed |
 |-----------|--------|---------|-----------|
-| M0: Project Scaffolding | 🔲 Not Started | — | — |
-| M1: User Authentication | 🔲 Not Started | — | — |
-| M2: Strava OAuth | 🔲 Not Started | — | — |
-| M3: Race Goal Setup | 🔲 Not Started | — | — |
-| M4: Dashboard | 🔲 Not Started | — | — |
-| M5: AI Coach | 🔲 Not Started | — | — |
+| M0: Project Scaffolding | 🟡 In Progress | ✓ | — |
+| M1: User Authentication | 🟡 In Progress | ✓ | — |
+| M2: Strava OAuth | 🟡 In Progress | ✓ | — |
+| M3: Race Goal Setup | 🟡 In Progress | ✓ | — |
+| M4: Dashboard | 🟡 In Progress | ✓ | — |
+| M5: AI Coach | 🟡 In Progress | ✓ | — |
 | M6: Polish & Deploy | 🔲 Not Started | — | — |
 
-**Status legend:** 🔲 Not Started | 🟡 In Progress | ✅ Complete | ⏸️ Blocked
+> ⚠️ **Note:** M0-M5 all have initial structure/scaffolding from "Korsana MVP first round" commit. Code exists for auth handlers, Strava client, goals handlers, dashboard page, and coach service — but completion status of each needs detailed audit. Home page, login, and signup flows are working. **Critical issue:** signup leads to blank dashboard screen — addressed in UI/UX Phase A onboarding flow.
 
 ---
 
@@ -230,6 +231,40 @@
 
 ---
 
+### UI/UX Enhancement Track (runs parallel to milestones)
+> Full plan in `ui-ux-plan.md`. Track high-level phase progress here.
+
+**Phase A: Fix Critical Path**
+- [ ] Skeleton loader components
+- [ ] Onboarding flow (fixes blank screen after signup)
+- [ ] Dashboard layout with skeleton states
+- [ ] Page transition system (`<PageTransition>` wrapper)
+
+**Phase B: Dashboard Comes Alive**
+- [ ] Metric cards with animated number counters
+- [ ] Chart animations (bar growth, line draw)
+- [ ] Activity feed with stagger animations
+- [ ] Sticky goal header with countdown
+- [ ] AI insight card
+
+**Phase C: Interaction Polish**
+- [ ] Micro-interaction component library (buttons, cards, inputs)
+- [ ] Auth page polish (split layout, form animations)
+- [ ] AI Coach chat animations (message entrance, typing indicator, suggested prompts)
+- [ ] Navigation animations
+- [ ] Staggered reveals across all pages
+
+**Phase D: Landing Page & Wow Factor**
+- [ ] Landing page full build with scroll-triggered sections
+- [ ] Hero section with text reveal animation
+- [ ] "How it works" animated flow
+- [ ] Settings page polish
+
+**Notes / Decisions:**
+> _
+
+---
+
 ## Decision Log
 
 > Track important technical decisions here for reference. Format: Date — Decision — Reasoning.
@@ -246,6 +281,7 @@
 | — | Garmin + Coros in Phase 2 | Second and third most popular in running community |
 | — | Manual entry is fallback | App is designed for connected platforms; manual entry supported but not primary UX |
 | — | Hybrid coaching approach | Training plans combine proven periodization frameworks + AI personalization |
+| — | Framer Motion for animations | React-native, declarative API, industry standard for React UI animation, great for dashboards and page transitions |
 | — | Monetization deferred | Keep architecture monetization-ready but no paywalls until userbase exists |
 
 ---
@@ -257,5 +293,6 @@
 | Date | Session Summary | Next Steps |
 |------|----------------|------------|
 | — | Project planning complete. Created context.md, plan.md, CLAUDE.md | Begin M0: Scaffold projects |
+| — | Locked tech stack: Gin, PostgreSQL on Railway, Framer Motion. Created ui-ux-plan.md with full animation/design system. Updated all files. | Audit existing code to determine exact M0-M5 completion. Start UI/UX Phase A (fix blank screen, onboarding flow, skeletons). |
 
 ---

@@ -83,6 +83,7 @@
 | **AI** | Google Gemini API and/or Anthropic Claude API | Conversational coaching, plan generation. Evaluate both during development — use whichever delivers better running-specific responses, or use both for different tasks. |
 | **Data Fetching** | React Query (TanStack Query) | Caching, background sync, optimistic updates |
 | **Charts** | Recharts or Chart.js | Training data visualization |
+| **Animation** | Framer Motion | Page transitions, micro-interactions, scroll animations, dashboard motion |
 | **Deployment** | Vercel (frontend) + Railway (backend + Postgres + Redis) | Simple, affordable, everything in one platform for backend |
 
 ---
@@ -150,6 +151,14 @@ Golang API Server (Gin)
 - Information density on dashboard (runners want detail)
 - Table-based activity lists (scannable, professional)
 - Purposeful white space around critical metrics
+
+**Animation Philosophy:**
+- Purposeful motion only — every animation communicates something (entrance, feedback, status)
+- Fast by default — page transitions ≤300ms, hover effects ≤200ms
+- Consistent direction — content enters bottom-up, modals from center, notifications from top
+- Performance first — animate only `transform` and `opacity` (GPU-accelerated)
+- Respect `prefers-reduced-motion` — provide instant fallbacks
+- See `ui-ux-plan.md` for full animation system details
 
 ---
 
@@ -235,12 +244,18 @@ Each of these becomes a potential blog post or interview discussion point:
 
 ## 11. Inspiration & References
 
+**Product & UX:**
 - **Runna** — Training plan UX, goal-setting flow
 - **Endorphin Run** — Personalized plan adaptation
 - **Strava** — Activity data display, route maps
 - **Lifetime Fitness (L\*AI\*C)** — AI assistant UX (centered, conversational, actionable)
-- **Linear** — Clean, data-dense dashboard design
-- **Raycast** — Minimal, high-performance UI patterns
+
+**Design & Animation:**
+- **Biznus (Webflow template)** — Clean layouts, scroll animations, polished interactions
+- **Linear.app** — Data-dense dashboard with subtle, purposeful motion
+- **Raycast.com** — Minimal, high-performance UI with great micro-interactions
+- **Vercel.com** — Hero animations, scroll-triggered reveals, modern feel
+- **Stripe.com** — Gradient backgrounds, animated diagrams, premium feel
 
 ---
 

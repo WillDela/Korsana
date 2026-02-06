@@ -16,7 +16,7 @@ const Signup = () => {
     try {
       await signup(data.email, data.password);
       await login(data.email, data.password);
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (err) {
       setServerError(err);
     } finally {

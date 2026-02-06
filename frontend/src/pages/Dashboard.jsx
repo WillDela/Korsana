@@ -108,6 +108,80 @@ const Dashboard = () => {
 
   const { weeks: weeksOut, days: daysOut } = calculateDaysUntilRace();
 
+  // Compute weekly mileage from this week's activities
+  const computeWeeklyMileage = () => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const weekActivities = activities.filter(a => new Date(a.start_time) >= startOfWeek);
+    const totalMeters = weekActivities.reduce((sum, a) => sum + (a.distance_meters || 0), 0);
+    return parseFloat((totalMeters * 0.000621371).toFixed(1));
+  };
+
+  // Compute average pace from last 4 weeks of activities
+  const computeCurrentPace = () => {
+    const recentRuns = activities.filter(a => a.average_pace_seconds_per_km);
+    if (recentRuns.length === 0) return null;
+    const avgPace = recentRuns.reduce((sum, a) => sum + a.average_pace_seconds_per_km, 0) / recentRuns.length;
+    return avgPace;
+  };
+
+  // Compute target pace from goal (seconds per km -> formatted pace per mile)
+  const computeTargetPace = () => {
+    if (!activeGoal || !activeGoal.target_time_seconds || !activeGoal.distance_meters) return null;
+    const pacePerKm = activeGoal.target_time_seconds / (activeGoal.distance_meters / 1000);
+    return pacePerKm;
+  };
+
+  // Compute training progress percentage
+  const computeTrainingProgress = () => {
+    if (!activeGoal) return 0;
+    const raceDate = new Date(activeGoal.race_date);
+    const createdDate = new Date(activeGoal.created_at || Date.now());
+    const now = new Date();
+    const totalDuration = raceDate - createdDate;
+    const elapsed = now - createdDate;
+    if (totalDuration <= 0) return 100;
+    return Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+  };
+
+  // Compute pace difference in seconds
+  const computePaceDiff = () => {
+    const current = computeCurrentPace();
+    const target = computeTargetPace();
+    if (!current || !target) return null;
+    // Convert both to seconds per mile for comparison
+    const currentPerMile = current * 1.60934;
+    const targetPerMile = target * 1.60934;
+    return Math.round(currentPerMile - targetPerMile);
+  };
+
+  const weeklyMileageActual = computeWeeklyMileage();
+  const currentPaceRaw = computeCurrentPace();
+  const targetPaceRaw = computeTargetPace();
+  const trainingProgress = computeTrainingProgress();
+  const paceDiff = computePaceDiff();
+
+  // Format target time for display
+  const formatTargetTime = () => {
+    if (!activeGoal?.target_time_seconds) return '--:--:--';
+    const h = Math.floor(activeGoal.target_time_seconds / 3600);
+    const m = Math.floor((activeGoal.target_time_seconds % 3600) / 60);
+    const s = activeGoal.target_time_seconds % 60;
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Count this week's runs
+  const countWeeklyRuns = () => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return activities.filter(a => new Date(a.start_time) >= startOfWeek).length;
+  };
+
   const handleLogout = () => {
     logout();
   };
@@ -171,7 +245,7 @@ const Dashboard = () => {
 
             <div style={{ marginTop: '1rem' }}>
               <div className="progress-bar" style={{ height: '6px' }}>
-                <div className="progress-bar-fill" style={{ width: '35%' }}></div>
+                <div className="progress-bar-fill" style={{ width: `${trainingProgress}%` }}></div>
               </div>
               <div style={{
                 display: 'flex',
@@ -181,7 +255,7 @@ const Dashboard = () => {
                 opacity: 0.7
               }}>
                 <span>Training started</span>
-                <span>35% complete</span>
+                <span>{trainingProgress}% complete</span>
                 <span>Race day</span>
               </div>
             </div>
@@ -198,30 +272,40 @@ const Dashboard = () => {
               <div className="metric-card">
                 <div className="label">This Week</div>
                 <div className="data-value-lg" style={{ marginTop: '0.5rem' }}>
-                  {raceData.weeklyMileage.actual}<span style={{ fontSize: '1rem', marginLeft: '0.25rem' }}>mi</span>
+                  {weeklyMileageActual}<span style={{ fontSize: '1rem', marginLeft: '0.25rem' }}>mi</span>
                 </div>
                 <div className="metric-context">
-                  of {raceData.weeklyMileage.planned} mi planned ({Math.round(raceData.weeklyMileage.actual / raceData.weeklyMileage.planned * 100)}%)
+                  {countWeeklyRuns()} run{countWeeklyRuns() !== 1 ? 's' : ''} this week
                 </div>
               </div>
 
               <div className="metric-card">
                 <div className="label">Current Pace</div>
                 <div className="data-value-lg" style={{ marginTop: '0.5rem' }}>
-                  {raceData.currentPace}
+                  {currentPaceRaw ? formatPace(currentPaceRaw) : '--:--'}
                 </div>
                 <div className="metric-context">
-                  <span className="metric-negative">+12s</span> from goal
+                  {paceDiff !== null ? (
+                    paceDiff > 0 ? (
+                      <span className="metric-negative">+{paceDiff}s from goal</span>
+                    ) : paceDiff < 0 ? (
+                      <span className="metric-positive">{paceDiff}s ahead of goal</span>
+                    ) : (
+                      <span className="metric-positive">On target</span>
+                    )
+                  ) : (
+                    <span>avg from recent runs</span>
+                  )}
                 </div>
               </div>
 
               <div className="metric-card">
                 <div className="label">Goal Pace</div>
                 <div className="data-value-lg" style={{ marginTop: '0.5rem', color: 'var(--color-secondary)' }}>
-                  {raceData.targetPace}
+                  {targetPaceRaw ? formatPace(targetPaceRaw) : '--:--'}
                 </div>
                 <div className="metric-context">
-                  min/mile for 3:45:00
+                  min/mile for {formatTargetTime()}
                 </div>
               </div>
             </div>
@@ -301,7 +385,7 @@ const Dashboard = () => {
                   6 mi
                 </div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
-                  @ easy pace (9:00-9:30)
+                  @ easy pace
                 </div>
               </div>
             </div>
@@ -324,19 +408,19 @@ const Dashboard = () => {
               <div style={{ marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
                   <span>Mileage</span>
-                  <span className="text-mono">42 / 45 mi</span>
+                  <span className="text-mono">{weeklyMileageActual} mi</span>
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-bar-fill" style={{ width: '93%' }}></div>
+                  <div className="progress-bar-fill" style={{ width: `${Math.min(100, weeklyMileageActual > 0 ? (weeklyMileageActual / 30) * 100 : 0)}%` }}></div>
                 </div>
               </div>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                  <span>Workouts</span>
-                  <span className="text-mono">4 / 5</span>
+                  <span>Runs</span>
+                  <span className="text-mono">{countWeeklyRuns()}</span>
                 </div>
                 <div className="progress-bar">
-                  <div className="progress-bar-fill" style={{ width: '80%' }}></div>
+                  <div className="progress-bar-fill" style={{ width: `${Math.min(100, (countWeeklyRuns() / 5) * 100)}%` }}></div>
                 </div>
               </div>
             </div>
