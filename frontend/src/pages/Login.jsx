@@ -27,7 +27,7 @@ const Login = () => {
     <div className="page-auth">
       <div className="auth-card animate-slideUp">
         <div className="auth-header">
-          <Link to="/" className="logo">AllInRun</Link>
+          <Link to="/" className="logo">Korsana</Link>
           <h1>Welcome back</h1>
           <p>Log in to continue your training</p>
         </div>

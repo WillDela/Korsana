@@ -3,8 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/allinrun/backend/internal/services"
+	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type AuthHandler struct {
@@ -62,5 +63,32 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
 		"user":  user,
+	})
+}
+
+func (h *AuthHandler) Me(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
+	})
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// For JWT-based auth, logout is handled client-side by removing the token
+	// This endpoint exists for consistency and future token blacklisting with Redis
+	c.JSON(http.StatusOK, gin.H{
+		"message": "logged out successfully",
 	})
 }

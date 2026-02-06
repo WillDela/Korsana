@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/allinrun/backend/internal/config"
+	"github.com/korsana/backend/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

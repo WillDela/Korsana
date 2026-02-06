@@ -23,8 +23,9 @@ type Config struct {
 	StravaClientSecret string
 	StravaRedirectURI  string
 
-	// OpenAI
-	OpenAIAPIKey string
+	// AI Provider APIs (use either Claude or Gemini)
+	ClaudeAPIKey string
+	GeminiAPIKey string
 
 	// Environment
 	Environment string // "development", "production"
@@ -34,13 +35,14 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		Port:               getEnv("PORT", "8080"),
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/allinrun?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/korsana?sslmode=disable"),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
 		JWTSecret:          getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
 		StravaClientID:     getEnv("STRAVA_CLIENT_ID", ""),
 		StravaClientSecret: getEnv("STRAVA_CLIENT_SECRET", ""),
 		StravaRedirectURI:  getEnv("STRAVA_REDIRECT_URI", "http://localhost:8080/api/strava/callback"),
-		OpenAIAPIKey:       getEnv("OPENAI_API_KEY", ""),
+		ClaudeAPIKey:       getEnv("CLAUDE_API_KEY", ""),
+		GeminiAPIKey:       getEnv("GEMINI_API_KEY", ""),
 		Environment:        getEnv("ENVIRONMENT", "development"),
 	}
 }

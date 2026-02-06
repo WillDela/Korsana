@@ -1,4 +1,4 @@
-module github.com/allinrun/backend
+module github.com/korsana/backend
 
 go 1.24.0
 
