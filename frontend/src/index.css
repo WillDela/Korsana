@@ -619,14 +619,19 @@ h4 { font-size: 1rem; font-weight: 600; }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(8px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
 .animate-fadeIn {
