@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CreateGoal from './pages/CreateGoal';
 import Onboarding from './pages/Onboarding';
+import Coach from './pages/Coach';
 import './App.css';
 
 // Protected Route Component
@@ -54,6 +55,14 @@ const AnimatedRoutes = () => {
           element={
             <ProtectedRoute>
               <PageTransition><CreateGoal /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Coach /></PageTransition>
             </ProtectedRoute>
           }
         />
