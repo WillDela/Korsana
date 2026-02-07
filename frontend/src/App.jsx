@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import CreateGoal from './pages/CreateGoal';
+import Goals from './pages/Goals';
+import EditGoal from './pages/EditGoal';
 import Onboarding from './pages/Onboarding';
 import Coach from './pages/Coach';
 import './App.css';
@@ -51,10 +53,26 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/goals"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Goals /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/goals/new"
           element={
             <ProtectedRoute>
               <PageTransition><CreateGoal /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/goals/:id/edit"
+          element={
+            <ProtectedRoute>
+              <PageTransition><EditGoal /></PageTransition>
             </ProtectedRoute>
           }
         />

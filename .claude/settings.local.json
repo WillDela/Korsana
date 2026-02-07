@@ -4,7 +4,8 @@
       "Bash(npm install:*)",
       "Bash(npx vite build)",
       "Bash(go build:*)",
-      "Bash(npm ls recharts)"
+      "Bash(npm ls recharts)",
+      "Bash(go get:*)"
     ]
   }
 }

@@ -641,3 +641,98 @@ h4 { font-size: 1rem; font-weight: 600; }
 .animate-slideUp {
   animation: slideUp var(--transition-base);
 }
+
+/* ============================================
+   Mobile Responsiveness
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Dashboard main grid: collapse sidebar below main content */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Metric cards: 2 columns on tablet */
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Charts: stack to single column */
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Navigation: reduce padding, hide email */
+  .nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-email {
+    display: none;
+  }
+
+  /* Race header: reduce font sizes */
+  .race-header .race-countdown {
+    font-size: 1.125rem;
+  }
+
+  /* Reduce main padding */
+  main {
+    padding: 1rem 1rem !important;
+  }
+
+  /* Data values: shrink on mobile */
+  .data-value-lg {
+    font-size: 2rem;
+  }
+
+  .data-value-xl {
+    font-size: 2.25rem;
+  }
+
+  /* Table: tighter padding */
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Metric cards: single column on phone */
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Even smaller data values */
+  .data-value-lg {
+    font-size: 1.75rem;
+  }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+
+  /* Card padding reduction */
+  .card {
+    padding: 1rem;
+  }
+
+  .metric-card {
+    padding: 1rem;
+  }
+
+  /* Race header */
+  .race-header {
+    padding: 1rem;
+  }
+
+  /* Auth pages: reduce padding */
+  .page-auth {
+    padding: 1rem 0.75rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
+}

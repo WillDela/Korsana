@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/korsana/backend/internal/api/handlers"
 	"github.com/korsana/backend/internal/api/middleware"
 	"github.com/korsana/backend/internal/config"
@@ -16,6 +17,9 @@ import (
 )
 
 func main() {
+	// Load .env file (ignore error if not present, e.g. in production)
+	_ = godotenv.Load()
+
 	// 1. Load Configuration
 	cfg := config.Load()
 

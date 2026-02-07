@@ -163,6 +163,82 @@ const Dashboard = () => {
   const trainingProgress = computeTrainingProgress();
   const paceDiff = computePaceDiff();
 
+  // --- Dynamic sidebar helpers ---
+  const getWeeklyMileageTarget = () => {
+    if (!activeGoal) return 30;
+    const raceDistanceMiles = (activeGoal.distance_meters || 42195) * 0.000621371;
+    const weeksRemaining = Math.max(1, totalDays / 7);
+    // Rough heuristic: peak weekly mileage ~3x race distance for marathon, scale down for shorter races
+    const peakMileage = Math.min(raceDistanceMiles * 3, 60);
+    // If far out, target is lower; ramp up as race approaches
+    const rampFactor = Math.min(1, trainingProgress / 80);
+    return Math.round(Math.max(10, peakMileage * (0.5 + 0.5 * rampFactor)));
+  };
+
+  const getInsightMessage = () => {
+    const runs = countWeeklyRuns();
+    const mileage = weeklyMileageActual;
+    const target = getWeeklyMileageTarget();
+
+    if (!activeGoal) return "Set a race goal to get personalized coaching insights.";
+
+    if (totalDays <= 14) {
+      return "Taper time! Reduce volume by 40-50% this week. Focus on rest, nutrition, and mental prep for race day.";
+    }
+    if (runs === 0 && mileage === 0) {
+      return "No runs logged this week yet. Lace up and get moving — consistency beats intensity.";
+    }
+    if (mileage >= target) {
+      return `Great week — you've hit ${mileage} mi against a ${target} mi target. Don't skip your rest day; recovery is where adaptation happens.`;
+    }
+    if (paceDiff !== null && paceDiff < -5) {
+      return `You're running ${Math.abs(paceDiff)}s per mile faster than goal pace. Dial back on easy days to save energy for key workouts.`;
+    }
+    if (paceDiff !== null && paceDiff > 10) {
+      return `Pace is ${paceDiff}s off your target — don't stress. Focus on building aerobic base; speed will come.`;
+    }
+    if (runs >= 3) {
+      return `Solid consistency with ${runs} runs this week. Keep the easy days truly easy and bring intensity only to key sessions.`;
+    }
+    return `${mileage} miles so far this week. Aim for ${target} mi — small consistent efforts add up over ${Math.ceil(totalDays / 7)} weeks to race day.`;
+  };
+
+  const getTodaysPlan = () => {
+    if (!activeGoal) return { type: 'Rest', distance: null, note: 'Set a goal first' };
+
+    const dayOfWeek = new Date().getDay(); // 0=Sun, 6=Sat
+    const todayActivities = activities.filter(a => {
+      const d = new Date(a.start_time);
+      const today = new Date();
+      return d.toDateString() === today.toDateString();
+    });
+
+    if (todayActivities.length > 0) {
+      const totalMiles = todayActivities.reduce((sum, a) => sum + (a.distance_meters || 0) * 0.000621371, 0);
+      return { type: 'Done', distance: `${totalMiles.toFixed(1)} mi`, note: 'completed today' };
+    }
+
+    const target = getWeeklyMileageTarget();
+    const easyDist = Math.round(target / 5);
+    const longDist = Math.round(target * 0.35);
+    const tempoDist = Math.round(target * 0.2);
+
+    // Day-of-week heuristics
+    switch (dayOfWeek) {
+      case 0: return { type: 'Rest', distance: null, note: 'recovery day' };
+      case 1: return { type: 'Easy Run', distance: `${easyDist} mi`, note: '@ easy pace' };
+      case 2: return { type: 'Tempo', distance: `${tempoDist} mi`, note: '@ tempo pace' };
+      case 3: return { type: 'Easy Run', distance: `${easyDist} mi`, note: '@ easy pace' };
+      case 4: return { type: 'Intervals', distance: `${tempoDist} mi`, note: 'speed work' };
+      case 5: return { type: 'Rest', distance: null, note: 'recovery day' };
+      case 6: return { type: 'Long Run', distance: `${longDist} mi`, note: '@ easy pace' };
+      default: return { type: 'Easy Run', distance: `${easyDist} mi`, note: '@ easy pace' };
+    }
+  };
+
+  const todaysPlan = getTodaysPlan();
+  const weeklyTarget = getWeeklyMileageTarget();
+
   // --- Chart data ---
   const weeklyChartData = useMemo(() => {
     if (activities.length === 0) return [];
@@ -221,7 +297,7 @@ const Dashboard = () => {
       <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
         <Link to="/" className="nav-brand">Korsana</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+          <span className="nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
             {user?.email}
           </span>
           <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
@@ -270,13 +346,18 @@ const Dashboard = () => {
                   </span>{' '}days
                 </div>
               </div>
-              {isConnected ? (
-                <span className="badge badge-success">✓ Strava Connected</span>
-              ) : (
-                <button onClick={handleConnectStrava} disabled={isLoading} className="btn btn-strava">
-                  {isLoading ? 'Connecting...' : 'Connect Strava'}
-                </button>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Link to="/goals" style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontWeight: 500 }}>
+                  Manage Goals
+                </Link>
+                {isConnected ? (
+                  <span className="badge badge-success">✓ Strava Connected</span>
+                ) : (
+                  <button onClick={handleConnectStrava} disabled={isLoading} className="btn btn-strava">
+                    {isLoading ? 'Connecting...' : 'Connect Strava'}
+                  </button>
+                )}
+              </div>
             </div>
             <div style={{ marginTop: '1rem' }}>
               <div className="progress-bar" style={{ height: '6px' }}>
@@ -297,18 +378,18 @@ const Dashboard = () => {
         )}
 
         {/* Main Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem' }}>
+        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem' }}>
           {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Key Metrics - Staggered */}
             {loadingActivities || loadingGoal ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 <SkeletonCard />
                 <SkeletonCard />
                 <SkeletonCard />
               </div>
             ) : (
-              <StaggerContainer style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <StaggerContainer className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 <StaggerItem>
                   <motion.div
                     className="metric-card"
@@ -387,7 +468,7 @@ const Dashboard = () => {
 
             {/* Charts Section */}
             {!loadingActivities && activities.length > 0 && (
-              <StaggerContainer style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <StaggerContainer className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {/* Weekly Mileage Bar Chart */}
                 <StaggerItem>
                   <motion.div
@@ -641,7 +722,7 @@ const Dashboard = () => {
                   fontWeight: 400,
                 }}>
                   <TypewriterText
-                    text="Your mileage is solid this week. Don't skip tomorrow's rest day — recovery is where the adaptation happens."
+                    text={getInsightMessage()}
                     speed={25}
                     delay={600}
                   />
@@ -680,14 +761,16 @@ const Dashboard = () => {
                   borderRadius: '0.375rem',
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                    Easy Run
+                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: todaysPlan.type === 'Done' ? 'var(--color-success)' : todaysPlan.type === 'Rest' ? 'var(--color-slate)' : 'var(--color-primary)' }}>
+                    {todaysPlan.type}
                   </div>
-                  <div className="data-value" style={{ fontSize: '2rem', marginTop: '0.5rem' }}>
-                    6 mi
-                  </div>
+                  {todaysPlan.distance && (
+                    <div className="data-value" style={{ fontSize: '2rem', marginTop: '0.5rem' }}>
+                      {todaysPlan.distance}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
-                    @ easy pace
+                    {todaysPlan.note}
                   </div>
                 </div>
               </div>
@@ -708,7 +791,7 @@ const Dashboard = () => {
                     <motion.div
                       className="progress-bar-fill"
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, weeklyMileageActual > 0 ? (weeklyMileageActual / 30) * 100 : 0)}%` }}
+                      animate={{ width: `${Math.min(100, weeklyMileageActual > 0 ? (weeklyMileageActual / weeklyTarget) * 100 : 0)}%` }}
                       transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
                     />
                   </div>

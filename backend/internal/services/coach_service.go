@@ -156,7 +156,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 // callClaudeAPI calls the Anthropic Claude API
 func (s *CoachService) callClaudeAPI(messages []ClaudeMessage, systemPrompt string) (string, error) {
 	reqBody := ClaudeRequest{
-		Model:     "claude-3-5-sonnet-20241022",
+		Model:     "claude-sonnet-4-5-20250929",
 		MaxTokens: 1024,
 		Messages:  messages,
 		System:    systemPrompt,
