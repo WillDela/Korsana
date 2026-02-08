@@ -10,6 +10,7 @@ import AnimatedNumber from '../components/AnimatedNumber';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
 import { SkeletonCard, SkeletonRow, SkeletonRaceHeader, SkeletonSidebarCard } from '../components/Skeleton';
 import TypewriterText from '../components/TypewriterText';
+import logo from '../assets/images/Korsana_Logo.png';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -314,7 +315,7 @@ const Dashboard = () => {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-primary backdrop-blur-md border-b border-primary/80 h-16 flex items-center justify-between px-6">
         <Link to="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-deep-green font-bold text-sm">K</div>
+          <img src={logo} alt="Korsana Logo" className="h-10 w-auto" />
           Korsana
         </Link>
         <div className="flex items-center gap-4">

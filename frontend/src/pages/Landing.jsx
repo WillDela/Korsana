@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PhotoMasonry from '../components/PhotoMasonry';
 import AnimatedNumber from '../components/AnimatedNumber';
+import logo from '../assets/images/Korsana_Logo.png';
 
 // Reusable scroll reveal component
 const ScrollReveal = ({ children, delay = 0 }) => {
@@ -43,10 +44,7 @@ const Landing = () => {
       >
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            {/* Logo Placeholder (or use actual logo asset if/when available) */}
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg group-hover:bg-secondary transition-colors duration-300">
-              K
-            </div>
+            <img src={logo} alt="Korsana Logo" className="h-10 w-auto transition-opacity duration-300 group-hover:opacity-80" />
             <span className="text-xl font-bold tracking-tight text-primary group-hover:text-secondary transition-colors duration-300">
               Korsana
             </span>
@@ -264,7 +262,7 @@ const Landing = () => {
         <footer className="bg-primary py-16 border-t border-primary/80">
           <div className="container mx-auto px-6 text-center">
             <div className="font-bold text-2xl text-white mb-4 flex items-center justify-center gap-2">
-              <div className="w-6 h-6 bg-accent rounded flex items-center justify-center text-deep-green text-xs font-bold">K</div>
+              <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
               Korsana
             </div>
             <p className="text-white/70 text-sm mb-8">Built with precision for the Miami Marathon 2026.</p>

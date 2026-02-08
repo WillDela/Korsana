@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';
 import AnimatedButton from '../components/AnimatedButton';
+import logo from '../assets/images/Korsana_Logo.png';
 
 const Coach = () => {
   const { user, logout } = useAuth();
@@ -94,7 +95,10 @@ const Coach = () => {
     <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column' }}>
       {/* Navigation */}
       <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="nav-brand">Korsana</Link>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
+          <span className="font-bold text-lg">Korsana</span>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/settings" className="nav-link">Settings</Link>

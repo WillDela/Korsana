@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/images/Korsana_Logo.png';
 
 const Goals = () => {
   const { user, logout } = useAuth();
@@ -69,7 +70,10 @@ const Goals = () => {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)' }}>
       <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="nav-brand">Korsana</Link>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
+          <span className="font-bold text-lg">Korsana</span>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span className="nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
             {user?.email}

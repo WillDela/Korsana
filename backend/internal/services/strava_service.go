@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -10,25 +12,70 @@ import (
 	"github.com/korsana/backend/internal/models"
 	"github.com/korsana/backend/pkg/strava"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 // StravaService handles Strava business logic
 type StravaService struct {
 	db           *database.DB
 	stravaClient *strava.Client
+	redis        *redis.Client
 }
 
 // NewStravaService creates a new Strava service
-func NewStravaService(db *database.DB, client *strava.Client) *StravaService {
+func NewStravaService(db *database.DB, client *strava.Client, redisClient *redis.Client) *StravaService {
 	return &StravaService{
 		db:           db,
 		stravaClient: client,
+		redis:        redisClient,
 	}
 }
 
-// GetAuthURL returns the Strava OAuth URL
-func (s *StravaService) GetAuthURL() string {
-	return s.stravaClient.GetAuthorizationURL()
+// GenerateOAuthState creates a secure random state parameter and stores it in Redis
+func (s *StravaService) GenerateOAuthState(ctx context.Context, userID uuid.UUID) (string, error) {
+	// Generate random state
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	state := hex.EncodeToString(b)
+
+	// Store state in Redis with 10 minute expiration
+	key := fmt.Sprintf("strava_oauth_state:%s", state)
+	err := s.redis.Set(ctx, key, userID.String(), 10*time.Minute).Err()
+	if err != nil {
+		return "", err
+	}
+
+	return state, nil
+}
+
+// ValidateOAuthState validates the state parameter and returns the associated user ID
+func (s *StravaService) ValidateOAuthState(ctx context.Context, state string) (uuid.UUID, error) {
+	key := fmt.Sprintf("strava_oauth_state:%s", state)
+	userIDStr, err := s.redis.Get(ctx, key).Result()
+	if err != nil {
+		return uuid.Nil, errors.New("invalid or expired state")
+	}
+
+	// Delete the state (one-time use)
+	s.redis.Del(ctx, key)
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return uuid.Nil, errors.New("invalid user ID in state")
+	}
+
+	return userID, nil
+}
+
+// GetAuthURL returns the Strava OAuth URL with state parameter
+func (s *StravaService) GetAuthURL(ctx context.Context, userID uuid.UUID) (string, error) {
+	state, err := s.GenerateOAuthState(ctx, userID)
+	if err != nil {
+		return "", err
+	}
+	return s.stravaClient.GetAuthorizationURL(state), nil
 }
 
 // HandleCallback processes the OAuth callback and saves the connection

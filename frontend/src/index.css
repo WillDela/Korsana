@@ -15,8 +15,8 @@
   /* Deep Blue */
   --color-secondary: #618B4A;
   /* Sage Green */
-  --color-accent: #06ffa5;
-  /* Electric Teal */
+  --color-accent: #618B4A;
+  /* Sage Green (same as secondary for cohesive palette) */
   --color-deep-green: #13230B;
   /* Deep Forest Green */
   --color-cream: #EEF5DB;
@@ -137,8 +137,8 @@ body {
   }
 
   .btn-accent {
-    @apply bg-accent text-deep-green shadow-md;
-    @apply hover:shadow-lg hover:brightness-95;
+    @apply bg-accent text-white shadow-md;
+    @apply hover:shadow-lg hover:brightness-110;
     @apply active:scale-[0.98];
     @apply focus:ring-accent/50;
   }

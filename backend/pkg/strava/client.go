@@ -49,13 +49,16 @@ type TokenResponse struct {
 }
 
 // GetAuthorizationURL returns the URL to redirect users to for Strava OAuth
-func (c *Client) GetAuthorizationURL() string {
+func (c *Client) GetAuthorizationURL(state string) string {
 	params := url.Values{}
 	params.Add("client_id", c.ClientID)
 	params.Add("response_type", "code")
 	params.Add("redirect_uri", c.RedirectURI)
 	params.Add("approval_prompt", "force")
 	params.Add("scope", scope)
+	if state != "" {
+		params.Add("state", state)
+	}
 
 	return fmt.Sprintf("%s?%s", authURL, params.Encode())
 }

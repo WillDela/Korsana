@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -29,12 +30,19 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// 3. Initialize External Clients
+	// 3. Initialize Redis
+	opt, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("Failed to parse Redis URL: %v", err)
+	}
+	redisClient := redis.NewClient(opt)
+
+	// 4. Initialize External Clients
 	stravaClient := strava.NewClient(cfg.StravaClientID, cfg.StravaClientSecret, cfg.StravaRedirectURI)
 
-	// 4. Initialize Services
+	// 5. Initialize Services
 	authService := services.NewAuthService(db, cfg)
-	stravaService := services.NewStravaService(db, stravaClient)
+	stravaService := services.NewStravaService(db, stravaClient, redisClient)
 	goalsService := services.NewGoalsService(db)
 	coachService := services.NewCoachService(db, cfg, goalsService)
 
@@ -75,6 +83,9 @@ func main() {
 			auth.POST("/logout", middleware.AuthMiddleware(cfg), authHandler.Logout)
 		}
 
+		// Public Strava OAuth Callback (no auth required - validated via state parameter)
+		api.GET("/strava/callback", stravaHandler.Callback)
+
 		// Protected Routes
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
@@ -83,7 +94,6 @@ func main() {
 			strava := protected.Group("/strava")
 			{
 				strava.GET("/auth", stravaHandler.AuthURL)
-				strava.GET("/callback", stravaHandler.Callback)
 				strava.POST("/sync", stravaHandler.SyncActivities)
 				strava.GET("/activities", stravaHandler.GetActivities)
 			}

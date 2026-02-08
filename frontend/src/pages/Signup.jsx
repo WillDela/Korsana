@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import AnimatedInput from '../components/AnimatedInput';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
+import logo from '../assets/images/Korsana_Logo.png';
 
 const Signup = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
@@ -62,12 +63,20 @@ const Signup = () => {
         }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <Link to="/" style={{ textDecoration: 'none' }}>
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <motion.img
+              src={logo}
+              alt="Korsana Logo"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+              style={{ height: '3rem', width: 'auto' }}
+            />
             <motion.h1
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
-              style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', marginBottom: '1rem' }}
+              style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', marginBottom: 0 }}
             >
               Korsana
             </motion.h1>

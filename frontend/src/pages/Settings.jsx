@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { profileAPI } from '../api/profile';
 import { stravaAPI } from '../api/strava';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
+import logo from '../assets/images/Korsana_Logo.png';
 
 const Settings = () => {
   const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +24,28 @@ const Settings = () => {
 
   // Strava state
   const [connectingStrava, setConnectingStrava] = useState(false);
+  const [stravaMessage, setStravaMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     fetchProfile();
+
+    // Check for Strava callback status
+    if (searchParams.get('strava_connected') === 'true') {
+      setStravaMessage({ type: 'success', text: 'Strava connected successfully!' });
+      fetchProfile(); // Refresh profile to show connection
+      // Clear query params
+      setSearchParams({});
+    } else if (searchParams.get('strava_error')) {
+      const error = searchParams.get('strava_error');
+      const errorMessages = {
+        missing_code: 'Authorization code missing',
+        missing_state: 'Security validation failed',
+        invalid_state: 'Invalid or expired session',
+        connection_failed: 'Failed to connect to Strava',
+      };
+      setStravaMessage({ type: 'error', text: errorMessages[error] || 'Failed to connect Strava' });
+      setSearchParams({});
+    }
   }, []);
 
   const fetchProfile = async () => {
@@ -90,7 +111,10 @@ const Settings = () => {
     <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)' }}>
       {/* Navigation */}
       <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="nav-brand">Korsana</Link>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
+          <span className="font-bold text-lg">Korsana</span>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/coach" className="nav-link">Coach</Link>
@@ -180,6 +204,25 @@ const Settings = () => {
                   </svg>
                   <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Strava Connection</h2>
                 </div>
+
+                {/* Strava status messages */}
+                {stravaMessage.text && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: '0.5rem',
+                      marginBottom: '1rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      backgroundColor: stravaMessage.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
+                      color: '#fff',
+                    }}
+                  >
+                    {stravaMessage.text}
+                  </motion.div>
+                )}
 
                 {profile?.strava?.connected ? (
                   <div>
