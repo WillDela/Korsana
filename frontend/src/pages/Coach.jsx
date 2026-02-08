@@ -95,9 +95,10 @@ const Coach = () => {
       {/* Navigation */}
       <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
         <Link to="/" className="nav-brand">Korsana</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
-          <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+          <Link to="/settings" className="nav-link">Settings</Link>
+          <span className="coach-nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
             {user?.email}
           </span>
           <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
@@ -107,31 +108,29 @@ const Coach = () => {
       </nav>
 
       {/* Chat Container */}
-      <div style={{ flex: 1, maxWidth: '900px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', padding: '2rem 1.5rem' }}>
+      <div className="coach-container" style={{ flex: 1, maxWidth: '900px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: '2rem' }}
+          style={{ marginBottom: '1.5rem' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
+            <div className="coach-header-avatar" style={{
               borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--color-secondary) 0%, #4f7136 100%)',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '1.25rem',
               fontWeight: 700,
               boxShadow: '0 4px 12px rgba(97, 139, 74, 0.3)',
+              flexShrink: 0,
             }}>
               K
             </div>
             <div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>AI Coach</h1>
+              <h1 className="coach-header-title" style={{ fontWeight: 800, margin: 0 }}>AI Coach</h1>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                 Your personalized running coach
               </p>
@@ -140,14 +139,7 @@ const Coach = () => {
         </motion.div>
 
         {/* Messages Container */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            marginBottom: '1.5rem',
-            minHeight: '400px',
-          }}
-        >
+        <div className="coach-messages" style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem' }}>
           {isFetchingHistory ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
               <div style={{ color: 'var(--color-text-muted)' }}>Loading conversation...</div>
@@ -158,7 +150,7 @@ const Coach = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              style={{ padding: '3rem 1.5rem', textAlign: 'center' }}
+              style={{ padding: '2rem 1rem', textAlign: 'center' }}
             >
               <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
                 Ask me anything about your training
@@ -166,7 +158,7 @@ const Coach = () => {
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem', maxWidth: '500px', margin: '0 auto 2rem' }}>
                 I have access to your race goal and recent activities. Try one of these:
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', maxWidth: '600px', margin: '0 auto' }}>
+              <div className="coach-prompts-grid" style={{ display: 'grid', gap: '0.75rem', maxWidth: '600px', margin: '0 auto' }}>
                 {suggestedPrompts.map((prompt, i) => (
                   <motion.button
                     key={i}
@@ -196,7 +188,7 @@ const Coach = () => {
             </motion.div>
           ) : (
             // Message list
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -206,14 +198,12 @@ const Coach = () => {
                   style={{
                     display: 'flex',
                     flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
-                    gap: '0.75rem',
+                    gap: '0.5rem',
                     alignItems: 'flex-start',
                   }}
                 >
                   {/* Avatar */}
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
+                  <div className="coach-msg-avatar" style={{
                     borderRadius: '50%',
                     background: message.role === 'user' ? 'var(--color-primary)' : 'var(--color-secondary)',
                     color: '#fff',
@@ -228,8 +218,7 @@ const Coach = () => {
                   </div>
 
                   {/* Message bubble */}
-                  <div style={{
-                    maxWidth: '75%',
+                  <div className="coach-msg-bubble" style={{
                     padding: '1rem 1.25rem',
                     borderRadius: message.role === 'user' ? '1rem 1rem 0 1rem' : '1rem 1rem 1rem 0',
                     background: message.role === 'user' ? 'var(--color-primary)' : '#fff',
@@ -259,13 +248,11 @@ const Coach = () => {
                   animate={{ opacity: 1, y: 0 }}
                   style={{
                     display: 'flex',
-                    gap: '0.75rem',
+                    gap: '0.5rem',
                     alignItems: 'flex-start',
                   }}
                 >
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
+                  <div className="coach-msg-avatar" style={{
                     borderRadius: '50%',
                     background: 'var(--color-secondary)',
                     color: '#fff',
@@ -274,6 +261,7 @@ const Coach = () => {
                     justifyContent: 'center',
                     fontSize: '0.875rem',
                     fontWeight: 600,
+                    flexShrink: 0,
                   }}>
                     K
                   </div>
@@ -318,11 +306,11 @@ const Coach = () => {
             background: '#fff',
             border: '2px solid var(--color-border)',
             borderRadius: '0.75rem',
-            padding: '1rem',
+            padding: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
           }}
         >
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -332,13 +320,13 @@ const Coach = () => {
               disabled={isLoading}
               style={{
                 flex: 1,
-                padding: '0.75rem',
+                padding: '0.625rem',
                 border: 'none',
                 outline: 'none',
                 fontSize: '0.9375rem',
                 fontFamily: 'var(--font-sans)',
                 resize: 'none',
-                minHeight: '48px',
+                minHeight: '44px',
                 maxHeight: '120px',
                 background: 'transparent',
                 color: 'var(--color-text-primary)',
@@ -350,7 +338,7 @@ const Coach = () => {
               onClick={() => handleSendMessage()}
               disabled={!inputValue.trim() || isLoading}
               style={{
-                padding: '0.75rem 1.5rem',
+                padding: '0.625rem 1.25rem',
                 fontSize: '0.9375rem',
                 fontWeight: 600,
               }}
@@ -358,7 +346,7 @@ const Coach = () => {
               Send
             </AnimatedButton>
           </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+          <div className="coach-hint" style={{ marginTop: '0.375rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
             Press Enter to send, Shift+Enter for new line
           </div>
         </motion.div>

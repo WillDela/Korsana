@@ -43,6 +43,7 @@ func main() {
 	stravaHandler := handlers.NewStravaHandler(stravaService)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
+	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService)
 
 	// 6. Setup Router
 	r := gin.Default()
@@ -103,12 +104,15 @@ func main() {
 			{
 				coach.POST("/message", coachHandler.SendMessage)
 				coach.GET("/history", coachHandler.GetConversationHistory)
+				coach.GET("/insight", coachHandler.GetInsight)
 			}
 
-			// Dashboard (Placeholder)
-			protected.GET("/dashboard", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{"message": "Welcome to the dashboard"})
-			})
+			// Profile / Settings
+			profile := protected.Group("/profile")
+			{
+				profile.GET("", profileHandler.GetProfile)
+				profile.PUT("/password", profileHandler.ChangePassword)
+			}
 		}
 	}
 

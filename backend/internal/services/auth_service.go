@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -98,6 +98,31 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*model
 		return nil, errors.New("user not found")
 	}
 	return &user, nil
+}
+
+// ChangePassword verifies the current password and updates to a new one
+func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
+	var user models.User
+	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verify current password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword))
+	if err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, "UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3",
+		string(hashedPassword), time.Now(), userID)
+	return err
 }
 
 // generateToken creates a JWT token

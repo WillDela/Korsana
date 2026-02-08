@@ -1,738 +1,529 @@
 @import "tailwindcss";
 
-/* Google Fonts - Inter & IBM Plex Mono */
+/* ============================================
+   Google Fonts - Inter & IBM Plex Mono
+   ============================================ */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ============================================
-   Korsana Design System: Athletic Precision
-   Blue-Green Palette - Natural, Grounded, Professional
+   Tailwind CSS v4 Theme Configuration
+   "Track & Field" - Athletic Precision Palette
    ============================================ */
+@theme {
+  /* Primary Palette */
+  --color-primary: #242E7B;
+  /* Deep Blue */
+  --color-secondary: #618B4A;
+  /* Sage Green */
+  --color-accent: #06ffa5;
+  /* Electric Teal */
+  --color-deep-green: #13230B;
+  /* Deep Forest Green */
+  --color-cream: #EEF5DB;
+  /* Warm Cream */
+  --color-slate: #465362;
+  /* Blue-Gray */
 
-:root {
-  /* Blue-Green Athletic Precision Palette */
-  --color-primary: #242E7B;        /* Deep Blue - primary brand, professional */
-  --color-secondary: #618B4A;      /* Sage Green - secondary actions, success */
-  --color-accent: #06ffa5;         /* Electric Teal - achievements, highlights */
-  --color-deep-green: #13230B;     /* Deep Green - dark backgrounds, emphasis */
-  --color-cream: #EEF5DB;          /* Cream - warm surfaces */
-  --color-slate: #465362;          /* Slate - muted elements */
+  /* Status Colors */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
 
-  /* Extended Palette */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #F8FAF5;   /* Very light green-tinted white */
-  --color-bg-dark: #13230B;        /* Deep green for dark sections */
-  --color-border: #e5e7eb;
-  --color-border-dark: #d1d5db;
-  
-  /* Text Hierarchy */
-  --color-text-primary: #13230B;   /* Deep green for primary text */
-  --color-text-secondary: #465362; /* Slate for secondary text */
-  --color-text-muted: #9ca3af;
-  --color-text-inverse: #ffffff;
-  
-  /* Status Colors (Purposeful, not decorative) */
-  --color-success: #059669;        /* Forest Green - goal achieved */
-  --color-warning: #d97706;        /* Amber - attention needed */
-  --color-error: #dc2626;          /* Racing Red - critical */
-  
-  /* Typography Scale */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', monospace;
-  
-  /* Spacing Scale */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0.0, 0.2, 1);
-  --transition-base: 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+
+  /* Layout */
+  --spacing-container: 1200px;
 }
 
 /* ============================================
-   Reset & Base Styles
+   Semantic CSS Variables
    ============================================ */
+:root {
+  /* Background Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #EEF5DB;
+  /* Cream */
+  --color-bg-surface: #ffffff;
+  --color-bg-muted: #f8fafc;
+  /* slate-50 */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* Text Colors */
+  --color-text-primary: #13230B;
+  /* Deep Green */
+  --color-text-secondary: #465362;
+  /* Slate */
+  --color-text-muted: #94a3b8;
+  /* slate-400 */
+  --color-text-inverse: #ffffff;
+
+  /* Border */
+  --color-border: #e2e8f0;
+  /* slate-200 */
+  --color-border-light: #f1f5f9;
+  /* slate-100 */
 }
 
+/* ============================================
+   Base Styles
+   ============================================ */
 html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  line-height: 1.5;
-  min-height: 100vh;
-}
-
-/* ============================================
-   Typography - Intentional Hierarchy
-   ============================================ */
-
-/* Headings - Inter Bold/Black */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-}
-
-h1 { font-size: 2rem; font-weight: 900; }
-h2 { font-size: 1.5rem; font-weight: 700; }
-h3 { font-size: 1.25rem; font-weight: 600; }
-h4 { font-size: 1rem; font-weight: 600; }
-
-/* Data/Numbers - IBM Plex Mono (Precision) */
-.data-value {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.data-value-lg {
-  font-family: var(--font-mono);
-  font-size: 2.5rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.data-value-xl {
-  font-family: var(--font-mono);
-  font-size: 3rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-/* Labels - Uppercase, tracked */
-.label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-}
-
-.label-sm {
-  font-size: 0.625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
-}
-
-/* ============================================
-   Buttons - Purposeful, Not Decorative
-   ============================================ */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 0.375rem;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  text-decoration: none;
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--color-secondary);
-  outline-offset: 2px;
-}
-
-.btn-primary {
-  background: var(--color-secondary);
-  color: var(--color-text-inverse);
-}
-
-.btn-primary:hover {
-  background: #4f7136;
-}
-
-.btn-secondary {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-}
-
-.btn-secondary:hover {
-  background: #1a2257;
-}
-
-.btn-outline {
-  background: transparent;
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-dark);
-}
-
-.btn-outline:hover {
-  border-color: var(--color-primary);
-  background: var(--color-bg-secondary);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--color-text-secondary);
-}
-
-.btn-ghost:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
-}
-
-.btn-strava {
-  background: #FC4C02;
-  color: white;
-}
-
-.btn-strava:hover {
-  background: #E34402;
-}
-
-/* ============================================
-   Form Inputs - Clean & Functional
-   ============================================ */
-
-.input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  color: var(--color-text-primary);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 0.375rem;
-  transition: all var(--transition-fast);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(26, 35, 50, 0.1);
-}
-
-.input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.input-error {
-  border-color: var(--color-error);
-}
-
-/* ============================================
-   Cards - Functional Containers
-   ============================================ */
-
-.card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-}
-
-.card-elevated {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-/* ============================================
-   Metric Cards - Data-First Design
-   ============================================ */
-
-.metric-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-}
-
-.metric-card .label {
-  margin-bottom: 0.5rem;
-}
-
-.metric-card .data-value-lg {
-  color: var(--color-primary);
-}
-
-.metric-card .metric-context {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  margin-top: 0.5rem;
-}
-
-.metric-positive {
-  color: var(--color-success);
-}
-
-.metric-negative {
-  color: var(--color-error);
-}
-
-/* ============================================
-   Progress Bar - Simple, Clear
-   ============================================ */
-
-.progress-bar {
-  height: 8px;
-  background: var(--color-bg-secondary);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--color-secondary);
-  border-radius: 4px;
-  transition: width var(--transition-base);
-}
-
-.progress-bar-success .progress-bar-fill {
-  background: var(--color-success);
-}
-
-/* ============================================
-   Data Tables - Scannable, Dense
-   ============================================ */
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  text-align: left;
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.data-table td {
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.data-table tr:hover {
-  background: var(--color-bg-secondary);
-}
-
-.data-table .data-cell {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ============================================
-   Navigation - Clean & Purposeful
-   ============================================ */
-
-.nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.nav-link {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  border-radius: 0.375rem;
-  transition: all var(--transition-fast);
-}
-
-.nav-link:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
-}
-
-.nav-link.active {
-  color: var(--color-text-primary);
-  background: var(--color-bg-secondary);
-}
-
-/* ============================================
-   Race Countdown - Goal Context
-   ============================================ */
-
-.race-header {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-}
-
-.race-header .race-name {
-  font-size: 0.875rem;
-  font-weight: 500;
-  opacity: 0.8;
-  margin-bottom: 0.25rem;
-}
-
-.race-header .race-countdown {
-  font-family: var(--font-mono);
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.race-header .progress-bar {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.race-header .progress-bar-fill {
-  background: var(--color-accent);
-}
-
-/* ============================================
-   AI Coach Box
-   ============================================ */
-
-.coach-insight {
-  background: var(--color-cream);
-  border-left: 3px solid var(--color-secondary);
-  padding: 1rem 1.25rem;
-  border-radius: 0 0.375rem 0.375rem 0;
-}
-
-.coach-insight .coach-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.coach-insight p {
-  font-size: 0.9375rem;
+  background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================
-   Status Badges
+   Creative Utilities - "The Korsa Look"
    ============================================ */
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 9999px;
+/* Topographic Map Texture - Subtle background pattern */
+.texture-topography {
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23618B4A' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
 }
 
-.badge-success {
-  background: rgba(5, 150, 105, 0.1);
-  color: var(--color-success);
+/* Diagonal Clip Paths - "The Crossing" Motif */
+.clip-diagonal-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
 }
 
-.badge-warning {
-  background: rgba(217, 119, 6, 0.1);
-  color: var(--color-warning);
-}
-
-.badge-error {
-  background: rgba(220, 38, 38, 0.1);
-  color: var(--color-error);
+.clip-diagonal-top {
+  clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
 }
 
 /* ============================================
-   Alert/Error Messages
+   Component Layer
    ============================================ */
+@layer components {
 
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.alert-error {
-  background: rgba(220, 38, 38, 0.1);
-  color: var(--color-error);
-  border: 1px solid rgba(220, 38, 38, 0.2);
-}
-
-.alert-success {
-  background: rgba(5, 150, 105, 0.1);
-  color: var(--color-success);
-  border: 1px solid rgba(5, 150, 105, 0.2);
-}
-
-/* ============================================
-   Utilities
-   ============================================ */
-
-.text-mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-
-.text-muted { color: var(--color-text-muted); }
-.text-secondary { color: var(--color-text-secondary); }
-.text-success { color: var(--color-success); }
-.text-error { color: var(--color-error); }
-.text-accent { color: var(--color-accent); }
-
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ============================================
-   Layout Containers
-   ============================================ */
-
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-.container-sm {
-  max-width: 480px;
-}
-
-.container-md {
-  max-width: 640px;
-}
-
-/* ============================================
-   Page Layouts
-   ============================================ */
-
-.page-auth {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-secondary);
-  padding: 2rem 1rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 0.5rem;
-  padding: 2rem;
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.auth-header .logo {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--color-primary);
-  margin-bottom: 0.5rem;
-}
-
-.auth-header h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.auth-header p {
-  color: var(--color-text-secondary);
-  font-size: 0.9375rem;
-}
-
-/* ============================================
-   Focus States (Accessibility)
-   ============================================ */
-
-:focus-visible {
-  outline: 2px solid var(--color-secondary);
-  outline-offset: 2px;
-}
-
-/* ============================================
-   Animations - Purposeful, Not Gimmicky
-   ============================================ */
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+  /* --- Buttons --- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 cursor-pointer;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
+
+  .btn-sm {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-md {
+    @apply px-6 py-3 text-base;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white shadow-md;
+    @apply hover:shadow-lg hover:brightness-110;
+    @apply active:scale-[0.98];
+    @apply focus:ring-primary/50;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white shadow-md;
+    @apply hover:shadow-lg hover:brightness-110;
+    @apply active:scale-[0.98];
+    @apply focus:ring-secondary/50;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-deep-green shadow-md;
+    @apply hover:shadow-lg hover:brightness-95;
+    @apply active:scale-[0.98];
+    @apply focus:ring-accent/50;
+  }
+
+  .btn-outline {
+    @apply bg-transparent border-2 border-primary text-primary;
+    @apply hover:bg-primary/5;
+    @apply active:scale-[0.98];
+    @apply focus:ring-primary/50;
+  }
+
+  .btn-outline-light {
+    @apply bg-transparent border-2 border-white/30 text-white;
+    @apply hover:bg-white/10 hover:border-white/50;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-slate;
+    @apply hover:bg-slate/5 hover:text-primary;
+  }
+
+  /* --- Cards --- */
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm;
+    @apply p-6 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .card-featured {
+    @apply p-8 shadow-md;
+  }
+
+  /* --- Metric Components (Data-Dense) --- */
+  .metric-card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm p-6;
+    @apply relative overflow-hidden transition-all duration-200;
+    @apply hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .metric-card-accent {
+    @apply before:absolute before:top-0 before:left-0 before:w-1 before:h-full;
+  }
+
+  .metric-card-accent-primary {
+    @apply before:bg-primary;
+  }
+
+  .metric-card-accent-secondary {
+    @apply before:bg-secondary;
+  }
+
+  .metric-card-accent-accent {
+    @apply before:bg-accent;
+  }
+
+  .metric-label {
+    @apply text-xs font-bold uppercase tracking-wider mb-2;
+  }
+
+  .metric-value-xl {
+    @apply font-mono text-4xl md:text-5xl font-bold tracking-tight leading-none;
+    @apply text-deep-green;
+  }
+
+  .metric-value-lg {
+    @apply font-mono text-3xl font-bold tracking-tight leading-none;
+    @apply text-deep-green;
+  }
+
+  .metric-value-md {
+    @apply font-mono text-2xl font-bold tracking-tight leading-none;
+    @apply text-deep-green;
+  }
+
+  .metric-subtext {
+    @apply text-xs font-medium text-slate mt-2;
+  }
+
+  /* --- Form Inputs --- */
+  .input {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-200;
+    @apply bg-white text-deep-green placeholder-slate/50;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary;
+  }
+
+  .input-error {
+    @apply border-error focus:ring-error/20 focus:border-error;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-deep-green mb-2;
+  }
+
+  /* --- Navigation --- */
+  .nav-link {
+    @apply px-4 py-2 font-medium rounded-lg transition-colors duration-200;
+    @apply text-slate hover:text-primary hover:bg-primary/5;
+    @apply cursor-pointer no-underline;
+  }
+
+  .nav-link-active {
+    @apply text-primary bg-primary/10 font-semibold;
+  }
+
+  .nav-link-light {
+    @apply text-white/80 hover:text-white hover:bg-white/10;
+  }
+
+  .nav-link-light-active {
+    @apply text-white bg-white/15;
+  }
+
+  /* --- Section Utilities --- */
+  .section-padding {
+    @apply py-20 md:py-24 lg:py-32;
+  }
+
+  .section-padding-sm {
+    @apply py-12 md:py-16;
+  }
+
+  .container-padding {
+    @apply px-6 md:px-8;
+  }
+
+  /* --- Table Styles --- */
+  .table-row {
+    @apply border-b border-gray-50 last:border-0;
+    @apply hover:bg-slate-50/50 transition-colors;
+  }
+
+  .table-cell {
+    @apply px-6 py-4;
+  }
+
+  .table-header {
+    @apply px-6 py-3 text-left text-xs font-medium text-slate uppercase tracking-wider;
+    @apply bg-slate-50/50 border-b border-gray-100;
+  }
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+/* Page Enter Animation */
+.animate-enter {
+  animation: enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes enter {
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
+/* Fade In */
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide Up */
+.animate-slide-up {
+  animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse for loading indicators */
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s ease-in-out infinite;
+}
+
+@keyframes pulseSubtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Shimmer for skeleton loading */
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      var(--color-border-light) 0%,
+      var(--color-bg-muted) 50%,
+      var(--color-border-light) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Blink for typewriter cursor */
 @keyframes blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
 
-.animate-fadeIn {
-  animation: fadeIn var(--transition-base);
-}
+  0%,
+  50% {
+    opacity: 1;
+  }
 
-.animate-slideUp {
-  animation: slideUp var(--transition-base);
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ============================================
-   Mobile Responsiveness
+   Coach Page - Mobile Responsive
    ============================================ */
+.coach-container {
+  padding: 2rem 1.5rem;
+}
+
+.coach-header-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.25rem;
+}
+
+.coach-header-title {
+  font-size: 1.75rem;
+}
+
+.coach-messages {
+  min-height: 400px;
+}
+
+.coach-msg-avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.coach-msg-bubble {
+  max-width: 75%;
+}
+
+.coach-prompts-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.coach-hint {
+  display: block;
+}
+
+.coach-nav-email {
+  display: inline;
+}
 
 @media (max-width: 768px) {
-  /* Dashboard main grid: collapse sidebar below main content */
-  .dashboard-grid {
-    grid-template-columns: 1fr !important;
+  .coach-container {
+    padding: 1rem 0.75rem;
   }
 
-  /* Metric cards: 2 columns on tablet */
-  .metrics-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+  .coach-header-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
   }
 
-  /* Charts: stack to single column */
-  .charts-grid {
-    grid-template-columns: 1fr !important;
+  .coach-header-title {
+    font-size: 1.35rem;
   }
 
-  /* Navigation: reduce padding, hide email */
-  .nav {
+  .coach-messages {
+    min-height: 250px;
+  }
+
+  .coach-msg-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .coach-msg-bubble {
+    max-width: 85%;
     padding: 0.75rem 1rem;
   }
 
-  .nav-email {
+  .coach-prompts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .coach-hint {
     display: none;
   }
 
-  /* Race header: reduce font sizes */
-  .race-header .race-countdown {
-    font-size: 1.125rem;
-  }
-
-  /* Reduce main padding */
-  main {
-    padding: 1rem 1rem !important;
-  }
-
-  /* Data values: shrink on mobile */
-  .data-value-lg {
-    font-size: 2rem;
-  }
-
-  .data-value-xl {
-    font-size: 2.25rem;
-  }
-
-  /* Table: tighter padding */
-  .data-table th,
-  .data-table td {
-    padding: 0.5rem 0.625rem;
-    font-size: 0.8125rem;
+  .coach-nav-email {
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
-  /* Metric cards: single column on phone */
-  .metrics-grid {
-    grid-template-columns: 1fr !important;
+  .coach-container {
+    padding: 0.75rem 0.5rem;
   }
 
-  /* Even smaller data values */
-  .data-value-lg {
-    font-size: 1.75rem;
+  .coach-header-title {
+    font-size: 1.15rem;
   }
 
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.25rem; }
-  h3 { font-size: 1.125rem; }
-
-  /* Card padding reduction */
-  .card {
-    padding: 1rem;
+  .coach-msg-bubble {
+    max-width: 90%;
   }
+}
 
-  .metric-card {
-    padding: 1rem;
-  }
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
 
-  /* Race header */
-  .race-header {
-    padding: 1rem;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
 
-  /* Auth pages: reduce padding */
-  .page-auth {
-    padding: 1rem 0.75rem;
-  }
+/* ============================================
+   Scrollbar Styling (Optional)
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  .auth-card {
-    padding: 1.5rem;
-  }
+::-webkit-scrollbar-track {
+  background: var(--color-bg-muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* ============================================
+   Selection Styling
+   ============================================ */
+::selection {
+  background-color: var(--color-secondary);
+  color: white;
 }

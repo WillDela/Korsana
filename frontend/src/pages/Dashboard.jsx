@@ -5,6 +5,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import { useAuth } from '../context/AuthContext';
 import { goalsAPI } from '../api/goals';
 import { stravaAPI } from '../api/strava';
+import { profileAPI } from '../api/profile';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
 import { SkeletonCard, SkeletonRow, SkeletonRaceHeader, SkeletonSidebarCard } from '../components/Skeleton';
@@ -19,6 +20,8 @@ const Dashboard = () => {
   const [activities, setActivities] = useState([]);
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(true);
+  const [aiInsight, setAiInsight] = useState(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -31,6 +34,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchActiveGoal();
     fetchActivities();
+    fetchAiInsight();
   }, []);
 
   const fetchActiveGoal = async () => {
@@ -54,6 +58,21 @@ const Dashboard = () => {
       console.error('Failed to fetch activities:', error);
     } finally {
       setLoadingActivities(false);
+    }
+  };
+
+  const fetchAiInsight = async () => {
+    try {
+      setLoadingInsight(true);
+      const data = await profileAPI.getInsight();
+      if (data.insight) {
+        setAiInsight(data.insight);
+      }
+    } catch (error) {
+      // Silently fall back to heuristic insight
+      console.error('AI insight unavailable, using fallback:', error);
+    } finally {
+      setLoadingInsight(false);
     }
   };
 
@@ -167,7 +186,6 @@ const Dashboard = () => {
   const getWeeklyMileageTarget = () => {
     if (!activeGoal) return 30;
     const raceDistanceMiles = (activeGoal.distance_meters || 42195) * 0.000621371;
-    const weeksRemaining = Math.max(1, totalDays / 7);
     // Rough heuristic: peak weekly mileage ~3x race distance for marathon, scale down for shorter races
     const peakMileage = Math.min(raceDistanceMiles * 3, 60);
     // If far out, target is lower; ramp up as race approaches
@@ -292,21 +310,29 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)' }}>
+    <div className="min-h-screen bg-slate-50">
       {/* Navigation */}
-      <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="nav-brand">Korsana</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+      <nav className="sticky top-0 z-50 bg-primary backdrop-blur-md border-b border-primary/80 h-16 flex items-center justify-between px-6">
+        <Link to="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-deep-green font-bold text-sm">K</div>
+          Korsana
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/coach" className="text-sm font-medium text-white/70 hover:text-white transition-colors hidden sm:inline-block">Coach</Link>
+          <Link to="/settings" className="text-sm font-medium text-white/70 hover:text-white transition-colors hidden sm:inline-block">Settings</Link>
+          <span className="text-sm text-white/60 hidden md:inline-block">
             {user?.email}
           </span>
-          <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
+          <button
+            onClick={() => logout()}
+            className="text-sm font-medium text-white/70 hover:text-white transition-colors"
+          >
             Log out
           </button>
         </div>
       </nav>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <main className="container mx-auto px-6 py-10 max-w-7xl">
         {/* Race Header - Sticky below nav */}
         {loadingGoal ? (
           <SkeletonRaceHeader />
@@ -314,11 +340,10 @@ const Dashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="card"
-            style={{ marginBottom: '2rem', padding: '2rem', textAlign: 'center' }}
+            className="bg-white rounded-xl border border-gray-200 p-8 text-center mb-8 shadow-sm"
           >
-            <h3 style={{ marginBottom: '1rem' }}>No Active Goal Set</h3>
-            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+            <h3 className="text-xl font-bold mb-2">No Active Goal Set</h3>
+            <p className="text-slate-500 mb-6">
               Set a race goal to start tracking your progress
             </p>
             <Link to="/goals/new" className="btn btn-primary">
@@ -330,47 +355,58 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="race-header"
-            style={{ marginBottom: '2rem', position: 'sticky', top: '60px', zIndex: 40 }}
+            className="sticky top-[70px] z-40 bg-white/95 backdrop-blur-md rounded-xl border border-gray-200 shadow-sm p-6 mb-8"
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="flex flex-wrap justify-between items-start gap-4">
               <div>
-                <div className="race-name">UPCOMING RACE</div>
-                <div className="race-countdown" style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                  {activeGoal.race_name} —{' '}
-                  <span className="data-value">
+                <div className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-1">UPCOMING RACE</div>
+                <div className="flex items-baseline gap-2 text-2xl font-bold text-deep-green">
+                  {activeGoal.race_name}
+                  <span className="text-slate-300 font-light mx-2">|</span>
+                  <span className="text-primary tabular-nums">
                     <AnimatedNumber value={weeksOut} />
-                  </span>{' '}weeks,{' '}
-                  <span className="data-value">
+                  </span>
+                  <span className="text-sm font-medium text-slate-500">weeks</span>
+                  <span className="text-primary tabular-nums ml-2">
                     <AnimatedNumber value={daysOut} />
-                  </span>{' '}days
+                  </span>
+                  <span className="text-sm font-medium text-slate-500">days out</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Link to="/goals" style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontWeight: 500 }}>
+              <div className="flex items-center gap-4">
+                <Link to="/goals" className="text-sm font-medium text-slate-500 hover:text-primary transition-colors">
                   Manage Goals
                 </Link>
                 {isConnected ? (
-                  <span className="badge badge-success">✓ Strava Connected</span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-200">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    Strava Connected
+                  </span>
                 ) : (
-                  <button onClick={handleConnectStrava} disabled={isLoading} className="btn btn-strava">
+                  <button
+                    onClick={handleConnectStrava}
+                    disabled={isLoading}
+                    className="btn btn-outline text-sm py-1.5 px-4"
+                  >
                     {isLoading ? 'Connecting...' : 'Connect Strava'}
                   </button>
                 )}
               </div>
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <div className="progress-bar" style={{ height: '6px' }}>
+
+            <div className="mt-6">
+              {/* Progress Bar */}
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
-                  className="progress-bar-fill"
+                  className="h-full bg-gradient-to-r from-primary to-secondary"
                   initial={{ width: 0 }}
                   animate={{ width: `${trainingProgress}%` }}
                   transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
                 />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.7 }}>
+              <div className="flex justify-between mt-2 text-xs font-medium text-slate-400">
                 <span>Training started</span>
-                <span>{trainingProgress}% complete</span>
+                <span className="text-secondary">{trainingProgress}% complete</span>
                 <span>Race day</span>
               </div>
             </div>
@@ -378,35 +414,31 @@ const Dashboard = () => {
         )}
 
         {/* Main Grid */}
-        <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 items-start">
           {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="flex flex-col gap-8 w-full min-w-0">
             {/* Key Metrics - Staggered */}
             {loadingActivities || loadingGoal ? (
-              <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <SkeletonCard />
                 <SkeletonCard />
                 <SkeletonCard />
               </div>
             ) : (
-              <StaggerContainer className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <StaggerItem>
                   <motion.div
-                    className="metric-card"
-                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(36, 46, 123, 0.15)' }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    style={{
-                      background: 'linear-gradient(135deg, #ffffff 0%, #f8faf5 100%)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                      borderLeft: '3px solid var(--color-primary)',
-                    }}
+                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(36, 46, 123, 0.1)' }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group"
                   >
-                    <div className="label" style={{ color: 'var(--color-primary)' }}>This Week</div>
-                    <div className="data-value-lg" style={{ marginTop: '0.5rem', color: 'var(--color-primary)' }}>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+                    <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">This Week</div>
+                    <div className="text-3xl font-mono font-bold text-deep-green tabular-nums">
                       <AnimatedNumber value={weeklyMileageActual} decimals={1} />
-                      <span style={{ fontSize: '1rem', marginLeft: '0.25rem' }}>mi</span>
+                      <span className="text-lg text-slate-400 ml-1">mi</span>
                     </div>
-                    <div className="metric-context">
+                    <div className="mt-2 text-xs text-slate-500 font-medium">
                       {countWeeklyRuns()} run{countWeeklyRuns() !== 1 ? 's' : ''} this week
                     </div>
                   </motion.div>
@@ -414,30 +446,26 @@ const Dashboard = () => {
 
                 <StaggerItem>
                   <motion.div
-                    className="metric-card"
-                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(97, 139, 74, 0.15)' }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    style={{
-                      background: 'linear-gradient(135deg, #ffffff 0%, #f8faf5 100%)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                      borderLeft: '3px solid var(--color-secondary)',
-                    }}
+                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(97, 139, 74, 0.1)' }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group"
                   >
-                    <div className="label" style={{ color: 'var(--color-secondary)' }}>Current Pace</div>
-                    <div className="data-value-lg" style={{ marginTop: '0.5rem', color: 'var(--color-secondary)' }}>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
+                    <div className="text-xs font-bold text-secondary uppercase tracking-wider mb-2">Current Pace</div>
+                    <div className="text-3xl font-mono font-bold text-deep-green tabular-nums">
                       {currentPaceRaw ? formatPace(currentPaceRaw) : '--:--'}
                     </div>
-                    <div className="metric-context">
+                    <div className="mt-2 text-xs font-medium">
                       {paceDiff !== null ? (
                         paceDiff > 0 ? (
-                          <span className="metric-negative">+{paceDiff}s from goal</span>
+                          <span className="text-red-500">+{paceDiff}s from goal</span>
                         ) : paceDiff < 0 ? (
-                          <span className="metric-positive">{paceDiff}s ahead of goal</span>
+                          <span className="text-green-600">{paceDiff}s ahead of goal</span>
                         ) : (
-                          <span className="metric-positive">On target</span>
+                          <span className="text-green-600">On target</span>
                         )
                       ) : (
-                        <span>avg from recent runs</span>
+                        <span className="text-slate-400">avg from recent runs</span>
                       )}
                     </div>
                   </motion.div>
@@ -445,21 +473,17 @@ const Dashboard = () => {
 
                 <StaggerItem>
                   <motion.div
-                    className="metric-card"
-                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(6, 255, 165, 0.15)' }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    style={{
-                      background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf9 100%)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                      borderLeft: '3px solid var(--color-accent)',
-                    }}
+                    whileHover={{ y: -4, boxShadow: '0 12px 24px rgba(6, 255, 165, 0.1)' }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden group"
                   >
-                    <div className="label" style={{ color: 'var(--color-accent)' }}>Days to Race</div>
-                    <div className="data-value-lg" style={{ marginTop: '0.5rem', color: 'var(--color-accent)' }}>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-accent"></div>
+                    <div className="text-xs font-bold text-accent uppercase tracking-wider mb-2">Days to Race</div>
+                    <div className="text-3xl font-mono font-bold text-deep-green tabular-nums">
                       <AnimatedNumber value={totalDays} />
                     </div>
-                    <div className="metric-context">
-                      target {formatTargetTime()}
+                    <div className="mt-2 text-xs text-slate-500 font-medium">
+                      Target: <span className="font-mono">{formatTargetTime()}</span>
                     </div>
                   </motion.div>
                 </StaggerItem>
@@ -468,81 +492,78 @@ const Dashboard = () => {
 
             {/* Charts Section */}
             {!loadingActivities && activities.length > 0 && (
-              <StaggerContainer className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Weekly Mileage Bar Chart */}
                 <StaggerItem>
-                  <motion.div
-                    className="card"
-                    style={{
-                      padding: '1.25rem',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                      background: 'linear-gradient(to bottom, #ffffff 0%, #fafbf8 100%)',
-                    }}
-                    whileHover={{ boxShadow: '0 8px 16px rgba(0,0,0,0.08)' }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="label" style={{ marginBottom: '1rem', color: 'var(--color-primary)', fontSize: '0.8125rem' }}>
-                      Weekly Mileage
-                    </div>
-                    <ResponsiveContainer width="100%" height={200}>
+                  <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-80">
+                    <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-6">Weekly Mileage</h4>
+                    <ResponsiveContainer width="100%" height="85%">
                       <BarChart data={weeklyChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                        <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
-                        <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} width={35} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="week"
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={30}
+                        />
                         <Tooltip
                           contentStyle={{
-                            ...chartTooltipStyle,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                            backgroundColor: '#fff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            fontSize: '12px'
                           }}
+                          cursor={{ fill: '#f8fafc' }}
                           formatter={(v) => [`${v} mi`, 'Mileage']}
                         />
                         <Bar
                           dataKey="miles"
-                          fill="url(#colorMileage)"
+                          fill="#242E7B"
                           radius={[4, 4, 0, 0]}
-                          animationDuration={1000}
-                          animationBegin={200}
+                          maxBarSize={40}
                         />
-                        <defs>
-                          <linearGradient id="colorMileage" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#242E7B" stopOpacity={0.9} />
-                            <stop offset="100%" stopColor="#242E7B" stopOpacity={0.6} />
-                          </linearGradient>
-                        </defs>
                       </BarChart>
                     </ResponsiveContainer>
-                  </motion.div>
+                  </div>
                 </StaggerItem>
 
                 {/* Pace Trend Line Chart */}
                 <StaggerItem>
-                  <motion.div
-                    className="card"
-                    style={{
-                      padding: '1.25rem',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                      background: 'linear-gradient(to bottom, #ffffff 0%, #fafbf8 100%)',
-                    }}
-                    whileHover={{ boxShadow: '0 8px 16px rgba(0,0,0,0.08)' }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="label" style={{ marginBottom: '1rem', color: 'var(--color-secondary)', fontSize: '0.8125rem' }}>
-                      Pace Trend
-                    </div>
-                    <ResponsiveContainer width="100%" height={200}>
+                  <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm h-80">
+                    <h4 className="text-sm font-bold text-secondary uppercase tracking-wider mb-6">Pace Trend</h4>
+                    <ResponsiveContainer width="100%" height="85%">
                       <LineChart data={paceChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                        />
                         <YAxis
-                          tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
-                          width={35}
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={30}
                           reversed
-                          domain={['dataMin - 0.3', 'dataMax + 0.3']}
+                          domain={['dataMin - 0.5', 'dataMax + 0.5']}
                         />
                         <Tooltip
                           contentStyle={{
-                            ...chartTooltipStyle,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                            backgroundColor: '#fff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            fontSize: '12px'
                           }}
                           formatter={(v, name, props) => [props.payload.label + ' /mi', 'Pace']}
                         />
@@ -550,271 +571,186 @@ const Dashboard = () => {
                           <Line
                             type="monotone"
                             dataKey={() => (targetPaceRaw * 1.60934) / 60}
-                            stroke="var(--color-secondary)"
-                            strokeDasharray="5 5"
+                            stroke="#618B4A"
+                            strokeDasharray="4 4"
                             dot={false}
                             strokeWidth={2}
                             name="Goal"
-                            opacity={0.6}
+                            opacity={0.5}
                           />
                         )}
                         <Line
                           type="monotone"
                           dataKey="pace"
-                          stroke="var(--color-accent)"
+                          stroke="#06ffa5"
                           strokeWidth={3}
-                          dot={{ r: 4, fill: 'var(--color-accent)', strokeWidth: 2, stroke: '#fff' }}
-                          animationDuration={1400}
-                          animationBegin={300}
+                          dot={{ r: 4, fill: '#06ffa5', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6, stroke: '#06ffa5', strokeWidth: 4, fill: '#fff' }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </motion.div>
+                  </div>
                 </StaggerItem>
               </StaggerContainer>
             )}
 
-            {/* Recent Runs Table - Staggered rows */}
+            {/* Recent Runs Table */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="card"
-              style={{
-                padding: 0,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
-                overflow: 'hidden',
-              }}
+              className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
             >
-              <div style={{
-                padding: '1.25rem 1.5rem',
-                borderBottom: '1px solid var(--color-border)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: 'linear-gradient(to right, #fafbf8 0%, #ffffff 100%)',
-              }}>
-                <h3 style={{ fontSize: '1.0625rem', margin: 0, fontWeight: 700, color: 'var(--color-text-primary)' }}>
+              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
                   Recent Runs
                 </h3>
                 {activities.length > 0 && (
-                  <motion.button
+                  <button
                     onClick={handleSyncActivities}
-                    className="btn btn-ghost"
-                    style={{ fontSize: '0.75rem', padding: '0.375rem 0.875rem' }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider transition-colors"
                   >
-                    Sync
-                  </motion.button>
+                    Sync Now
+                  </button>
                 )}
               </div>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ paddingLeft: '1.5rem' }}>Date</th>
-                    <th>Distance</th>
-                    <th>Pace</th>
-                    <th>Type</th>
-                    <th style={{ paddingRight: '1.5rem' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingActivities ? (
-                    Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                  ) : activities.length === 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-white text-slate-400 font-medium border-b border-gray-50">
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>
-                          No activities yet. Connect Strava to sync your runs.
-                        </p>
-                      </td>
+                      <th className="px-6 py-3 font-medium">Date</th>
+                      <th className="px-6 py-3 font-medium">Distance</th>
+                      <th className="px-6 py-3 font-medium">Pace</th>
+                      <th className="px-6 py-3 font-medium">Type</th>
+                      <th className="px-6 py-3 text-right"></th>
                     </tr>
-                  ) : (
-                    activities.slice(0, 10).map((activity, i) => (
-                      <motion.tr
-                        key={activity.id || i}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.25, delay: i * 0.04 }}
-                        whileHover={{
-                          backgroundColor: 'rgba(97, 139, 74, 0.04)',
-                          transition: { duration: 0.15 },
-                        }}
-                        style={{ cursor: 'default' }}
-                      >
-                        <td style={{ paddingLeft: '1.5rem' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                            {formatDate(activity.start_time)}
-                          </span>
-                          <span style={{ color: 'var(--color-text-muted)', marginLeft: '0.5rem', fontSize: '0.8125rem' }}>
-                            {formatDay(activity.start_time)}
-                          </span>
+                  </thead>
+                  <tbody>
+                    {loadingActivities ? (
+                      Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                    ) : activities.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                          No activities yet. Connect Strava to sync your runs.
                         </td>
-                        <td className="data-cell" style={{ fontWeight: 500 }}>
-                          {metersToMiles(activity.distance_meters)} mi
-                        </td>
-                        <td className="data-cell" style={{ fontWeight: 500, color: 'var(--color-primary)' }}>
-                          {formatPace(activity.average_pace_seconds_per_km)}
-                        </td>
-                        <td style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                          {activity.name || 'Run'}
-                        </td>
-                        <td style={{ textAlign: 'right', paddingRight: '1.5rem' }}>
-                          <span style={{ color: 'var(--color-success)', fontSize: '1.125rem' }}>✓</span>
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                      </tr>
+                    ) : (
+                      activities.slice(0, 10).map((activity, i) => (
+                        <motion.tr
+                          key={activity.id || i}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="hover:bg-slate-50 transition-colors border-b border-gray-50 last:border-0"
+                        >
+                          <td className="px-6 py-4">
+                            <span className="font-semibold text-deep-green block">
+                              {formatDate(activity.start_time)}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {formatDay(activity.start_time)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-mono font-medium text-slate-700">
+                            {metersToMiles(activity.distance_meters)} mi
+                          </td>
+                          <td className="px-6 py-4 font-mono font-medium text-primary">
+                            {formatPace(activity.average_pace_seconds_per_km)} /mi
+                          </td>
+                          <td className="px-6 py-4 text-slate-500">
+                            {activity.name || 'Run'}
+                          </td>
+                          <td className="px-6 py-4 text-right text-green-500 font-bold">
+                            ✓
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </motion.div>
           </div>
 
           {/* Right Column - Sidebar */}
-          <StaggerContainer style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="flex flex-col gap-6 sticky top-24">
             {/* AI Insight Card */}
-            <StaggerItem>
-              <motion.div
-                className="card"
-                style={{
-                  padding: '1.5rem',
-                  borderLeft: '4px solid var(--color-secondary)',
-                  background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
-                  boxShadow: '0 4px 12px rgba(97, 139, 74, 0.08), 0 1px 3px rgba(0,0,0,0.06)',
-                }}
-                whileHover={{
-                  y: -4,
-                  boxShadow: '0 12px 24px rgba(97, 139, 74, 0.12), 0 4px 8px rgba(0,0,0,0.08)',
-                }}
-                transition={{ duration: 0.2 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1rem' }}>
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--color-secondary) 0%, #4f7136 100%)',
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.875rem',
-                      fontWeight: 700,
-                      boxShadow: '0 2px 8px rgba(97, 139, 74, 0.3)',
-                    }}
-                  >
-                    K
-                  </motion.span>
-                  <span className="label" style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--color-secondary)' }}>
-                    Coach Insight
-                  </span>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white rounded-xl shadow-lg border-l-4 border-secondary p-6 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-5">
+                <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-secondary to-deep-green text-white flex items-center justify-center font-bold text-xs shadow-md">
+                  AI
                 </div>
-                <p style={{
-                  fontSize: '0.9375rem',
-                  lineHeight: 1.6,
-                  margin: 0,
-                  color: 'var(--color-text-primary)',
-                  fontWeight: 400,
-                }}>
-                  <TypewriterText
-                    text={getInsightMessage()}
-                    speed={25}
-                    delay={600}
-                  />
-                </p>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 3.5, duration: 0.3 }}
-                >
-                  <Link
-                    to="/coach"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      marginTop: '1rem',
-                      fontSize: '0.8125rem',
-                      color: 'var(--color-secondary)',
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Ask a follow-up →
-                  </Link>
-                </motion.div>
-              </motion.div>
-            </StaggerItem>
+                <span className="text-xs font-bold uppercase tracking-wider text-secondary">Coach Insight</span>
+              </div>
+
+              <div className="text-deep-green leading-relaxed text-sm font-medium pr-2">
+                {loadingInsight ? (
+                  <div className="space-y-2">
+                    <div className="h-3 bg-gray-100 rounded w-full animate-pulse" />
+                    <div className="h-3 bg-gray-100 rounded w-4/5 animate-pulse" />
+                  </div>
+                ) : (
+                  <TypewriterText text={aiInsight || getInsightMessage()} speed={20} />
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+                <Link to="/coach" className="text-xs font-bold text-secondary flex items-center gap-1 hover:gap-2 transition-all">
+                  FULL ANALYSIS <span className="text-lg">→</span>
+                </Link>
+              </div>
+            </motion.div>
 
             {/* Today's Plan */}
-            <StaggerItem>
-              <div className="card">
-                <div className="label" style={{ marginBottom: '0.75rem' }}>Today's Plan</div>
-                <div style={{
-                  padding: '1rem',
-                  background: 'var(--color-bg-secondary)',
-                  borderRadius: '0.375rem',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: todaysPlan.type === 'Done' ? 'var(--color-success)' : todaysPlan.type === 'Rest' ? 'var(--color-slate)' : 'var(--color-primary)' }}>
-                    {todaysPlan.type}
+            <div className="bg-white p-6 rounded-xl border border-gray-200">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Today's Plan</h4>
+              <div className="text-center bg-slate-50 rounded-lg p-6 border border-slate-100">
+                <div className={`text-2xl font-bold mb-2 ${todaysPlan.type === 'Done' ? 'text-green-600' :
+                  todaysPlan.type === 'Rest' ? 'text-slate-400' : 'text-primary'
+                  }`}>
+                  {todaysPlan.type}
+                </div>
+                {todaysPlan.distance && (
+                  <div className="text-4xl font-mono font-bold text-deep-green mb-2">
+                    {todaysPlan.distance}
                   </div>
-                  {todaysPlan.distance && (
-                    <div className="data-value" style={{ fontSize: '2rem', marginTop: '0.5rem' }}>
-                      {todaysPlan.distance}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>
-                    {todaysPlan.note}
-                  </div>
+                )}
+                <div className="text-sm text-slate-500 font-medium">
+                  {todaysPlan.note}
                 </div>
               </div>
-            </StaggerItem>
+            </div>
 
-            {/* Week Summary */}
-            <StaggerItem>
-              <div className="card">
-                <div className="label" style={{ marginBottom: '1rem' }}>Weekly Progress</div>
-                <div style={{ marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    <span>Mileage</span>
-                    <span className="text-mono">
-                      <AnimatedNumber value={weeklyMileageActual} decimals={1} suffix=" mi" />
-                    </span>
-                  </div>
-                  <div className="progress-bar">
-                    <motion.div
-                      className="progress-bar-fill"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, weeklyMileageActual > 0 ? (weeklyMileageActual / weeklyTarget) * 100 : 0)}%` }}
-                      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
-                    />
-                  </div>
-                </div>
+            {/* Weekly Target Progress */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Weekly Volume</h4>
+              <div className="space-y-4">
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
-                    <span>Runs</span>
-                    <span className="text-mono">
-                      <AnimatedNumber value={countWeeklyRuns()} />
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-deep-green">Mileage</span>
+                    <span className="font-mono text-slate-600">
+                      {weeklyMileageActual} / {weeklyTarget} mi
                     </span>
                   </div>
-                  <div className="progress-bar">
-                    <motion.div
-                      className="progress-bar-fill"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, (countWeeklyRuns() / 5) * 100)}%` }}
-                      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
-                    />
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary"
+                      style={{ width: `${Math.min(100, (weeklyMileageActual / weeklyTarget) * 100)}%` }}
+                    ></div>
                   </div>
                 </div>
               </div>
-            </StaggerItem>
-          </StaggerContainer>
+            </div>
+          </div>
         </div>
       </main>
     </div>

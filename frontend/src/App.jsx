@@ -11,6 +11,7 @@ import Goals from './pages/Goals';
 import EditGoal from './pages/EditGoal';
 import Onboarding from './pages/Onboarding';
 import Coach from './pages/Coach';
+import Settings from './pages/Settings';
 import './App.css';
 
 // Protected Route Component
@@ -81,6 +82,14 @@ const AnimatedRoutes = () => {
           element={
             <ProtectedRoute>
               <PageTransition><Coach /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Settings /></PageTransition>
             </ProtectedRoute>
           }
         />

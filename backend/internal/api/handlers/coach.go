@@ -47,6 +47,25 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 	})
 }
 
+func (h *CoachHandler) GetInsight(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	insight, err := h.coachService.GenerateInsight(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"insight": insight,
+	})
+}
+
 func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {

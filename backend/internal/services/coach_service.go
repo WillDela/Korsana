@@ -277,6 +277,46 @@ func formatTime(seconds *int) string {
 	return fmt.Sprintf("%d:%02d:%02d", hours, minutes, secs)
 }
 
+// GenerateInsight generates a short daily coaching insight for the dashboard sidebar
+func (s *CoachService) GenerateInsight(ctx context.Context, userID uuid.UUID) (string, error) {
+	trainingContext, err := s.buildTrainingContext(ctx, userID)
+	if err != nil {
+		trainingContext = "No training data available yet."
+	}
+
+	systemPrompt := fmt.Sprintf(`You are Korsana, an experienced running coach. Generate a brief, actionable daily coaching insight for the runner's dashboard.
+
+Current runner's context:
+%s
+
+Rules:
+- Keep it to 1-2 sentences max
+- Be specific and data-informed when possible
+- Focus on what they should do today or this week
+- Use a direct, supportive tone
+- Never be generic — reference their actual training data or goal
+- If they have no data, encourage them to get started`, trainingContext)
+
+	messages := []ClaudeMessage{
+		{Role: "user", Content: "Give me a brief coaching insight for my dashboard today."},
+	}
+
+	var response string
+	if s.config.ClaudeAPIKey != "" {
+		response, err = s.callClaudeAPI(messages, systemPrompt)
+	} else if s.config.GeminiAPIKey != "" {
+		response, err = s.callGeminiAPI(messages, systemPrompt)
+	} else {
+		return "", errors.New("no AI API key configured")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
 // GetConversationHistory retrieves the conversation history for a user
 func (s *CoachService) GetConversationHistory(ctx context.Context, userID uuid.UUID, limit int) ([]models.CoachConversation, error) {
 	if limit == 0 {

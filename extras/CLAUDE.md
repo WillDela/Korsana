@@ -58,10 +58,13 @@
 - **Sage Green (secondary):** `#618B4A`
 - **Cream (surfaces):** `#EEF5DB`
 - **Slate (muted):** `#465362`
+- **Status:** On Track = Sage Green, Warning = Amber `#d97706`, Behind = Red `#dc2626`
+- **Pop/accent color:** TBD — will be chosen if needed, not defaulted
 - **Data/Numbers font:** IBM Plex Mono
 - **UI font:** Inter
-- **Philosophy:** Data-dense, purposeful color, no decoration for decoration's sake
+- **Philosophy:** Athletic Precision — data-dense, purposeful color, monospace numbers, generous spacing
 - **Coaching approach:** Always hybrid — established training principles + AI personalization. Never generic linear plans.
+- **Full design specs:** See `ui-ux-plan.md` for spacing rules, component specs, and anti-cramping guidelines.
 
 ### API Design
 - RESTful endpoints under `/api/` prefix
@@ -282,6 +285,7 @@
 | — | Manual entry is fallback | App is designed for connected platforms; manual entry supported but not primary UX |
 | — | Hybrid coaching approach | Training plans combine proven periodization frameworks + AI personalization |
 | — | Framer Motion for animations | React-native, declarative API, industry standard for React UI animation, great for dashboards and page transitions |
+| — | Accent/pop color TBD | If a high-impact accent is needed, it will be chosen deliberately — not defaulted. Teal is not the direction. |
 | — | Monetization deferred | Keep architecture monetization-ready but no paywalls until userbase exists |
 
 ---
@@ -294,5 +298,6 @@
 |------|----------------|------------|
 | — | Project planning complete. Created context.md, plan.md, CLAUDE.md | Begin M0: Scaffold projects |
 | — | Locked tech stack: Gin, PostgreSQL on Railway, Framer Motion. Created ui-ux-plan.md with full animation/design system. Updated all files. | Audit existing code to determine exact M0-M5 completion. Start UI/UX Phase A (fix blank screen, onboarding flow, skeletons). |
+| — | Merged comprehensive UI/UX implementation spec into ui-ux-plan.md. Added: full design system (color usage by context, type scale with Tailwind classes, spacing system with anti-cramping rules), component specs (nav, hero, cards, tables, buttons, inputs), page layouts with exact structure, status colors, QA checklist. 17-day phased implementation plan. Removed Electric Teal — accent/pop color is TBD. | Start Phase 1: design system foundation in code (CSS vars, Tailwind config, font imports). |
 
 ---
