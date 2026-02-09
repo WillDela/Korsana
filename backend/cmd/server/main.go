@@ -112,9 +112,10 @@ func main() {
 			// AI Coach
 			coach := protected.Group("/coach")
 			{
-				coach.POST("/message", coachHandler.SendMessage)
+				coachLimiter := middleware.CoachRateLimiter(redisClient)
+				coach.POST("/message", coachLimiter, coachHandler.SendMessage)
 				coach.GET("/history", coachHandler.GetConversationHistory)
-				coach.GET("/insight", coachHandler.GetInsight)
+				coach.GET("/insight", coachLimiter, coachHandler.GetInsight)
 			}
 
 			// Profile / Settings

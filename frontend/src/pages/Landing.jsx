@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PhotoMasonry from '../components/PhotoMasonry';
 import AnimatedNumber from '../components/AnimatedNumber';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 // Reusable scroll reveal component
 const ScrollReveal = ({ children, delay = 0 }) => {

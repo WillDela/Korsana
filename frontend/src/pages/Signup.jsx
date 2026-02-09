@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import AnimatedInput from '../components/AnimatedInput';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Signup = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();

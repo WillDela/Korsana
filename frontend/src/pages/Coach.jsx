@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';
+import { getErrorMessage } from '../api/client';
 import AnimatedButton from '../components/AnimatedButton';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Coach = () => {
   const { user, logout } = useAuth();
@@ -70,10 +71,12 @@ const Coach = () => {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Add error message
+      const errMsg = getErrorMessage(error);
+      console.error('Error details:', errMsg);
+      // Add error message with retry hint
       const errorMessage = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `I'm having trouble connecting right now. (${errMsg})\n\nPlease try again in a moment. If this persists, check that the backend server is running and the AI API key is configured.`,
         created_at: new Date().toISOString(),
         isError: true,
       };

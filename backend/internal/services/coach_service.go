@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -26,26 +27,34 @@ type CoachService struct {
 
 // NewCoachService creates a new coach service
 func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService) *CoachService {
+	if cfg.GeminiAPIKey != "" {
+		log.Printf("[Coach] Gemini API key configured (length: %d)", len(cfg.GeminiAPIKey))
+	} else if cfg.ClaudeAPIKey != "" {
+		log.Printf("[Coach] Claude API key configured (length: %d)", len(cfg.ClaudeAPIKey))
+	} else {
+		log.Printf("[Coach] WARNING: No AI API key configured — coach will not work")
+	}
+
 	return &CoachService{
 		db:           db,
 		config:       cfg,
-		httpClient:   &http.Client{Timeout: 30 * time.Second},
+		httpClient:   &http.Client{Timeout: 60 * time.Second},
 		goalsService: goalsService,
 	}
 }
 
-// ClaudeMessage represents a message in the Claude API format
-type ClaudeMessage struct {
+// ChatMessage represents a message in a provider-agnostic format
+type ChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
 // ClaudeRequest represents the request to Claude API
 type ClaudeRequest struct {
-	Model     string          `json:"model"`
-	MaxTokens int             `json:"max_tokens"`
-	Messages  []ClaudeMessage `json:"messages"`
-	System    string          `json:"system,omitempty"`
+	Model     string        `json:"model"`
+	MaxTokens int           `json:"max_tokens"`
+	Messages  []ChatMessage `json:"messages"`
+	System    string        `json:"system,omitempty"`
 }
 
 // ClaudeResponse represents the response from Claude API
@@ -53,6 +62,34 @@ type ClaudeResponse struct {
 	Content []struct {
 		Text string `json:"text"`
 	} `json:"content"`
+}
+
+// Gemini API types
+type GeminiPart struct {
+	Text string `json:"text"`
+}
+
+type GeminiContent struct {
+	Role  string       `json:"role"`
+	Parts []GeminiPart `json:"parts"`
+}
+
+type GeminiRequest struct {
+	Contents         []GeminiContent  `json:"contents"`
+	SystemInstruction *GeminiContent  `json:"systemInstruction,omitempty"`
+	GenerationConfig *GeminiGenConfig `json:"generationConfig,omitempty"`
+}
+
+type GeminiGenConfig struct {
+	MaxOutputTokens int `json:"maxOutputTokens"`
+}
+
+type GeminiResponse struct {
+	Candidates []struct {
+		Content struct {
+			Parts []GeminiPart `json:"parts"`
+		} `json:"content"`
+	} `json:"candidates"`
 }
 
 // SendMessage sends a message to the AI coach and gets a response
@@ -82,16 +119,16 @@ func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, userMe
 	}
 
 	// Build messages for Claude
-	messages := []ClaudeMessage{}
+	messages := []ChatMessage{}
 	for _, msg := range recentMessages {
-		messages = append(messages, ClaudeMessage{
+		messages = append(messages, ChatMessage{
 			Role:    msg.Role,
 			Content: msg.Content,
 		})
 	}
 
 	// Add current user message
-	messages = append(messages, ClaudeMessage{
+	messages = append(messages, ChatMessage{
 		Role:    "user",
 		Content: userMessage,
 	})
@@ -111,19 +148,25 @@ Current runner's context:
 
 Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.`, trainingContext)
 
-	// Choose API based on what's available
+	// Choose API based on what's available (prefer Gemini for free tier)
 	var response string
-	if s.config.ClaudeAPIKey != "" {
-		response, err = s.callClaudeAPI(messages, systemPrompt)
-	} else if s.config.GeminiAPIKey != "" {
+	if s.config.GeminiAPIKey != "" {
+		log.Printf("[Coach] Calling Gemini API with %d messages", len(messages))
 		response, err = s.callGeminiAPI(messages, systemPrompt)
+	} else if s.config.ClaudeAPIKey != "" {
+		log.Printf("[Coach] Calling Claude API with %d messages", len(messages))
+		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
-		return "", errors.New("no AI API key configured")
+		log.Printf("[Coach] ERROR: No AI API key configured")
+		return "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
 
 	if err != nil {
+		log.Printf("[Coach] ERROR from AI API: %v", err)
 		return "", err
 	}
+
+	log.Printf("[Coach] Got response (%d chars)", len(response))
 
 	// Store conversation in database
 	userMsg := &models.CoachConversation{
@@ -154,7 +197,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 }
 
 // callClaudeAPI calls the Anthropic Claude API
-func (s *CoachService) callClaudeAPI(messages []ClaudeMessage, systemPrompt string) (string, error) {
+func (s *CoachService) callClaudeAPI(messages []ChatMessage, systemPrompt string) (string, error) {
 	reqBody := ClaudeRequest{
 		Model:     "claude-sonnet-4-5-20250929",
 		MaxTokens: 1024,
@@ -178,13 +221,15 @@ func (s *CoachService) callClaudeAPI(messages []ClaudeMessage, systemPrompt stri
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		log.Printf("[Coach] HTTP request to Claude failed: %v", err)
+		return "", fmt.Errorf("failed to reach AI service: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("claude API error: %d - %s", resp.StatusCode, string(body))
+		log.Printf("[Coach] Claude API returned status %d: %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("AI service error (status %d)", resp.StatusCode)
 	}
 
 	var claudeResp ClaudeResponse
@@ -200,18 +245,87 @@ func (s *CoachService) callClaudeAPI(messages []ClaudeMessage, systemPrompt stri
 }
 
 // callGeminiAPI calls the Google Gemini API
-func (s *CoachService) callGeminiAPI(messages []ClaudeMessage, systemPrompt string) (string, error) {
-	// Gemini implementation - simplified for now
-	// You would implement the actual Gemini API call here
-	return "", errors.New("Gemini API not yet implemented")
+func (s *CoachService) callGeminiAPI(messages []ChatMessage, systemPrompt string) (string, error) {
+	// Convert messages to Gemini format (Gemini uses "model" instead of "assistant")
+	var contents []GeminiContent
+	for _, msg := range messages {
+		role := msg.Role
+		if role == "assistant" {
+			role = "model"
+		}
+		contents = append(contents, GeminiContent{
+			Role:  role,
+			Parts: []GeminiPart{{Text: msg.Content}},
+		})
+	}
+
+	reqBody := GeminiRequest{
+		Contents: contents,
+		SystemInstruction: &GeminiContent{
+			Parts: []GeminiPart{{Text: systemPrompt}},
+		},
+		GenerationConfig: &GeminiGenConfig{
+			MaxOutputTokens: 1024,
+		},
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", err
+	}
+
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", s.config.GeminiAPIKey)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		log.Printf("[Coach] HTTP request to Gemini failed: %v", err)
+		return "", fmt.Errorf("failed to reach AI service: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("[Coach] Gemini API returned status %d: %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("AI service error (status %d)", resp.StatusCode)
+	}
+
+	var geminiResp GeminiResponse
+	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
+		return "", err
+	}
+
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		return "", errors.New("no response from Gemini")
+	}
+
+	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
 }
 
 // buildTrainingContext builds a context string from user's training data
 func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUID) (string, error) {
-	// Get active goal
+	var parts []string
+
+	// Get active goal (optional — coach still works without one)
 	goal, err := s.goalsService.GetActiveGoal(ctx, userID)
 	if err != nil {
-		return "", err
+		parts = append(parts, "Race Goal: No active race goal set yet.")
+	} else {
+		daysUntil := int(time.Until(goal.RaceDate).Hours() / 24)
+		parts = append(parts, fmt.Sprintf(`Race Goal: %s on %s (%d days away)
+Distance: %.2f km
+Target Time: %s`,
+			goal.RaceName,
+			goal.RaceDate.Format("2006-01-02"),
+			daysUntil,
+			float64(goal.RaceDistanceMeters)/1000.0,
+			formatTime(goal.TargetTimeSeconds),
+		))
 	}
 
 	// Get recent activities (last 14 days)
@@ -236,31 +350,31 @@ func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUI
 		totalDuration += act.DurationSeconds
 	}
 
-	distanceKm := totalDistance / 1000.0
-	avgPace := 0.0
-	if totalDistance > 0 {
-		avgPace = float64(totalDuration) / (distanceKm)
-	}
-
-	// Days until race
-	daysUntil := int(time.Until(goal.RaceDate).Hours() / 24)
-
-	contextStr := fmt.Sprintf(`Race Goal: %s on %s (%d days away)
-Distance: %.2f km
-Target Time: %s
-Recent Training (last 14 days):
+	if runCount > 0 {
+		distanceKm := totalDistance / 1000.0
+		avgPace := 0.0
+		if totalDistance > 0 {
+			avgPace = float64(totalDuration) / distanceKm
+		}
+		parts = append(parts, fmt.Sprintf(`Recent Training (last 14 days):
 - Total runs: %d
 - Total distance: %.1f km
 - Average pace: %.0f seconds/km`,
-		goal.RaceName,
-		goal.RaceDate.Format("2006-01-02"),
-		daysUntil,
-		float64(goal.RaceDistanceMeters)/1000.0,
-		formatTime(goal.TargetTimeSeconds),
-		runCount,
-		distanceKm,
-		avgPace,
-	)
+			runCount,
+			distanceKm,
+			avgPace,
+		))
+	} else {
+		parts = append(parts, "Recent Training: No activities recorded in the last 14 days.")
+	}
+
+	contextStr := ""
+	for i, part := range parts {
+		if i > 0 {
+			contextStr += "\n"
+		}
+		contextStr += part
+	}
 
 	return contextStr, nil
 }
@@ -297,15 +411,15 @@ Rules:
 - Never be generic — reference their actual training data or goal
 - If they have no data, encourage them to get started`, trainingContext)
 
-	messages := []ClaudeMessage{
+	messages := []ChatMessage{
 		{Role: "user", Content: "Give me a brief coaching insight for my dashboard today."},
 	}
 
 	var response string
-	if s.config.ClaudeAPIKey != "" {
-		response, err = s.callClaudeAPI(messages, systemPrompt)
-	} else if s.config.GeminiAPIKey != "" {
+	if s.config.GeminiAPIKey != "" {
 		response, err = s.callGeminiAPI(messages, systemPrompt)
+	} else if s.config.ClaudeAPIKey != "" {
+		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
 		return "", errors.New("no AI API key configured")
 	}

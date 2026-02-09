@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Goals = () => {
   const { user, logout } = useAuth();

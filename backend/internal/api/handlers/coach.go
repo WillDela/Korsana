@@ -36,6 +36,11 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
+	if len(req.Message) > 1000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Message too long (max 1000 characters)"})
+		return
+	}
+
 	response, err := h.coachService.SendMessage(c.Request.Context(), userID, req.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

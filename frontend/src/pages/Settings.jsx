@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { profileAPI } from '../api/profile';
 import { stravaAPI } from '../api/strava';
+import { getErrorMessage } from '../api/client';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Settings = () => {
   const { user, logout } = useAuth();
@@ -25,6 +26,9 @@ const Settings = () => {
   // Strava state
   const [connectingStrava, setConnectingStrava] = useState(false);
   const [stravaMessage, setStravaMessage] = useState({ type: '', text: '' });
+
+  // General error state
+  const [generalError, setGeneralError] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -51,10 +55,12 @@ const Settings = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      setGeneralError('');
       const data = await profileAPI.getProfile();
       setProfile(data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
+      setGeneralError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -82,7 +88,7 @@ const Settings = () => {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
-      setPasswordError(error.response?.data?.error || 'Failed to change password');
+      setPasswordError(getErrorMessage(error));
     } finally {
       setChangingPassword(false);
     }
@@ -91,10 +97,12 @@ const Settings = () => {
   const handleConnectStrava = async () => {
     try {
       setConnectingStrava(true);
+      setStravaMessage({ type: '', text: '' });
       const response = await stravaAPI.getAuthURL();
       window.location.href = response.url;
     } catch (error) {
       console.error('Failed to start Strava auth:', error);
+      setStravaMessage({ type: 'error', text: getErrorMessage(error) });
       setConnectingStrava(false);
     }
   };
@@ -135,6 +143,24 @@ const Settings = () => {
             Manage your account, connections, and preferences
           </p>
         </motion.div>
+
+        {/* General error display */}
+        {generalError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              marginBottom: '1.5rem',
+              backgroundColor: 'var(--color-error)',
+              color: '#fff',
+              fontSize: '0.875rem',
+            }}
+          >
+            {generalError}
+          </motion.div>
+        )}
 
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

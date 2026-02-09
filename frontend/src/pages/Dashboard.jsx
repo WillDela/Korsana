@@ -6,11 +6,12 @@ import { useAuth } from '../context/AuthContext';
 import { goalsAPI } from '../api/goals';
 import { stravaAPI } from '../api/strava';
 import { profileAPI } from '../api/profile';
+import { getErrorMessage } from '../api/client';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
 import { SkeletonCard, SkeletonRow, SkeletonRaceHeader, SkeletonSidebarCard } from '../components/Skeleton';
 import TypewriterText from '../components/TypewriterText';
-import logo from '../assets/images/Korsana_Logo.png';
+import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [aiInsight, setAiInsight] = useState(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [syncError, setSyncError] = useState('');
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -116,10 +118,12 @@ const Dashboard = () => {
 
   const handleSyncActivities = async () => {
     try {
+      setSyncError('');
       await stravaAPI.syncActivities();
       await fetchActivities();
     } catch (error) {
       console.error('Failed to sync activities:', error);
+      setSyncError(getErrorMessage(error));
     }
   };
 
@@ -628,16 +632,35 @@ const Dashboard = () => {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
             >
-              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                  Recent Runs
-                </h3>
-                <button
-                  onClick={handleSyncActivities}
-                  className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider transition-colors"
-                >
-                  Sync Now
-                </button>
+              <div className="px-6 py-4 border-b border-gray-100 bg-slate-50/50">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                    Recent Runs
+                  </h3>
+                  <button
+                    onClick={handleSyncActivities}
+                    className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider transition-colors"
+                  >
+                    Sync Now
+                  </button>
+                </div>
+                {syncError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    style={{
+                      marginTop: '0.75rem',
+                      padding: '0.75rem',
+                      borderRadius: '0.375rem',
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {syncError}
+                  </motion.div>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">

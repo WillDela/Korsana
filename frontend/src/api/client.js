@@ -31,4 +31,18 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function to extract user-friendly error messages
+export const getErrorMessage = (error) => {
+  if (error.response) {
+    // Server responded with error
+    return error.response.data?.error || error.response.data?.message || `Error: ${error.response.status}`;
+  } else if (error.request) {
+    // Request made but no response
+    return 'Network error. Please check your connection.';
+  } else {
+    // Something else happened
+    return error.message || 'An unexpected error occurred';
+  }
+};
+
 export default api;
