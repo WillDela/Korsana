@@ -34,9 +34,35 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchActiveGoal();
-    fetchActivities();
+    fetchActivitiesAndAutoSync();
     fetchAiInsight();
   }, []);
+
+  const fetchActivitiesAndAutoSync = async () => {
+    try {
+      setLoadingActivities(true);
+      const response = await stravaAPI.getActivities();
+
+      // If no activities but user might have Strava connected, try syncing once
+      if (!response.activities || response.activities.length === 0) {
+        try {
+          await stravaAPI.syncActivities();
+          const syncedResponse = await stravaAPI.getActivities();
+          setActivities(syncedResponse.activities || []);
+        } catch (syncError) {
+          // Sync failed, just show empty activities (user may not have Strava connected)
+          setActivities([]);
+        }
+      } else {
+        setActivities(response.activities || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+      setActivities([]);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
 
   const fetchActiveGoal = async () => {
     try {
@@ -606,14 +632,12 @@ const Dashboard = () => {
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
                   Recent Runs
                 </h3>
-                {activities.length > 0 && (
-                  <button
-                    onClick={handleSyncActivities}
-                    className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider transition-colors"
-                  >
-                    Sync Now
-                  </button>
-                )}
+                <button
+                  onClick={handleSyncActivities}
+                  className="text-xs font-bold text-primary hover:text-secondary uppercase tracking-wider transition-colors"
+                >
+                  Sync Now
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -631,8 +655,13 @@ const Dashboard = () => {
                       Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     ) : activities.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
-                          No activities yet. Connect Strava to sync your runs.
+                        <td colSpan="5" className="px-6 py-12 text-center">
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                            <p className="text-slate-500">No activities found.</p>
+                            <p className="text-sm text-slate-400">
+                              Connect Strava in <Link to="/settings" className="text-primary hover:text-secondary font-medium">Settings</Link> or click "Sync Now" above to refresh.
+                            </p>
+                          </div>
                         </td>
                       </tr>
                     ) : (
