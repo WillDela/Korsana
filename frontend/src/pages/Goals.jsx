@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/images/KorsanaLogo.jpg';
+import Navbar from '../components/Navbar';
 
 const Goals = () => {
   const { user, logout } = useAuth();
@@ -68,21 +68,8 @@ const Goals = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)' }}>
-      <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
-          <span className="font-bold text-lg">Korsana</span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span className="nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-            {user?.email}
-          </span>
-          <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
-            Log out
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <Navbar variant="dashboard" />
 
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -90,7 +77,7 @@ const Goals = () => {
             <Link to="/dashboard" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', textDecoration: 'none' }}>
               ← Back to Dashboard
             </Link>
-            <h1 style={{ marginTop: '0.5rem' }}>Your Goals</h1>
+            <h1 className="font-serif" style={{ marginTop: '0.5rem' }}>Your Goals</h1>
           </div>
           <Link to="/goals/new" className="btn btn-primary">
             New Goal
@@ -142,11 +129,11 @@ const Goals = () => {
                       </div>
                       <div>
                         <span className="label" style={{ fontSize: '0.6875rem' }}>Target</span>
-                        <div className="data-value" style={{ fontSize: '0.9375rem' }}>{formatTargetTime(goal.target_time_seconds)}</div>
+                        <div className="font-mono" style={{ fontSize: '0.9375rem' }}>{formatTargetTime(goal.target_time_seconds)}</div>
                       </div>
                       <div>
                         <span className="label" style={{ fontSize: '0.6875rem' }}>Countdown</span>
-                        <div style={{ fontSize: '0.9375rem', fontWeight: 500 }}>{getDaysUntil(goal.race_date)}</div>
+                        <div className="font-mono" style={{ fontSize: '0.9375rem', fontWeight: 500 }}>{getDaysUntil(goal.race_date)}</div>
                       </div>
                     </div>
                   </div>

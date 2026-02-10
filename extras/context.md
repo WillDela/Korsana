@@ -9,6 +9,8 @@
 **Mission Statement:**
 "Korsana is an AI-powered coaching platform that analyzes a runner's unified training data to create and adapt a personalized plan for their specific race goals."
 
+**Slogan:** "Your plan, our goal."
+
 **Name Origin:** Derived from *Korsa* (Swedish: "to cross" / "to traverse") — evoking the idea of crossing the finish line. Fits the goal-oriented identity.
 
 **What Korsana IS:**
@@ -124,13 +126,14 @@ Golang API Server (Gin)
 | **Deep Green** | `#13230B` | Near-black forest green | Backgrounds, dark sections, primary text on light |
 | **Deep Blue** | `#242E7B` | Rich navy-blue | Primary brand color, buttons, nav, active states |
 | **Sage Green** | `#618B4A` | Olive/sage green | Secondary actions, success states, positive metrics |
-| **Cream** | `#EEF5DB` | Light warm off-white | Page backgrounds, card surfaces |
+| **Cream** | `#EEF5DB` | Light warm off-white | Small accents, hover tints, landing texture. **NOT page backgrounds.** |
+| **Light Gray** | `#FAFAFA` | — | App page backgrounds (dashboard, coach, settings, goals) |
 | **Slate** | `#465362` | Dark blue-gray | Secondary text, borders, muted UI elements |
 
 > ⚠️ Palette is subject to change but the direction is blue-green: natural, athletic, grounded. If a high-impact accent/pop color is needed later, it will be chosen deliberately — not defaulted.
-| **Data font** | IBM Plex Mono | Precision for numbers/metrics |
-| **Headings** | Inter Bold/Black | Clean, modern |
-| **Body text** | Inter Regular | Readable, fast |
+| **Data font** | IBM Plex Mono | Precision for all numbers/metrics/paces/distances |
+| **Headlines** | Libre Baskerville (Bold, Italic) | Editorial serif — distinctive, credible, premium feel |
+| **UI/Body text** | Fira Sans (400-700) | Humanist sans-serif — clean, warm, readable |
 
 **What to AVOID:**
 - Gradient backgrounds everywhere

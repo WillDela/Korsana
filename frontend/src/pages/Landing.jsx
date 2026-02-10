@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PhotoMasonry from '../components/PhotoMasonry';
 import AnimatedNumber from '../components/AnimatedNumber';
+import Navbar from '../components/Navbar';
 import logo from '../assets/images/KorsanaLogo.jpg';
 
 // Reusable scroll reveal component
@@ -34,43 +35,9 @@ const Landing = () => {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
   return (
-    <div className="min-h-screen bg-white text-deep-green overflow-hidden font-sans selection:bg-secondary selection:text-white">
+    <div className="min-h-screen bg-[#FAFAFA] text-deep-green overflow-hidden font-sans selection:bg-secondary selection:text-white">
       {/* Navigation */}
-      <motion.nav
-        className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100"
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img src={logo} alt="Korsana Logo" className="h-10 w-auto transition-opacity duration-300 group-hover:opacity-80" />
-            <span className="text-xl font-bold tracking-tight text-primary group-hover:text-secondary transition-colors duration-300">
-              Korsana
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-6">
-            {!user ? (
-              <>
-                <Link to="/login" className="hidden md:block text-slate-600 font-medium hover:text-primary transition-colors">
-                  Log in
-                </Link>
-                <Link
-                  to="/signup"
-                  className="btn btn-primary shadow-lg shadow-secondary/20 hover:shadow-secondary/30"
-                >
-                  Get Started
-                </Link>
-              </>
-            ) : (
-              <Link to="/dashboard" className="btn btn-primary">
-                Go to Dashboard
-              </Link>
-            )}
-          </div>
-        </div>
-      </motion.nav>
+      <Navbar variant="landing" />
 
       {/* Hero Section */}
       <main>

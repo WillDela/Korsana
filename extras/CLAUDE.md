@@ -18,12 +18,12 @@
 | File | Purpose |
 |------|---------|
 | `CLAUDE.md` | You're here. Project instructions + progress tracker. |
-| `context.md` | Full project context: vision, decisions, tech stack, design system, competitive landscape. |
-| `plan.md` | Step-by-step MVP execution plan with milestones and task checklists. |
-| `ui-ux-plan.md` | Detailed UI/UX enhancement plan: animations, page designs, component library, implementation phases. |
-| `README.md` | Public-facing project documentation (once created). |
+| `korsana-strategy.md` | **PRIMARY:** Final strategy — design system, features, AI coach architecture, implementation phases. Read this first for current direction. |
+| `context.md` | Full project context: vision, decisions, tech stack, competitive landscape. |
+| `plan.md` | Original MVP execution plan (some sections superseded by korsana-strategy.md). |
+| `ui-ux-plan.md` | Component specs, spacing rules, animation patterns (reference for implementation). |
 
-**Always read `context.md`, `plan.md`, and `ui-ux-plan.md` before starting any new work session.** They are the source of truth.
+**Always read `korsana-strategy.md` first for current direction, then `CLAUDE.md` for guidelines.**
 
 ---
 
@@ -52,19 +52,22 @@
 - Use TypeScript for all frontend code
 - Use TailwindCSS for styling — follow the "Athletic Precision" design system defined in `context.md`
 
-### Design System Quick Reference (Blue-Green Vibe)
-- **Deep Green (bg/text):** `#13230B`
+### Design System Quick Reference
+- **Deep Green (text):** `#13230B`
 - **Deep Blue (primary):** `#242E7B`
 - **Sage Green (secondary):** `#618B4A`
-- **Cream (surfaces):** `#EEF5DB`
+- **Cream:** `#EEF5DB` — small accents only, NOT page backgrounds
 - **Slate (muted):** `#465362`
+- **App backgrounds:** `#FAFAFA` light gray (dashboard, coach, settings, goals)
+- **Cards:** White `#FFFFFF` with `1px solid #E5E7EB` borders
 - **Status:** On Track = Sage Green, Warning = Amber `#d97706`, Behind = Red `#dc2626`
-- **Pop/accent color:** TBD — will be chosen if needed, not defaulted
-- **Data/Numbers font:** IBM Plex Mono
-- **UI font:** Inter
-- **Philosophy:** Athletic Precision — data-dense, purposeful color, monospace numbers, generous spacing
-- **Coaching approach:** Always hybrid — established training principles + AI personalization. Never generic linear plans.
-- **Full design specs:** See `ui-ux-plan.md` for spacing rules, component specs, and anti-cramping guidelines.
+- **Headlines font:** Libre Baskerville (serif — editorial, distinctive)
+- **UI/Body font:** Fira Sans (humanist sans — clean, warm)
+- **Data/Numbers font:** IBM Plex Mono (monospace — precision)
+- **Slogan:** "Your plan, our goal."
+- **Philosophy:** Athletic Precision — serif headlines for credibility, monospace data for precision, generous spacing, no decoration for decoration's sake.
+- **Coaching approach:** Always hybrid — established training principles + AI personalization. Never generic linear plans. AI is reactive (on-demand), not automatic.
+- **Full design specs:** See `korsana-strategy.md` for implementation plan, `ui-ux-plan.md` for component specs.
 
 ### API Design
 - RESTful endpoints under `/api/` prefix
@@ -287,6 +290,14 @@
 | — | Framer Motion for animations | React-native, declarative API, industry standard for React UI animation, great for dashboards and page transitions |
 | — | Accent/pop color TBD | If a high-impact accent is needed, it will be chosen deliberately — not defaulted. Teal is not the direction. |
 | — | Monetization deferred | Keep architecture monetization-ready but no paywalls until userbase exists |
+| Feb 2026 | Libre Baskerville (headlines) + Fira Sans (UI) + IBM Plex Mono (numbers) | Serif headlines give editorial distinction from all-sans-serif competitors. Fira Sans is warmer than Inter. Mono stays for data precision. |
+| Feb 2026 | Cream (#EEF5DB) demoted from backgrounds to small accents | Full-page cream backgrounds made app feel dated. Light gray (#FAFAFA) is industry standard. |
+| Feb 2026 | Unified nav: Deep Blue app bar across ALL authenticated pages | 4 different nav patterns was the biggest "prototype" tell. One component, two modes (landing/app). |
+| Feb 2026 | 7-day Training Calendar as dashboard centerpiece | Every competitor (COROS, Runna, Strava) centers around a calendar. Goes below Race Header, above metrics. |
+| Feb 2026 | AI Coach is reactive only, not automatic | No auto-analysis on page load. User asks → coach pulls last 14 days → responds. Saves tokens. |
+| Feb 2026 | AI can write structured plans to training_calendar table | Coach generates JSON → backend parses → writes to DB → calendar updates. User can edit after. |
+| Feb 2026 | Race Readiness Score: Korsana's flagship 0-100 metric | Composite of volume adequacy, pace fitness, consistency, long run readiness, trend direction. Unique — not a COROS/Garmin copy. |
+| Feb 2026 | New slogan: "Your plan, our goal." | Replaces previous taglines. Emphasizes partnership between runner and platform. |
 
 ---
 
@@ -299,5 +310,6 @@
 | — | Project planning complete. Created context.md, plan.md, CLAUDE.md | Begin M0: Scaffold projects |
 | — | Locked tech stack: Gin, PostgreSQL on Railway, Framer Motion. Created ui-ux-plan.md with full animation/design system. Updated all files. | Audit existing code to determine exact M0-M5 completion. Start UI/UX Phase A (fix blank screen, onboarding flow, skeletons). |
 | — | Merged comprehensive UI/UX implementation spec into ui-ux-plan.md. Added: full design system (color usage by context, type scale with Tailwind classes, spacing system with anti-cramping rules), component specs (nav, hero, cards, tables, buttons, inputs), page layouts with exact structure, status colors, QA checklist. 17-day phased implementation plan. Removed Electric Teal — accent/pop color is TBD. | Start Phase 1: design system foundation in code (CSS vars, Tailwind config, font imports). |
+| Feb 2026 | **Major strategy session.** Reviewed all 7 current page screenshots. Researched Strava, COROS Training Hub, Notion, Runna design patterns. Analyzed Libre Baskerville, Inter Display, Fira Sans typography. Created `korsana-strategy.md` — the new single source of truth. Key decisions: typography trio (Libre Baskerville + Fira Sans + IBM Plex Mono), light gray backgrounds replacing Cream, unified Deep Blue nav, 7-day training calendar as dashboard centerpiece, Race Readiness Score as flagship metric, reactive AI coach architecture with calendar write capability. William answered all 14 clarifying questions. Full project overview documented (10 pages, 18 API routes, 6 DB tables, 4 services). | **Start Phase 1:** Implement design system in code — fonts, colors, unified nav. Then Phase 2: Training Calendar component + DB table. |
 
 ---

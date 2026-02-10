@@ -43,14 +43,14 @@ const CreateGoal = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)', padding: '2rem 1rem' }}>
+    <div style={{ minHeight: '100vh', background: '#FAFAFA', padding: '2rem 1rem' }}>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div className="card">
           <div style={{ marginBottom: '2rem' }}>
             <Link to="/dashboard" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', textDecoration: 'none' }}>
               ← Back to Dashboard
             </Link>
-            <h1 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Set Your Race Goal</h1>
+            <h1 className="font-serif" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Set Your Race Goal</h1>
             <p style={{ color: 'var(--color-text-secondary)' }}>
               Tell us about the race you're training for
             </p>

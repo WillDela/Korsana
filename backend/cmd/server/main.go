@@ -44,6 +44,7 @@ func main() {
 	authService := services.NewAuthService(db, cfg)
 	stravaService := services.NewStravaService(db, stravaClient, redisClient)
 	goalsService := services.NewGoalsService(db)
+	calendarService := services.NewCalendarService(db)
 	coachService := services.NewCoachService(db, cfg, goalsService)
 
 	// 5. Initialize Handlers
@@ -51,6 +52,7 @@ func main() {
 	stravaHandler := handlers.NewStravaHandler(stravaService)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
+	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService)
 
 	// 6. Setup Router
@@ -123,6 +125,15 @@ func main() {
 			{
 				profile.GET("", profileHandler.GetProfile)
 				profile.PUT("/password", profileHandler.ChangePassword)
+			}
+
+			// Training Calendar
+			calendar := protected.Group("/calendar")
+			{
+				calendar.GET("/week", calendarHandler.GetWeek)
+				calendar.PUT("/entry", calendarHandler.UpsertEntry)
+				calendar.DELETE("/entry/:id", calendarHandler.DeleteEntry)
+				calendar.PATCH("/entry/:id/status", calendarHandler.UpdateStatus)
 			}
 		}
 	}

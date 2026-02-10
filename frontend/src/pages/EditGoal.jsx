@@ -74,7 +74,7 @@ const EditGoal = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)', padding: '2rem 1rem' }}>
+      <div style={{ minHeight: '100vh', background: '#FAFAFA', padding: '2rem 1rem' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
             <p style={{ color: 'var(--color-text-secondary)' }}>Loading goal...</p>
@@ -85,14 +85,14 @@ const EditGoal = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)', padding: '2rem 1rem' }}>
+    <div style={{ minHeight: '100vh', background: '#FAFAFA', padding: '2rem 1rem' }}>
       <div style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div className="card">
           <div style={{ marginBottom: '2rem' }}>
             <Link to="/goals" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', textDecoration: 'none' }}>
               ← Back to Goals
             </Link>
-            <h1 style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Edit Goal</h1>
+            <h1 className="font-serif" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Edit Goal</h1>
             <p style={{ color: 'var(--color-text-secondary)' }}>
               Update your race details
             </p>

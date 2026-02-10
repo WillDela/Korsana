@@ -54,11 +54,12 @@ const Navbar = ({ variant = 'landing', className = '' }) => {
     >
       <div className="container mx-auto container-padding h-20 flex items-center justify-between">
         {/* Logo */}
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
           <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base transition-colors duration-200 ${logoIconClasses}`}>
             K
           </div>
-          <span className={`text-xl font-bold tracking-tight transition-colors duration-200 ${logoTextClasses}`}>
+          <span className={`text-xl font-bold font-serif tracking-tight transition-colors duration-200 ${logoTextClasses}`}>
             Korsana
           </span>
         </Link>
@@ -85,24 +86,31 @@ const Navbar = ({ variant = 'landing', className = '' }) => {
             // Logged in state
             <>
               {isDashboard && (
-                <nav className="hidden md:flex items-center gap-2">
+                <nav className="hidden md:flex items-center gap-1">
                   <Link
                     to="/dashboard"
                     className={`${linkClasses} ${location.pathname === '/dashboard' ? 'nav-link-light-active' : ''}`}
                   >
                     Dashboard
                   </Link>
+                  {/* Calendar Link - New Centerpiece */}
                   <Link
-                    to="/goals"
-                    className={`${linkClasses} ${location.pathname === '/goals' ? 'nav-link-light-active' : ''}`}
+                    to="/calendar"
+                    className={`${linkClasses} ${location.pathname === '/calendar' ? 'nav-link-light-active' : ''}`}
                   >
-                    Goals
+                    Calendar
                   </Link>
                   <Link
                     to="/coach"
                     className={`${linkClasses} ${location.pathname === '/coach' ? 'nav-link-light-active' : ''}`}
                   >
                     Coach
+                  </Link>
+                  <Link
+                    to="/goals"
+                    className={`${linkClasses} ${location.pathname === '/goals' ? 'nav-link-light-active' : ''}`}
+                  >
+                    Goals
                   </Link>
                 </nav>
               )}

@@ -7,7 +7,7 @@ import { stravaAPI } from '../api/strava';
 import { getErrorMessage } from '../api/client';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import logo from '../assets/images/KorsanaLogo.jpg';
+import Navbar from '../components/Navbar';
 
 const Settings = () => {
   const { user, logout } = useAuth();
@@ -116,21 +116,8 @@ const Settings = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)' }}>
-      {/* Navigation */}
-      <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
-          <span className="font-bold text-lg">Korsana</span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link to="/dashboard" className="nav-link">Dashboard</Link>
-          <Link to="/coach" className="nav-link">Coach</Link>
-          <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
-            Log out
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <Navbar variant="dashboard" />
 
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         <motion.div
@@ -138,7 +125,7 @@ const Settings = () => {
           animate={{ opacity: 1, y: 0 }}
           style={{ marginBottom: '2rem' }}
         >
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Settings</h1>
+          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Settings</h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>
             Manage your account, connections, and preferences
           </p>
@@ -197,7 +184,7 @@ const Settings = () => {
                   }}>
                     {profile?.user?.email?.[0]?.toUpperCase() || '?'}
                   </div>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Account</h2>
+                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Account</h2>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.75rem 1rem', fontSize: '0.9375rem' }}>
@@ -208,7 +195,7 @@ const Settings = () => {
                   <span style={{ fontWeight: 500 }}>{profile?.user?.created_at ? formatDate(profile.user.created_at) : '—'}</span>
 
                   <span className="label" style={{ textTransform: 'none', fontSize: '0.875rem', letterSpacing: 0 }}>User ID</span>
-                  <span className="text-mono" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                  <span className="font-mono" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
                     {profile?.user?.id?.slice(0, 8)}...
                   </span>
                 </div>
@@ -228,7 +215,7 @@ const Settings = () => {
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                   </svg>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Strava Connection</h2>
+                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Strava Connection</h2>
                 </div>
 
                 {/* Strava status messages */}
@@ -294,7 +281,7 @@ const Settings = () => {
                     <circle cx="12" cy="12" r="6" />
                     <circle cx="12" cy="12" r="2" />
                   </svg>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Race Goal</h2>
+                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Race Goal</h2>
                 </div>
 
                 {profile?.active_goal ? (
@@ -338,7 +325,7 @@ const Settings = () => {
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Change Password</h2>
+                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Change Password</h2>
                 </div>
 
                 <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -433,7 +420,7 @@ const Settings = () => {
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
-                  <h2 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'var(--color-error)' }}>Danger Zone</h2>
+                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'var(--color-error)' }}>Danger Zone</h2>
                 </div>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
                   Logging out will clear your session. You can log back in anytime with your email and password.

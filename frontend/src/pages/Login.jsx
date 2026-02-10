@@ -75,6 +75,7 @@ const Login = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
+              className="font-serif"
               style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', marginBottom: 0 }}
             >
               Korsana
@@ -107,7 +108,7 @@ const Login = () => {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem',
-        background: 'var(--color-bg-secondary)',
+        background: '#FAFAFA',
       }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -116,7 +117,7 @@ const Login = () => {
           style={{ width: '100%', maxWidth: '420px' }}
         >
           <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+            <h1 className="font-serif" style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.5rem' }}>
               Welcome back
             </h1>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>

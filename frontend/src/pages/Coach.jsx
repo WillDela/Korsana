@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';
 import { getErrorMessage } from '../api/client';
 import AnimatedButton from '../components/AnimatedButton';
-import logo from '../assets/images/KorsanaLogo.jpg';
+import Navbar from '../components/Navbar';
 
 const Coach = () => {
   const { user, logout } = useAuth();
@@ -95,24 +95,8 @@ const Coach = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column' }}>
-      {/* Navigation */}
-      <nav className="nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Korsana Logo" className="h-8 w-auto" />
-          <span className="font-bold text-lg">Korsana</span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Link to="/dashboard" className="nav-link">Dashboard</Link>
-          <Link to="/settings" className="nav-link">Settings</Link>
-          <span className="coach-nav-email" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-            {user?.email}
-          </span>
-          <button onClick={() => logout()} className="btn btn-ghost" style={{ fontSize: '0.875rem' }}>
-            Log out
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col">
+      <Navbar variant="dashboard" />
 
       {/* Chat Container */}
       <div className="coach-container" style={{ flex: 1, maxWidth: '900px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
@@ -137,7 +121,7 @@ const Coach = () => {
               K
             </div>
             <div>
-              <h1 className="coach-header-title" style={{ fontWeight: 800, margin: 0 }}>AI Coach</h1>
+              <h1 className="coach-header-title font-serif" style={{ fontWeight: 800, margin: 0 }}>AI Coach</h1>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
                 Your personalized running coach
               </p>

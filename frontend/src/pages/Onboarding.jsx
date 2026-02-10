@@ -121,7 +121,7 @@ const Onboarding = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--color-bg-secondary)',
+      background: '#FAFAFA',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -183,7 +183,7 @@ const Onboarding = () => {
                   K
                 </motion.span>
               </div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-primary)' }}>
+              <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-primary)' }}>
                 Welcome to Korsana
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: '2rem' }}>
@@ -207,7 +207,7 @@ const Onboarding = () => {
               className="card"
               style={{ padding: '2.5rem', textAlign: 'center' }}
             >
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+              <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
                 Connect Your Data
               </h2>
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
@@ -272,7 +272,7 @@ const Onboarding = () => {
               className="card"
               style={{ padding: '2rem' }}
             >
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>
+              <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>
                 Set Your Race Goal
               </h2>
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', textAlign: 'center' }}>
@@ -460,7 +460,7 @@ const Onboarding = () => {
               >
                 ✓
               </motion.div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+              <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
                 You're All Set!
               </h2>
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>

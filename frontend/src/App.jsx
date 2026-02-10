@@ -11,6 +11,7 @@ import Goals from './pages/Goals';
 import EditGoal from './pages/EditGoal';
 import Onboarding from './pages/Onboarding';
 import Coach from './pages/Coach';
+import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
 import './App.css';
 
@@ -50,6 +51,14 @@ const AnimatedRoutes = () => {
           element={
             <ProtectedRoute>
               <PageTransition><Dashboard /></PageTransition>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <PageTransition><Calendar /></PageTransition>
             </ProtectedRoute>
           }
         />
