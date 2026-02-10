@@ -22,8 +22,6 @@ const Dashboard = () => {
   const [activities, setActivities] = useState([]);
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(true);
-  const [aiInsight, setAiInsight] = useState(null);
-  const [loadingInsight, setLoadingInsight] = useState(false);
   const [syncError, setSyncError] = useState('');
 
   useEffect(() => {
@@ -37,7 +35,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchActiveGoal();
     fetchActivitiesAndAutoSync();
-    fetchAiInsight();
   }, []);
 
   const fetchActivitiesAndAutoSync = async () => {
@@ -90,20 +87,6 @@ const Dashboard = () => {
     }
   };
 
-  const fetchAiInsight = async () => {
-    try {
-      setLoadingInsight(true);
-      const data = await profileAPI.getInsight();
-      if (data.insight) {
-        setAiInsight(data.insight);
-      }
-    } catch (error) {
-      // Silently fall back to heuristic insight
-      console.error('AI insight unavailable, using fallback:', error);
-    } finally {
-      setLoadingInsight(false);
-    }
-  };
 
   const handleConnectStrava = async () => {
     try {
@@ -752,7 +735,7 @@ const Dashboard = () => {
                     <div className="h-3 bg-gray-100 rounded w-4/5 animate-pulse" />
                   </div>
                 ) : (
-                  <TypewriterText text={aiInsight || getInsightMessage()} speed={20} />
+                  <TypewriterText text={getInsightMessage()} speed={20} />
                 )}
               </div>
 

@@ -45,7 +45,7 @@ func CoachRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 			return
 		}
 
-		// 2. Check per-user hourly limit (10/hour)
+		// 2. Check per-user hourly limit (30/hour)
 		hourKey := fmt.Sprintf("ratelimit:coach:%s:hour", userID)
 		hourCount, err := rdb.Incr(ctx, hourKey).Result()
 		if err != nil {
@@ -56,7 +56,7 @@ func CoachRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 		if hourCount == 1 {
 			rdb.Expire(ctx, hourKey, time.Hour)
 		}
-		if hourCount > 10 {
+		if hourCount > 30 {
 			log.Printf("[RateLimit] User %s exceeded hourly limit (%d)", userID, hourCount)
 			rdb.Decr(ctx, hourKey)
 			rdb.Decr(ctx, globalKey) // undo global increment too
@@ -68,7 +68,7 @@ func CoachRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 			return
 		}
 
-		// 3. Check per-user daily limit (50/day)
+		// 3. Check per-user daily limit (150/day)
 		dayKey := fmt.Sprintf("ratelimit:coach:%s:%s", userID, time.Now().UTC().Format("2006-01-02"))
 		dayCount, err := rdb.Incr(ctx, dayKey).Result()
 		if err != nil {
@@ -79,13 +79,13 @@ func CoachRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 		if dayCount == 1 {
 			rdb.Expire(ctx, dayKey, 25*time.Hour)
 		}
-		if dayCount > 50 {
+		if dayCount > 150 {
 			log.Printf("[RateLimit] User %s exceeded daily limit (%d)", userID, dayCount)
 			rdb.Decr(ctx, dayKey)
 			rdb.Decr(ctx, hourKey)
 			rdb.Decr(ctx, globalKey)
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error": "You've reached the daily message limit (50). Try again tomorrow.",
+				"error": "You've reached the daily message limit (150). Try again tomorrow.",
 			})
 			return
 		}
