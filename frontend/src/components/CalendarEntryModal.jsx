@@ -129,7 +129,7 @@ const CalendarEntryModal = ({ isOpen, onClose, onSave, onDelete, entry, selected
               }}
             >
               <div>
-                <h3 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>
+                <h3 className="font-semibold" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>
                   {isEditing ? 'Edit Workout' : 'Add Workout'}
                 </h3>
                 <p style={{ fontSize: '0.8125rem', color: '#6B7280', margin: '0.25rem 0 0' }}>

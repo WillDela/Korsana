@@ -121,7 +121,7 @@ const WeekCalendar = ({ compact = false }) => {
           >
             ← Prev
           </button>
-          <h3 className="font-serif" style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: '#1F2937' }}>
+          <h3 className="font-semibold" style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: '#1F2937' }}>
             {weekLabel}
           </h3>
           <button

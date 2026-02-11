@@ -2,11 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
-import { useAuth } from '../context/AuthContext';
-import Navbar from '../components/Navbar';
-
 const Goals = () => {
-  const { user, logout } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -68,21 +64,13 @@ const Goals = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <Navbar variant="dashboard" />
-
-      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <Link to="/dashboard" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', textDecoration: 'none' }}>
-              ← Back to Dashboard
-            </Link>
-            <h1 className="font-serif" style={{ marginTop: '0.5rem' }}>Your Goals</h1>
-          </div>
-          <Link to="/goals/new" className="btn btn-primary">
-            New Goal
-          </Link>
-        </div>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-text-primary">Your Goals</h1>
+        <Link to="/goals/new" className="btn btn-primary btn-sm">
+          New Goal
+        </Link>
+      </div>
 
         {loading ? (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
@@ -159,7 +147,6 @@ const Goals = () => {
             ))}
           </div>
         )}
-      </main>
     </div>
   );
 };

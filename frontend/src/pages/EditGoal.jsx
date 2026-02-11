@@ -74,192 +74,172 @@ const EditGoal = () => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#FAFAFA', padding: '2rem 1rem' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--color-text-secondary)' }}>Loading goal...</p>
-          </div>
+      <div className="max-w-[600px] mx-auto">
+        <div className="card text-center py-12">
+          <p className="text-text-secondary">Loading goal...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAFAFA', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div className="card">
-          <div style={{ marginBottom: '2rem' }}>
-            <Link to="/goals" style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', textDecoration: 'none' }}>
-              ← Back to Goals
-            </Link>
-            <h1 className="font-serif" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>Edit Goal</h1>
-            <p style={{ color: 'var(--color-text-secondary)' }}>
-              Update your race details
-            </p>
+    <div className="max-w-[600px] mx-auto">
+      <div className="card">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-text-primary mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Edit Goal</h1>
+          <p className="text-sm text-text-secondary">Update your race details</p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {serverError && (
+            <div className="alert alert-error mb-6">
+              {serverError}
+            </div>
+          )}
+
+          {/* Race Name */}
+          <div className="mb-6">
+            <label className="label" htmlFor="race_name">Race Name</label>
+            <input
+              id="race_name"
+              type="text"
+              className={`input ${errors.race_name ? 'input-error' : ''}`}
+              placeholder="Miami Marathon 2026"
+              {...register('race_name', { required: 'Race name is required' })}
+            />
+            {errors.race_name && (
+              <p className="text-error text-sm mt-1">
+                {errors.race_name.message}
+              </p>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {serverError && (
-              <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
-                {serverError}
-              </div>
+          {/* Race Date */}
+          <div className="mb-6">
+            <label className="label" htmlFor="race_date">Race Date</label>
+            <input
+              id="race_date"
+              type="date"
+              className={`input ${errors.race_date ? 'input-error' : ''}`}
+              {...register('race_date', { required: 'Race date is required' })}
+            />
+            {errors.race_date && (
+              <p className="text-error text-sm mt-1">
+                {errors.race_date.message}
+              </p>
             )}
+          </div>
 
-            {/* Race Name */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label" htmlFor="race_name">Race Name</label>
-              <input
-                id="race_name"
-                type="text"
-                className={`input ${errors.race_name ? 'input-error' : ''}`}
-                placeholder="Miami Marathon 2026"
-                {...register('race_name', { required: 'Race name is required' })}
-              />
-              {errors.race_name && (
-                <p className="text-error" style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                  {errors.race_name.message}
-                </p>
-              )}
+          {/* Distance */}
+          <div className="mb-6">
+            <label className="label" htmlFor="race_distance_km">Distance</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {commonDistances.map((dist) => (
+                <button
+                  key={dist.label}
+                  type="button"
+                  className="btn btn-outline py-3"
+                  onClick={() => setValue('race_distance_km', dist.value)}
+                >
+                  {dist.label}
+                </button>
+              ))}
             </div>
-
-            {/* Race Date */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label" htmlFor="race_date">Race Date</label>
-              <input
-                id="race_date"
-                type="date"
-                className={`input ${errors.race_date ? 'input-error' : ''}`}
-                {...register('race_date', { required: 'Race date is required' })}
-              />
-              {errors.race_date && (
-                <p className="text-error" style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                  {errors.race_date.message}
-                </p>
-              )}
-            </div>
-
-            {/* Distance */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label" htmlFor="race_distance_km">Distance</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                {commonDistances.map((dist) => (
-                  <button
-                    key={dist.label}
-                    type="button"
-                    className="btn btn-outline"
-                    onClick={() => setValue('race_distance_km', dist.value)}
-                    style={{ padding: '0.75rem' }}
-                  >
-                    {dist.label}
-                  </button>
-                ))}
-              </div>
-              <input
-                id="race_distance_km"
-                type="number"
-                step="0.1"
-                className={`input ${errors.race_distance_km ? 'input-error' : ''}`}
-                placeholder="Custom distance (km)"
-                {...register('race_distance_km', {
-                  required: 'Distance is required',
-                  min: { value: 1, message: 'Distance must be at least 1km' },
-                })}
-              />
-              {errors.race_distance_km && (
-                <p className="text-error" style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                  {errors.race_distance_km.message}
-                </p>
-              )}
-            </div>
-
-            {/* Goal Type */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label">Goal Type</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                <label style={{ cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    value="time"
-                    {...register('goal_type')}
-                    style={{ marginRight: '0.5rem' }}
-                  />
-                  Target Time
-                </label>
-                <label style={{ cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    value="finish"
-                    {...register('goal_type')}
-                    style={{ marginRight: '0.5rem' }}
-                  />
-                  Just Finish
-                </label>
-                <label style={{ cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    value="pr"
-                    {...register('goal_type')}
-                    style={{ marginRight: '0.5rem' }}
-                  />
-                  PR
-                </label>
-              </div>
-            </div>
-
-            {/* Target Time (only if goal_type is 'time' or 'pr') */}
-            {(goalType === 'time' || goalType === 'pr') && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="label">Target Time</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                  <div>
-                    <input
-                      type="number"
-                      min="0"
-                      max="23"
-                      className="input"
-                      placeholder="Hours"
-                      {...register('target_hours', { required: 'Required' })}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      className="input"
-                      placeholder="Minutes"
-                      {...register('target_minutes', { required: 'Required' })}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      min="0"
-                      max="59"
-                      className="input"
-                      placeholder="Seconds"
-                      {...register('target_seconds')}
-                    />
-                  </div>
-                </div>
-              </div>
+            <input
+              id="race_distance_km"
+              type="number"
+              step="0.1"
+              className={`input ${errors.race_distance_km ? 'input-error' : ''}`}
+              placeholder="Custom distance (km)"
+              {...register('race_distance_km', {
+                required: 'Distance is required',
+                min: { value: 1, message: 'Distance must be at least 1km' },
+              })}
+            />
+            {errors.race_distance_km && (
+              <p className="text-error text-sm mt-1">
+                {errors.race_distance_km.message}
+              </p>
             )}
+          </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSubmitting}
-                style={{ flex: 1 }}
-              >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </button>
-              <Link to="/goals" className="btn btn-outline" style={{ flex: 1, textAlign: 'center' }}>
-                Cancel
-              </Link>
+          {/* Goal Type */}
+          <div className="mb-6">
+            <label className="label">Goal Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="cursor-pointer flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  value="time"
+                  {...register('goal_type')}
+                />
+                Target Time
+              </label>
+              <label className="cursor-pointer flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  value="finish"
+                  {...register('goal_type')}
+                />
+                Just Finish
+              </label>
+              <label className="cursor-pointer flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  value="pr"
+                  {...register('goal_type')}
+                />
+                PR
+              </label>
             </div>
-          </form>
-        </div>
+          </div>
+
+          {/* Target Time */}
+          {(goalType === 'time' || goalType === 'pr') && (
+            <div className="mb-6">
+              <label className="label">Target Time</label>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  className="input"
+                  placeholder="Hours"
+                  {...register('target_hours', { required: 'Required' })}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  className="input"
+                  placeholder="Minutes"
+                  {...register('target_minutes', { required: 'Required' })}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  className="input"
+                  placeholder="Seconds"
+                  {...register('target_seconds')}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-4">
+            <button
+              type="submit"
+              className="btn btn-primary flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
+            <Link to="/goals" className="btn btn-outline flex-1 text-center">
+              Cancel
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

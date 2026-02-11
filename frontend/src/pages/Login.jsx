@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import AnimatedInput from '../components/AnimatedInput';
 import AnimatedButton from '../components/AnimatedButton';
 import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import logo from '../assets/images/KorsanaLogo.jpg';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
@@ -32,112 +31,54 @@ const Login = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex' }}>
-      {/* Brand Side - Hidden on mobile */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        style={{
-          flex: 1,
-          background: 'linear-gradient(135deg, #242E7B 0%, #13230B 100%)',
-          color: '#fff',
-          padding: '4rem 3rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Subtle background texture */}
-        <div style={{
-          position: 'absolute',
-          top: '0',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          opacity: 0.05,
-          backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 50%)',
-        }} />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <motion.img
-              src={logo}
-              alt="Korsana Logo"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
-              style={{ height: '3rem', width: 'auto' }}
-            />
-            <motion.h1
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
-              className="font-serif"
-              style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', marginBottom: 0 }}
-            >
-              Korsana
-            </motion.h1>
+    <div className="min-h-screen flex">
+      {/* Brand Side */}
+      <div className="hidden lg:flex flex-1 bg-navy text-white p-12 flex-col justify-between relative">
+        <div>
+          <Link to="/" className="flex items-center gap-3 no-underline mb-6">
+            <div className="w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">K</span>
+            </div>
+            <span className="text-white text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
           </Link>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            style={{ fontSize: '1.125rem', lineHeight: 1.6, opacity: 0.9, maxWidth: '400px' }}
-          >
+          <p className="text-white/80 text-lg max-w-sm leading-relaxed">
             Your AI-powered running coach. Train smarter, race faster.
-          </motion.p>
+          </p>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          style={{ fontSize: '0.875rem', opacity: 0.7, position: 'relative', zIndex: 1 }}
-        >
-          "Korsana helped me take 15 minutes off my marathon PR." — William
-        </motion.div>
-      </motion.div>
+        <p className="text-white/50 text-sm">
+          "Korsana helped me take 15 minutes off my marathon PR."
+        </p>
+      </div>
 
       {/* Form Side */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem',
-        background: '#FAFAFA',
-      }}>
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-bg-app">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          style={{ width: '100%', maxWidth: '420px' }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-[400px]"
         >
-          <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
-            <h1 className="font-serif" style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-              Welcome back
-            </h1>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>
-              Log in to continue your training
-            </p>
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
+            <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">K</span>
+            </div>
+            <span className="text-navy text-xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
+          </div>
+
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-text-primary mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Welcome back</h1>
+            <p className="text-sm text-text-secondary">Log in to continue your training</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             {serverError && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="alert alert-error"
-                style={{ marginBottom: '1.5rem' }}
-              >
+              <div className="bg-coral-light text-error text-sm rounded-lg px-4 py-3 mb-6 border border-error/20">
                 {serverError}
-              </motion.div>
+              </div>
             )}
 
-            <StaggerContainer style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <StaggerContainer className="flex flex-col gap-5">
               <StaggerItem>
                 <AnimatedInput
                   label="Email"
@@ -148,24 +89,22 @@ const Login = () => {
                   {...register('email', { required: 'Email is required' })}
                 />
               </StaggerItem>
-
               <StaggerItem>
                 <AnimatedInput
                   label="Password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   error={errors.password?.message}
                   {...register('password', { required: 'Password is required' })}
                 />
               </StaggerItem>
-
               <StaggerItem>
                 <AnimatedButton
                   type="submit"
                   variant="primary"
                   disabled={isSubmitting}
-                  style={{ width: '100%', padding: '0.875rem', fontSize: '0.9375rem', marginTop: '0.5rem' }}
+                  style={{ width: '100%', padding: '0.75rem', fontSize: '0.9375rem' }}
                 >
                   {isSubmitting ? 'Logging in...' : 'Log in'}
                 </AnimatedButton>
@@ -173,17 +112,12 @@ const Login = () => {
             </StaggerContainer>
           </form>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}
-          >
+          <p className="text-center mt-6 text-sm text-text-secondary">
             Don't have an account?{' '}
-            <Link to="/signup" style={{ color: 'var(--color-secondary)', fontWeight: 600, textDecoration: 'none' }}>
+            <Link to="/signup" className="text-navy font-semibold no-underline hover:text-navy-light transition-colors">
               Sign up
             </Link>
-          </motion.p>
+          </p>
         </motion.div>
       </div>
     </div>

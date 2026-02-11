@@ -5,12 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { profileAPI } from '../api/profile';
 import { stravaAPI } from '../api/strava';
 import { getErrorMessage } from '../api/client';
-import AnimatedButton from '../components/AnimatedButton';
-import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import Navbar from '../components/Navbar';
 
 const Settings = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,11 +30,9 @@ const Settings = () => {
   useEffect(() => {
     fetchProfile();
 
-    // Check for Strava callback status
     if (searchParams.get('strava_connected') === 'true') {
       setStravaMessage({ type: 'success', text: 'Strava connected successfully!' });
-      fetchProfile(); // Refresh profile to show connection
-      // Clear query params
+      fetchProfile();
       setSearchParams({});
     } else if (searchParams.get('strava_error')) {
       const error = searchParams.get('strava_error');
@@ -116,331 +111,232 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <Navbar variant="dashboard" />
+    <div className="max-w-[800px] mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-text-primary mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Settings</h1>
+        <p className="text-text-secondary text-[0.9375rem]">
+          Manage your account, connections, and preferences
+        </p>
+      </div>
 
-      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      {generalError && (
         <motion.div
-          initial={{ opacity: 0, y: -12 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: '2rem' }}
+          className="bg-error text-white text-sm rounded-lg px-4 py-3 mb-6"
         >
-          <h1 className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Settings</h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9375rem' }}>
-            Manage your account, connections, and preferences
-          </p>
+          {generalError}
         </motion.div>
+      )}
 
-        {/* General error display */}
-        {generalError && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              marginBottom: '1.5rem',
-              backgroundColor: 'var(--color-error)',
-              color: '#fff',
-              fontSize: '0.875rem',
-            }}
-          >
-            {generalError}
-          </motion.div>
-        )}
-
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="card" style={{ height: '180px', background: 'var(--color-bg-primary)' }}>
-                <div style={{ height: '16px', width: '120px', background: 'var(--color-bg-secondary)', borderRadius: '4px', marginBottom: '1rem' }} />
-                <div style={{ height: '14px', width: '80%', background: 'var(--color-bg-secondary)', borderRadius: '4px', marginBottom: '0.75rem' }} />
-                <div style={{ height: '14px', width: '60%', background: 'var(--color-bg-secondary)', borderRadius: '4px' }} />
+      {loading ? (
+        <div className="flex flex-col gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card h-[180px] animate-pulse">
+              <div className="h-4 w-[120px] bg-border-light rounded mb-4" />
+              <div className="h-3.5 w-4/5 bg-border-light rounded mb-3" />
+              <div className="h-3.5 w-3/5 bg-border-light rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {/* Account Section */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold">
+                {profile?.user?.email?.[0]?.toUpperCase() || '?'}
               </div>
-            ))}
+              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Account</h2>
+            </div>
+
+            <div className="grid text-[0.9375rem]" style={{ gridTemplateColumns: '120px 1fr', gap: '0.75rem 1rem' }}>
+              <span className="text-sm text-text-secondary">Email</span>
+              <span className="font-medium">{profile?.user?.email}</span>
+
+              <span className="text-sm text-text-secondary">Member since</span>
+              <span className="font-medium">{profile?.user?.created_at ? formatDate(profile.user.created_at) : '\u2014'}</span>
+
+              <span className="text-sm text-text-secondary">User ID</span>
+              <span className="font-mono text-sm text-text-muted">
+                {profile?.user?.id?.slice(0, 8)}...
+              </span>
+            </div>
           </div>
-        ) : (
-          <StaggerContainer style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Account Section */}
-            <StaggerItem>
+
+          {/* Strava Connection Section */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-6">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Strava Connection</h2>
+            </div>
+
+            {stravaMessage.text && (
               <motion.div
-                className="card"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-lg px-4 py-3 mb-4 text-sm font-medium text-white ${
+                  stravaMessage.type === 'success' ? 'bg-success' : 'bg-error'
+                }`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'var(--color-primary)',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.875rem',
-                    fontWeight: 700,
-                  }}>
-                    {profile?.user?.email?.[0]?.toUpperCase() || '?'}
-                  </div>
-                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Account</h2>
-                </div>
+                {stravaMessage.text}
+              </motion.div>
+            )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.75rem 1rem', fontSize: '0.9375rem' }}>
-                  <span className="label" style={{ textTransform: 'none', fontSize: '0.875rem', letterSpacing: 0 }}>Email</span>
-                  <span style={{ fontWeight: 500 }}>{profile?.user?.email}</span>
-
-                  <span className="label" style={{ textTransform: 'none', fontSize: '0.875rem', letterSpacing: 0 }}>Member since</span>
-                  <span style={{ fontWeight: 500 }}>{profile?.user?.created_at ? formatDate(profile.user.created_at) : '—'}</span>
-
-                  <span className="label" style={{ textTransform: 'none', fontSize: '0.875rem', letterSpacing: 0 }}>User ID</span>
-                  <span className="font-mono" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                    {profile?.user?.id?.slice(0, 8)}...
+            {profile?.strava?.connected ? (
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="badge badge-success text-sm">Connected</span>
+                  <span className="text-sm text-text-muted">
+                    Athlete ID: {profile.strava.athlete_id}
                   </span>
                 </div>
-              </motion.div>
-            </StaggerItem>
-
-            {/* Strava Connection Section */}
-            <StaggerItem>
-              <motion.div
-                className="card"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                transition={{ duration: 0.2 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                  </svg>
-                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Strava Connection</h2>
-                </div>
-
-                {/* Strava status messages */}
-                {stravaMessage.text && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: '0.5rem',
-                      marginBottom: '1rem',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      backgroundColor: stravaMessage.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
-                      color: '#fff',
-                    }}
-                  >
-                    {stravaMessage.text}
-                  </motion.div>
-                )}
-
-                {profile?.strava?.connected ? (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                      <span className="badge badge-success" style={{ fontSize: '0.8125rem' }}>Connected</span>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                        Athlete ID: {profile.strava.athlete_id}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-                      Your Strava account is connected. Activities are synced automatically when you visit the dashboard.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
-                      Connect your Strava account to sync your running activities and get personalized coaching.
-                    </p>
-                    <AnimatedButton
-                      variant="strava"
-                      onClick={handleConnectStrava}
-                      disabled={connectingStrava}
-                      style={{ fontSize: '0.875rem' }}
-                    >
-                      {connectingStrava ? 'Connecting...' : 'Connect Strava'}
-                    </AnimatedButton>
-                  </div>
-                )}
-              </motion.div>
-            </StaggerItem>
-
-            {/* Active Goal Section */}
-            <StaggerItem>
-              <motion.div
-                className="card"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                transition={{ duration: 0.2 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <circle cx="12" cy="12" r="6" />
-                    <circle cx="12" cy="12" r="2" />
-                  </svg>
-                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Race Goal</h2>
-                </div>
-
-                {profile?.active_goal ? (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '1.125rem', fontWeight: 700 }}>{profile.active_goal.race_name}</span>
-                      <span className="badge badge-success">Active</span>
-                    </div>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                      Race date: {formatDate(profile.active_goal.race_date)}
-                    </p>
-                    <Link to="/goals" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primary)', textDecoration: 'none' }}>
-                      Manage Goals →
-                    </Link>
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
-                      No active race goal set. Setting a goal helps the AI coach personalize your training advice.
-                    </p>
-                    <Link to="/goals/new">
-                      <AnimatedButton variant="primary" style={{ fontSize: '0.875rem' }}>
-                        Set a Race Goal
-                      </AnimatedButton>
-                    </Link>
-                  </div>
-                )}
-              </motion.div>
-            </StaggerItem>
-
-            {/* Change Password Section */}
-            <StaggerItem>
-              <motion.div
-                className="card"
-                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                transition={{ duration: 0.2 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>Change Password</h2>
-                </div>
-
-                <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.375rem', color: 'var(--color-text-secondary)' }}>
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      className="input"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Enter current password"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.375rem', color: 'var(--color-text-secondary)' }}>
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      className="input"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="At least 6 characters"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.375rem', color: 'var(--color-text-secondary)' }}>
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      className="input"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-
-                  {passwordError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="alert alert-error"
-                    >
-                      {passwordError}
-                    </motion.div>
-                  )}
-
-                  {passwordSuccess && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="alert alert-success"
-                    >
-                      {passwordSuccess}
-                    </motion.div>
-                  )}
-
-                  <div>
-                    <AnimatedButton
-                      variant="primary"
-                      type="submit"
-                      disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-                      style={{ fontSize: '0.875rem' }}
-                    >
-                      {changingPassword ? 'Updating...' : 'Update Password'}
-                    </AnimatedButton>
-                  </div>
-                </form>
-              </motion.div>
-            </StaggerItem>
-
-            {/* Danger Zone */}
-            <StaggerItem>
-              <motion.div
-                className="card"
-                style={{
-                  borderColor: 'rgba(220, 38, 38, 0.2)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                  <h2 className="font-serif" style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'var(--color-error)' }}>Danger Zone</h2>
-                </div>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem', lineHeight: 1.6 }}>
-                  Logging out will clear your session. You can log back in anytime with your email and password.
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  Your Strava account is connected. Activities are synced automatically when you visit the dashboard.
                 </p>
-                <AnimatedButton
-                  variant="outline"
-                  onClick={() => logout()}
-                  style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--color-error)',
-                    borderColor: 'rgba(220, 38, 38, 0.3)',
-                  }}
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                  Connect your Strava account to sync your running activities and get personalized coaching.
+                </p>
+                <button
+                  className="btn text-sm font-semibold text-white border-none"
+                  onClick={handleConnectStrava}
+                  disabled={connectingStrava}
+                  style={{ background: '#FC4C02' }}
                 >
-                  Log Out
-                </AnimatedButton>
-              </motion.div>
-            </StaggerItem>
-          </StaggerContainer>
-        )}
-      </main>
+                  {connectingStrava ? 'Connecting...' : 'Connect Strava'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Active Goal Section */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-6">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-sage)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Race Goal</h2>
+            </div>
+
+            {profile?.active_goal ? (
+              <div>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="text-lg font-bold">{profile.active_goal.race_name}</span>
+                  <span className="badge badge-success">Active</span>
+                </div>
+                <p className="text-sm text-text-secondary mb-3">
+                  Race date: {formatDate(profile.active_goal.race_date)}
+                </p>
+                <Link to="/goals" className="text-sm font-semibold text-navy no-underline hover:text-navy-light transition-colors">
+                  Manage Goals &rarr;
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+                  No active race goal set. Setting a goal helps the AI coach personalize your training advice.
+                </p>
+                <Link to="/goals/new" className="btn btn-primary text-sm">
+                  Set a Race Goal
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Change Password Section */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-6">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Change Password</h2>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  className="input"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              {passwordError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="alert alert-error"
+                >
+                  {passwordError}
+                </motion.div>
+              )}
+
+              {passwordSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="alert alert-success"
+                >
+                  {passwordSuccess}
+                </motion.div>
+              )}
+
+              <div>
+                <button
+                  type="submit"
+                  className="btn btn-primary text-sm"
+                  disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+                >
+                  {changingPassword ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
