@@ -31,8 +31,8 @@
 
 **Builder:** William — 3rd year CS student at FIU
 - President & Co-founder of Panthers Run Club at FIU
-- Training for the Miami Marathon (~4 months out)
-- Targeting a Datadog internship in ~5 months
+- Training for the Miami Marathon (Completed but want to get back into training)
+- Landed Datadog Internship and start in 3 months
 - Building Korsana as a flagship portfolio project
 
 **Why This Matters for the Portfolio:**

@@ -9,7 +9,7 @@
 - **Name:** Korsana
 - **Type:** AI-powered running coaching platform
 - **Mission:** "Korsana is an AI-powered coaching platform that analyzes a runner's unified training data to create and adapt a personalized plan for their specific race goals."
-- **Builder:** William — CS student at FIU, Panthers Run Club president, training for Miami Marathon
+- **Builder:** William — CS student at FIU, Panthers Run Club president, now Marathon runner
 
 ---
 
