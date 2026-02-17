@@ -97,6 +97,7 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 	validTypes := map[string]bool{
 		"easy": true, "tempo": true, "interval": true,
 		"long": true, "recovery": true, "rest": true, "race": true,
+		"cross_train": true,
 	}
 	if !validTypes[req.WorkoutType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid workout_type"})

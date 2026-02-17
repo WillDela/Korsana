@@ -1,17 +1,35 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { goalsAPI } from '../api/goals';
 import { stravaAPI } from '../api/strava';
 import { getErrorMessage } from '../api/client';
-import AnimatedNumber from '../components/AnimatedNumber';
 import WeekCalendar from '../components/WeekCalendar';
 import ActiveGoalBanner from '../components/ActiveGoalBanner';
 import MetricCard from '../components/MetricCard';
 import ReadinessGauge from '../components/ReadinessGauge';
-import CoachInsightBar from '../components/CoachInsightBar';
-import DashboardTabs from '../components/DashboardTabs';
+import PaceEngineer from '../components/PaceEngineer';
+import PhysiologyZones from '../components/PhysiologyZones';
+import RecentActivitiesCard from '../components/RecentActivitiesCard';
 
+const MileageIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 20V10M12 20V4M6 20v-6" />
+  </svg>
+);
+
+const PaceIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const ConsistencyIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -189,24 +207,9 @@ const Dashboard = () => {
     return Math.round(Math.max(10, peakMileage * (0.5 + 0.5 * rampFactor)));
   };
 
-  const getInsightMessage = () => {
-    const runs = countWeeklyRuns();
-    const mileage = weeklyMileageActual;
-    const target = getWeeklyMileageTarget();
-
-    if (!activeGoal) return "Set a race goal to get personalized coaching insights.";
-    if (totalDays <= 14) return "Taper time! Reduce volume by 40-50% this week. Focus on rest, nutrition, and mental prep for race day.";
-    if (runs === 0 && mileage === 0) return "No runs logged this week yet. Lace up and get moving — consistency beats intensity.";
-    if (mileage >= target) return `Great week — you've hit ${mileage} mi against a ${target} mi target. Don't skip your rest day; recovery is where adaptation happens.`;
-    if (paceDiff !== null && paceDiff < -5) return `You're running ${Math.abs(paceDiff)}s per mile faster than goal pace. Dial back on easy days to save energy for key workouts.`;
-    if (paceDiff !== null && paceDiff > 10) return `Pace is ${paceDiff}s off your target — don't stress. Focus on building aerobic base; speed will come.`;
-    if (runs >= 3) return `Solid consistency with ${runs} runs this week. Keep the easy days truly easy and bring intensity only to key sessions.`;
-    return `${mileage} miles so far this week. Aim for ${target} mi — small consistent efforts add up over ${Math.ceil(totalDays / 7)} weeks to race day.`;
-  };
-
   const weeklyTarget = getWeeklyMileageTarget();
 
-  // Readiness score: simple heuristic combining mileage %, consistency, and pace
+  // Readiness score
   const readinessScore = useMemo(() => {
     const mileagePct = Math.min(100, (weeklyMileageActual / weeklyTarget) * 100);
     const consistencyBonus = countWeeklyRuns() >= 3 ? 20 : countWeeklyRuns() >= 1 ? 10 : 0;
@@ -214,7 +217,7 @@ const Dashboard = () => {
     return Math.min(100, Math.round(mileagePct * 0.5 + consistencyBonus + paceBonus + trainingProgress * 0.15));
   }, [weeklyMileageActual, weeklyTarget, trainingProgress, paceDiff, activities]);
 
-  // Consistency: count of weeks with 3+ runs out of last 4
+  // Consistency
   const consistency = useMemo(() => {
     if (activities.length === 0) return 0;
     const now = new Date();
@@ -234,7 +237,7 @@ const Dashboard = () => {
     return consistentWeeks * 25;
   }, [activities]);
 
-  // --- Chart data ---
+  // Chart data
   const weeklyChartData = useMemo(() => {
     if (activities.length === 0) return [];
     const weeks = {};
@@ -259,24 +262,6 @@ const Dashboard = () => {
     return Object.values(weeks).map(w => ({ ...w, miles: parseFloat(w.miles.toFixed(1)) }));
   }, [activities]);
 
-  const paceChartData = useMemo(() => {
-    if (activities.length === 0) return [];
-    return [...activities]
-      .filter(a => a.average_pace_seconds_per_km)
-      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-      .slice(-15)
-      .map(a => {
-        const pacePerMile = a.average_pace_seconds_per_km * 1.60934;
-        const min = Math.floor(pacePerMile / 60);
-        const sec = Math.floor(pacePerMile % 60);
-        return {
-          date: formatDate(a.start_time),
-          pace: parseFloat((pacePerMile / 60).toFixed(2)),
-          label: `${min}:${sec.toString().padStart(2, '0')}`,
-        };
-      });
-  }, [activities]);
-
   // Pace status text
   const paceStatus = () => {
     if (!currentPaceRaw) return { text: 'No data', color: 'var(--color-text-muted)' };
@@ -291,6 +276,13 @@ const Dashboard = () => {
     if (pct >= 100) return { text: 'Target hit!', color: 'var(--color-sage)' };
     if (pct >= 50) return { text: `${pct}% of ${weeklyTarget} mi`, color: 'var(--color-text-secondary)' };
     return { text: `${weeklyMileageActual} / ${weeklyTarget} mi`, color: 'var(--color-text-secondary)' };
+  };
+
+  const tooltipStyle = {
+    borderRadius: '8px',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    fontSize: '0.8125rem',
   };
 
   return (
@@ -309,7 +301,7 @@ const Dashboard = () => {
         <WeekCalendar compact={true} />
       </section>
 
-      {/* Row 3: Metric Cards */}
+      {/* Row 3: 4 Metric Cards */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <MetricCard label="Readiness">
           <ReadinessGauge value={readinessScore} size={76} />
@@ -321,11 +313,13 @@ const Dashboard = () => {
           suffix=" mi"
           subtext={mileageStatus().text}
           subtextColor={mileageStatus().color}
+          icon={<MileageIcon />}
         />
         <MetricCard
           label="Avg Pace"
           subtext={paceStatus().text}
           subtextColor={paceStatus().color}
+          icon={<PaceIcon />}
         >
           <div className="text-3xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-mono)' }}>
             {currentPaceRaw ? formatPace(currentPaceRaw) : '--:--'}
@@ -338,30 +332,61 @@ const Dashboard = () => {
           suffix="%"
           subtext={consistency >= 75 ? 'Strong habit' : consistency >= 50 ? 'Building' : 'Needs work'}
           subtextColor={consistency >= 75 ? 'var(--color-sage)' : consistency >= 50 ? 'var(--color-amber)' : 'var(--color-coral)'}
+          icon={<ConsistencyIcon />}
         />
       </section>
 
-      {/* Row 4: Coach Insight */}
-      <CoachInsightBar message={getInsightMessage()} className="mt-6" />
+      {/* Row 4: Pace Engineer + Physiology Zones */}
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+        <div className="lg:col-span-2">
+          <PaceEngineer activeGoal={activeGoal} />
+        </div>
+        <div className="lg:col-span-3">
+          <PhysiologyZones currentPace={currentPaceRaw} activeGoal={activeGoal} />
+        </div>
+      </section>
 
-      {/* Row 5: Sync bar */}
+      {/* Row 5: Volume Trend + Recent Activities */}
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
+        <div className="lg:col-span-3 bg-white rounded-xl border border-border p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+            Weekly Volume
+          </h3>
+          <div className="h-[240px]">
+            {weeklyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} dy={8} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--color-bg-elevated)' }} contentStyle={tooltipStyle} />
+                  <Bar dataKey="miles" fill="var(--color-navy)" radius={[4, 4, 0, 0]} barSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-text-muted">
+                No data yet — sync your activities
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="lg:col-span-2">
+          <RecentActivitiesCard
+            activities={activities}
+            formatPace={formatPace}
+            metersToMiles={metersToMiles}
+            formatDate={formatDate}
+          />
+        </div>
+      </section>
+
+      {/* Row 6: Subtle sync button */}
       <div className="flex items-center justify-end gap-3 mt-6">
         {syncError && <span className="text-xs text-error">{syncError}</span>}
-        <button onClick={handleSyncActivities} className="btn btn-ghost btn-sm text-xs">
+        <button onClick={handleSyncActivities} className="text-xs text-text-muted hover:text-navy transition-colors cursor-pointer bg-transparent border-none font-medium">
           Sync Activities
         </button>
       </div>
-
-      {/* Row 6: Tabbed Content */}
-      <DashboardTabs
-        chartData={weeklyChartData}
-        paceData={paceChartData}
-        activities={activities}
-        formatPace={formatPace}
-        metersToMiles={metersToMiles}
-        formatDate={formatDate}
-        className="mt-2"
-      />
     </>
   );
 };

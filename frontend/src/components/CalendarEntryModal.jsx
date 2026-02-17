@@ -9,6 +9,7 @@ const WORKOUT_TYPES = [
   { value: 'recovery', label: 'Recovery', color: '#6B7280', icon: '🧘' },
   { value: 'rest', label: 'Rest', color: '#9CA3AF', icon: '😴' },
   { value: 'race', label: 'Race', color: '#7C3AED', icon: '🏁' },
+  { value: 'cross_train', label: 'Cross Train', color: '#E5A830', icon: '🏊' },
 ];
 
 const CalendarEntryModal = ({ isOpen, onClose, onSave, onDelete, entry, selectedDate }) => {

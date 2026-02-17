@@ -253,7 +253,7 @@ const WeekCalendar = ({ compact = false }) => {
                       fontSize: compact ? '0.5625rem' : '0.6875rem',
                       color: '#6B7280',
                     }}>
-                      {(entry.planned_distance_meters / 1000).toFixed(1)} km
+                      {(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi
                     </span>
                   )}
 
