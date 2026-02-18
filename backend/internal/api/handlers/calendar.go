@@ -69,6 +69,7 @@ type upsertEntryRequest struct {
 	PlannedDurationMinutes *int    `json:"planned_duration_minutes"`
 	PlannedPacePerKm       *int    `json:"planned_pace_per_km"`
 	Status                 string  `json:"status"`
+	Source                 string  `json:"source"`
 }
 
 // UpsertEntry creates or updates a calendar entry
@@ -109,6 +110,11 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 		status = "planned"
 	}
 
+	source := req.Source
+	if source == "" {
+		source = "manual"
+	}
+
 	entry := &models.CalendarEntry{
 		Date:                   entryDate,
 		WorkoutType:            req.WorkoutType,
@@ -118,6 +124,7 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 		PlannedDurationMinutes: req.PlannedDurationMinutes,
 		PlannedPacePerKm:       req.PlannedPacePerKm,
 		Status:                 status,
+		Source:                 source,
 	}
 
 	result, err := h.calendarService.UpsertEntry(c.Request.Context(), userID, entry)

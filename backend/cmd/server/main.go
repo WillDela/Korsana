@@ -45,7 +45,7 @@ func main() {
 	stravaService := services.NewStravaService(db, stravaClient, redisClient)
 	goalsService := services.NewGoalsService(db)
 	calendarService := services.NewCalendarService(db)
-	coachService := services.NewCoachService(db, cfg, goalsService)
+	coachService := services.NewCoachService(db, cfg, goalsService, calendarService)
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -118,6 +118,7 @@ func main() {
 				coach.POST("/message", coachLimiter, coachHandler.SendMessage)
 				coach.GET("/history", coachHandler.GetConversationHistory)
 				coach.GET("/insight", coachLimiter, coachHandler.GetInsight)
+				coach.POST("/generate-plan", coachLimiter, coachHandler.GeneratePlan)
 			}
 
 			// Profile / Settings

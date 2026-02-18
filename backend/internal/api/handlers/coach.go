@@ -71,6 +71,50 @@ func (h *CoachHandler) GetInsight(c *gin.Context) {
 	})
 }
 
+type generatePlanRequest struct {
+	Days    int  `json:"days"`
+	Confirm bool `json:"confirm"`
+}
+
+// GeneratePlan generates a training plan and optionally writes it to the calendar
+// POST /api/coach/generate-plan
+func (h *CoachHandler) GeneratePlan(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req generatePlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Days = 7
+	}
+	if req.Days <= 0 || req.Days > 14 {
+		req.Days = 7
+	}
+
+	plan, err := h.coachService.GeneratePlan(c.Request.Context(), userID, req.Days)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// If confirm is true, write plan to calendar
+	if req.Confirm {
+		if err := h.coachService.WritePlanToCalendar(c.Request.Context(), userID, plan.Plan); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Plan generated but failed to save to calendar: " + err.Error()})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"plan":      plan.Plan,
+		"summary":   plan.Summary,
+		"confirmed": req.Confirm,
+	})
+}
+
 func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {

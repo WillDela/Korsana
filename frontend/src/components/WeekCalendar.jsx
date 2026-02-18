@@ -245,6 +245,18 @@ const WeekCalendar = ({ compact = false }) => {
                     }}>
                       {entry.title}
                     </span>
+                    {entry.source === 'ai_coach' && (
+                      <span style={{
+                        fontSize: '0.5rem',
+                        fontWeight: 700,
+                        background: 'rgba(91,140,62,0.15)',
+                        color: '#5B8C3E',
+                        padding: '1px 3px',
+                        borderRadius: '3px',
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}>AI</span>
+                    )}
                   </div>
 
                   {/* Distance */}

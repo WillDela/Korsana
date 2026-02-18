@@ -54,7 +54,10 @@ type Activity struct {
 	StartTime               time.Time `json:"start_time" db:"start_time"`
 	AveragePaceSecondsPerKm float64   `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
 	AverageHeartRate        *int      `json:"average_heart_rate" db:"average_heart_rate"`
+	MaxHeartRate            *int      `json:"max_heart_rate" db:"max_heart_rate"`
 	ElevationGainMeters     *float64  `json:"elevation_gain_meters" db:"elevation_gain_meters"`
+	AverageCadence          *float64  `json:"average_cadence" db:"average_cadence"`
+	SufferScore             *int      `json:"suffer_score" db:"suffer_score"`
 	SyncedAt                time.Time `json:"synced_at" db:"synced_at"`
 }
 
@@ -76,7 +79,9 @@ type WeeklySummary struct {
 	TotalDurationSeconds    int       `json:"total_duration_seconds" db:"total_duration_seconds"`
 	RunCount                int       `json:"run_count" db:"run_count"`
 	AveragePaceSecondsPerKm float64   `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
+	LongestRunMeters        *float64  `json:"longest_run_meters" db:"longest_run_meters"`
 	CreatedAt               time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt               time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // CalendarEntry represents a planned or completed workout on a specific day
@@ -92,6 +97,7 @@ type CalendarEntry struct {
 	PlannedPacePerKm       *int       `json:"planned_pace_per_km" db:"planned_pace_per_km"`
 	Status                 string     `json:"status" db:"status"`
 	CompletedActivityID    *uuid.UUID `json:"completed_activity_id" db:"completed_activity_id"`
+	Source                 string     `json:"source" db:"source"`
 	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
 }

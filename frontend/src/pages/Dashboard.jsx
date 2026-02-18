@@ -12,6 +12,8 @@ import ReadinessGauge from '../components/ReadinessGauge';
 import PaceEngineer from '../components/PaceEngineer';
 import PhysiologyZones from '../components/PhysiologyZones';
 import RecentActivitiesCard from '../components/RecentActivitiesCard';
+import RunTypeBreakdown from '../components/RunTypeBreakdown';
+import ConsistencyTracker from '../components/ConsistencyTracker';
 
 const MileageIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -41,6 +43,8 @@ const Dashboard = () => {
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [syncError, setSyncError] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState('');
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -116,11 +120,19 @@ const Dashboard = () => {
   const handleSyncActivities = async () => {
     try {
       setSyncError('');
-      await stravaAPI.syncActivities();
+      setSyncSuccess('');
+      setIsSyncing(true);
+      const result = await stravaAPI.syncActivities();
       await fetchActivities();
+      const count = result?.count || 0;
+      setSyncSuccess(count > 0 ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}` : 'Already up to date');
+      setTimeout(() => setSyncSuccess(''), 4000);
     } catch (error) {
       console.error('Failed to sync activities:', error);
       setSyncError(getErrorMessage(error));
+      setTimeout(() => setSyncError(''), 5000);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -209,15 +221,7 @@ const Dashboard = () => {
 
   const weeklyTarget = getWeeklyMileageTarget();
 
-  // Readiness score
-  const readinessScore = useMemo(() => {
-    const mileagePct = Math.min(100, (weeklyMileageActual / weeklyTarget) * 100);
-    const consistencyBonus = countWeeklyRuns() >= 3 ? 20 : countWeeklyRuns() >= 1 ? 10 : 0;
-    const paceBonus = paceDiff !== null ? (Math.abs(paceDiff) < 10 ? 15 : 5) : 0;
-    return Math.min(100, Math.round(mileagePct * 0.5 + consistencyBonus + paceBonus + trainingProgress * 0.15));
-  }, [weeklyMileageActual, weeklyTarget, trainingProgress, paceDiff, activities]);
-
-  // Consistency
+  // Consistency (must be before readinessScore which depends on it)
   const consistency = useMemo(() => {
     if (activities.length === 0) return 0;
     const now = new Date();
@@ -236,6 +240,72 @@ const Dashboard = () => {
     }
     return consistentWeeks * 25;
   }, [activities]);
+
+  // 5-component Race Readiness Score
+  const readinessScore = useMemo(() => {
+    // 1. Volume Adequacy (25%): weekly mileage vs target
+    const volumeScore = Math.min(100, (weeklyMileageActual / weeklyTarget) * 100);
+
+    // 2. Pace Fitness (25%): current avg pace vs target race pace
+    let paceScore = 50; // default neutral
+    if (paceDiff !== null) {
+      if (Math.abs(paceDiff) <= 5) paceScore = 100;
+      else if (Math.abs(paceDiff) <= 15) paceScore = 75;
+      else if (Math.abs(paceDiff) <= 30) paceScore = 50;
+      else paceScore = 25;
+    }
+
+    // 3. Consistency (20%): weeks with 3+ runs out of last 4
+    const consistencyScore = consistency; // already 0-100
+
+    // 4. Long Run Readiness (15%): longest run in last 3 weeks vs 60% of race distance
+    let longRunScore = 50;
+    if (activeGoal && activities.length > 0) {
+      const threeWeeksAgo = new Date();
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+      const recentRuns = activities.filter(a => new Date(a.start_time) >= threeWeeksAgo);
+      const longestRun = Math.max(0, ...recentRuns.map(a => a.distance_meters || 0));
+      const raceDistance = activeGoal.distance_meters || 42195;
+      const targetLong = raceDistance * 0.6;
+      longRunScore = targetLong > 0 ? Math.min(100, (longestRun / targetLong) * 100) : 50;
+    }
+
+    // 5. Trend Direction (15%): this week vs avg of previous 3 weeks
+    let trendScore = 50;
+    if (activities.length > 0) {
+      const now = new Date();
+      let prevWeeksMileage = [];
+      for (let w = 1; w <= 3; w++) {
+        const start = new Date(now);
+        start.setDate(start.getDate() - start.getDay() - w * 7);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 7);
+        const weekMiles = activities
+          .filter(a => { const d = new Date(a.start_time); return d >= start && d < end; })
+          .reduce((sum, a) => sum + (a.distance_meters || 0) * 0.000621371, 0);
+        prevWeeksMileage.push(weekMiles);
+      }
+      const avgPrev = prevWeeksMileage.reduce((a, b) => a + b, 0) / 3;
+      if (avgPrev > 0) {
+        const ratio = weeklyMileageActual / avgPrev;
+        if (ratio >= 1.1) trendScore = 100;
+        else if (ratio >= 0.9) trendScore = 75;
+        else if (ratio >= 0.7) trendScore = 50;
+        else trendScore = 25;
+      }
+    }
+
+    const composite = Math.round(
+      volumeScore * 0.25 +
+      paceScore * 0.25 +
+      consistencyScore * 0.20 +
+      longRunScore * 0.15 +
+      trendScore * 0.15
+    );
+
+    return Math.min(100, Math.max(0, composite));
+  }, [weeklyMileageActual, weeklyTarget, paceDiff, consistency, activities, activeGoal]);
 
   // Chart data
   const weeklyChartData = useMemo(() => {
@@ -287,6 +357,33 @@ const Dashboard = () => {
 
   return (
     <>
+      {/* Sync bar */}
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-semibold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
+          Dashboard
+        </h2>
+        <div className="flex items-center gap-3">
+          {syncSuccess && (
+            <span className="text-xs font-medium text-sage flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              {syncSuccess}
+            </span>
+          )}
+          {syncError && <span className="text-xs font-medium text-error">{syncError}</span>}
+          <button
+            onClick={handleSyncActivities}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy-light transition-colors cursor-pointer border-none disabled:opacity-60"
+          >
+            <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {isSyncing ? 'Syncing...' : 'Sync Activities'}
+          </button>
+        </div>
+      </div>
+
       {/* Row 1: Active Goal Banner */}
       <ActiveGoalBanner goal={activeGoal} loading={loadingGoal} trainingProgress={trainingProgress} />
 
@@ -336,7 +433,13 @@ const Dashboard = () => {
         />
       </section>
 
-      {/* Row 4: Pace Engineer + Physiology Zones */}
+      {/* Row 4: Run Type Breakdown + Consistency Tracker */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <RunTypeBreakdown activities={activities} targetPaceSecondsPerKm={computeTargetPace()} />
+        <ConsistencyTracker activities={activities} />
+      </section>
+
+      {/* Row 5: Pace Engineer + Physiology Zones */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
         <div className="lg:col-span-2">
           <PaceEngineer activeGoal={activeGoal} />
@@ -346,7 +449,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Row 5: Volume Trend + Recent Activities */}
+      {/* Row 6: Volume Trend + Recent Activities */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
         <div className="lg:col-span-3 bg-white rounded-xl border border-border p-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -380,13 +483,6 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Row 6: Subtle sync button */}
-      <div className="flex items-center justify-end gap-3 mt-6">
-        {syncError && <span className="text-xs text-error">{syncError}</span>}
-        <button onClick={handleSyncActivities} className="text-xs text-text-muted hover:text-navy transition-colors cursor-pointer bg-transparent border-none font-medium">
-          Sync Activities
-        </button>
-      </div>
     </>
   );
 };

@@ -49,15 +49,19 @@ func (s *CalendarService) UpsertEntry(ctx context.Context, userID uuid.UUID, ent
 		entry.CreatedAt = time.Now()
 	}
 
+	if entry.Source == "" {
+		entry.Source = "manual"
+	}
+
 	query := `
 		INSERT INTO training_calendar (
 			id, user_id, date, workout_type, title, description,
 			planned_distance_meters, planned_duration_minutes, planned_pace_per_km,
-			status, completed_activity_id, created_at, updated_at
+			status, completed_activity_id, source, created_at, updated_at
 		) VALUES (
 			:id, :user_id, :date, :workout_type, :title, :description,
 			:planned_distance_meters, :planned_duration_minutes, :planned_pace_per_km,
-			:status, :completed_activity_id, :created_at, :updated_at
+			:status, :completed_activity_id, :source, :created_at, :updated_at
 		)
 		ON CONFLICT (user_id, date) DO UPDATE SET
 			workout_type = EXCLUDED.workout_type,
@@ -68,6 +72,7 @@ func (s *CalendarService) UpsertEntry(ctx context.Context, userID uuid.UUID, ent
 			planned_pace_per_km = EXCLUDED.planned_pace_per_km,
 			status = EXCLUDED.status,
 			completed_activity_id = EXCLUDED.completed_activity_id,
+			source = EXCLUDED.source,
 			updated_at = EXCLUDED.updated_at
 	`
 	_, err := s.db.NamedExecContext(ctx, query, entry)

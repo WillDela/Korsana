@@ -142,10 +142,15 @@ const TrainingBlock = () => {
               {getBadgeLabel(entry.workout_type)}
             </span>
 
-            {/* Title */}
-            <span className="text-xs font-medium text-text-primary truncate">
-              {entry.title}
-            </span>
+            {/* Title + source */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-text-primary truncate">
+                {entry.title}
+              </span>
+              {entry.source === 'ai_coach' && (
+                <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sage/20 text-sage leading-none">AI</span>
+              )}
+            </div>
 
             {/* Distance + pace */}
             <div className="mt-auto flex items-center gap-2 text-[11px] text-text-muted font-mono">

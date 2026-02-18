@@ -210,6 +210,26 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			elevGain = &act.TotalElevationGain
 		}
 
+		// Convert max heart rate
+		var maxHR *int
+		if act.MaxHeartrate > 0 {
+			mhr := int(act.MaxHeartrate)
+			maxHR = &mhr
+		}
+
+		// Convert cadence
+		var cadence *float64
+		if act.AverageCadence > 0 {
+			cadence = &act.AverageCadence
+		}
+
+		// Convert suffer score
+		var sufferScore *int
+		if act.SufferScore > 0 {
+			ss := act.SufferScore
+			sufferScore = &ss
+		}
+
 		activity := &models.Activity{
 			ID:                      uuid.New(),
 			UserID:                  userID,
@@ -222,7 +242,10 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			StartTime:               startTime,
 			AveragePaceSecondsPerKm: avgPace,
 			AverageHeartRate:        avgHR,
+			MaxHeartRate:            maxHR,
 			ElevationGainMeters:     elevGain,
+			AverageCadence:          cadence,
+			SufferScore:             sufferScore,
 			SyncedAt:                time.Now(),
 		}
 
@@ -230,11 +253,13 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			INSERT INTO activities (
 				id, user_id, source, source_activity_id, activity_type, name,
 				distance_meters, duration_seconds, start_time, average_pace_seconds_per_km,
-				average_heart_rate, elevation_gain_meters, synced_at
+				average_heart_rate, max_heart_rate, elevation_gain_meters,
+				average_cadence, suffer_score, synced_at
 			) VALUES (
 				:id, :user_id, :source, :source_activity_id, :activity_type, :name,
 				:distance_meters, :duration_seconds, :start_time, :average_pace_seconds_per_km,
-				:average_heart_rate, :elevation_gain_meters, :synced_at
+				:average_heart_rate, :max_heart_rate, :elevation_gain_meters,
+				:average_cadence, :suffer_score, :synced_at
 			)
 			ON CONFLICT (source, source_activity_id) DO UPDATE SET
 				name = EXCLUDED.name,
@@ -242,7 +267,10 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 				duration_seconds = EXCLUDED.duration_seconds,
 				average_pace_seconds_per_km = EXCLUDED.average_pace_seconds_per_km,
 				average_heart_rate = EXCLUDED.average_heart_rate,
+				max_heart_rate = EXCLUDED.max_heart_rate,
 				elevation_gain_meters = EXCLUDED.elevation_gain_meters,
+				average_cadence = EXCLUDED.average_cadence,
+				suffer_score = EXCLUDED.suffer_score,
 				synced_at = EXCLUDED.synced_at
 		`
 
@@ -254,7 +282,45 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		syncedCount++
 	}
 
+	// After syncing, compute and upsert weekly summaries
+	if syncedCount > 0 {
+		_ = s.computeWeeklySummaries(ctx, userID)
+	}
+
 	return syncedCount, nil
+}
+
+// computeWeeklySummaries aggregates activity data into weekly_summaries
+func (s *StravaService) computeWeeklySummaries(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		INSERT INTO weekly_summaries (id, user_id, week_start, total_distance_meters, total_duration_seconds, run_count, average_pace_seconds_per_km, longest_run_meters, updated_at)
+		SELECT
+			gen_random_uuid(),
+			user_id,
+			date_trunc('week', start_time)::date AS week_start,
+			SUM(distance_meters) AS total_distance_meters,
+			SUM(duration_seconds) AS total_duration_seconds,
+			COUNT(*) AS run_count,
+			CASE WHEN SUM(distance_meters) > 0
+				THEN SUM(duration_seconds) / (SUM(distance_meters) / 1000.0)
+				ELSE 0
+			END AS average_pace_seconds_per_km,
+			MAX(distance_meters) AS longest_run_meters,
+			NOW()
+		FROM activities
+		WHERE user_id = $1
+			AND start_time >= NOW() - INTERVAL '8 weeks'
+		GROUP BY user_id, date_trunc('week', start_time)
+		ON CONFLICT (user_id, week_start) DO UPDATE SET
+			total_distance_meters = EXCLUDED.total_distance_meters,
+			total_duration_seconds = EXCLUDED.total_duration_seconds,
+			run_count = EXCLUDED.run_count,
+			average_pace_seconds_per_km = EXCLUDED.average_pace_seconds_per_km,
+			longest_run_meters = EXCLUDED.longest_run_meters,
+			updated_at = NOW()
+	`
+	_, err := s.db.ExecContext(ctx, query, userID)
+	return err
 }
 
 // GetUserActivities retrieves activities for a user

@@ -10,6 +10,9 @@ const Coach = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingHistory, setIsFetchingHistory] = useState(true);
+  const [planData, setPlanData] = useState(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -73,6 +76,43 @@ const Coach = () => {
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    setIsGeneratingPlan(true);
+    setPlanData(null);
+    try {
+      const data = await coachAPI.generatePlan(7, false);
+      setPlanData(data);
+    } catch (error) {
+      console.error('Failed to generate plan:', error);
+      const errMsg = getErrorMessage(error);
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: `I couldn't generate a plan right now. (${errMsg})\n\nPlease try again in a moment.`,
+        created_at: new Date().toISOString(),
+        isError: true,
+      }]);
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
+  const handleConfirmPlan = async () => {
+    setIsSavingPlan(true);
+    try {
+      await coachAPI.generatePlan(7, true);
+      setPlanData(null);
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: 'Your training plan has been saved to the calendar! Check the Calendar page to see your upcoming workouts.',
+        created_at: new Date().toISOString(),
+      }]);
+    } catch (error) {
+      console.error('Failed to save plan:', error);
+    } finally {
+      setIsSavingPlan(false);
     }
   };
 
@@ -212,6 +252,55 @@ const Coach = () => {
         )}
       </div>
 
+      {/* Plan preview */}
+      {planData && (
+        <div className="mb-4 bg-white border-2 border-sage/30 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
+              Generated Plan
+            </h3>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sage/15 text-sage uppercase">Preview</span>
+          </div>
+          {planData.summary && (
+            <p className="text-sm text-text-secondary mb-3">{planData.summary}</p>
+          )}
+          <div className="space-y-2 max-h-[240px] overflow-y-auto">
+            {planData.plan?.map((entry, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-bg-elevated text-sm">
+                <span className="text-xs font-mono text-text-muted w-20 shrink-0">{entry.date}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  entry.workout_type === 'rest' ? 'bg-gray-100 text-gray-500' :
+                  entry.workout_type === 'easy' ? 'bg-sage/15 text-sage' :
+                  entry.workout_type === 'long' ? 'bg-navy/10 text-navy' :
+                  entry.workout_type === 'tempo' ? 'bg-amber/15 text-amber' :
+                  entry.workout_type === 'interval' ? 'bg-coral/15 text-coral' :
+                  'bg-gray-100 text-gray-600'
+                }`}>{entry.workout_type}</span>
+                <span className="font-medium text-text-primary truncate">{entry.title}</span>
+                {entry.distance_km > 0 && (
+                  <span className="text-xs font-mono text-text-muted ml-auto shrink-0">{(entry.distance_km * 0.621371).toFixed(1)} mi</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleConfirmPlan}
+              disabled={isSavingPlan}
+              className="btn btn-primary btn-sm"
+            >
+              {isSavingPlan ? 'Saving...' : 'Save to Calendar'}
+            </button>
+            <button
+              onClick={() => setPlanData(null)}
+              className="btn btn-ghost btn-sm"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="bg-white border-2 border-border rounded-xl p-3 shadow-sm">
         <div className="flex gap-2 items-end">
@@ -232,6 +321,23 @@ const Coach = () => {
             disabled={!inputValue.trim() || isLoading}
           >
             Send
+          </button>
+          <button
+            className="btn btn-outline px-4 py-2.5 text-[0.8125rem] font-medium"
+            onClick={handleGeneratePlan}
+            disabled={isGeneratingPlan || isLoading}
+            title="Generate a 7-day training plan"
+          >
+            {isGeneratingPlan ? (
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M7.76 7.76L4.93 4.93" />
+                </svg>
+                Planning...
+              </span>
+            ) : (
+              '📋 Plan'
+            )}
           </button>
         </div>
         <div className="coach-hint mt-1.5 text-xs text-text-muted">

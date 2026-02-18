@@ -101,6 +101,8 @@ type Activity struct {
 	StartDate          string  `json:"start_date"`         // ISO 8601 format
 	AverageHeartrate   float64 `json:"average_heartrate"`
 	MaxHeartrate       float64 `json:"max_heartrate"`
+	AverageCadence     float64 `json:"average_cadence"`
+	SufferScore        int     `json:"suffer_score"`
 }
 
 // GetActivities fetches recent activities for the authenticated athlete

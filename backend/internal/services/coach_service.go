@@ -19,14 +19,15 @@ import (
 
 // CoachService handles AI coaching logic
 type CoachService struct {
-	db           *database.DB
-	config       *config.Config
-	httpClient   *http.Client
-	goalsService *GoalsService
+	db              *database.DB
+	config          *config.Config
+	httpClient      *http.Client
+	goalsService    *GoalsService
+	calendarService *CalendarService
 }
 
 // NewCoachService creates a new coach service
-func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService) *CoachService {
+func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService) *CoachService {
 	if cfg.GeminiAPIKey != "" {
 		log.Printf("[Coach] Gemini API key configured (length: %d)", len(cfg.GeminiAPIKey))
 	} else if cfg.ClaudeAPIKey != "" {
@@ -36,10 +37,11 @@ func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsSer
 	}
 
 	return &CoachService{
-		db:           db,
-		config:       cfg,
-		httpClient:   &http.Client{Timeout: 60 * time.Second},
-		goalsService: goalsService,
+		db:              db,
+		config:          cfg,
+		httpClient:      &http.Client{Timeout: 60 * time.Second},
+		goalsService:    goalsService,
+		calendarService: calendarService,
 	}
 }
 
@@ -368,6 +370,94 @@ Target Time: %s`,
 		parts = append(parts, "Recent Training: No activities recorded in the last 14 days.")
 	}
 
+	// Weekly summaries (last 6 weeks)
+	var summaries []models.WeeklySummary
+	summaryQuery := `
+		SELECT * FROM weekly_summaries
+		WHERE user_id = $1
+		ORDER BY week_start DESC
+		LIMIT 6
+	`
+	err = s.db.SelectContext(ctx, &summaries, summaryQuery, userID)
+	if err == nil && len(summaries) > 0 {
+		weeklyInfo := "Weekly Summaries (recent weeks):"
+		for _, ws := range summaries {
+			distKm := ws.TotalDistanceMeters / 1000.0
+			longestKm := 0.0
+			if ws.LongestRunMeters != nil {
+				longestKm = *ws.LongestRunMeters / 1000.0
+			}
+			weeklyInfo += fmt.Sprintf("\n- Week of %s: %.1f km across %d runs, avg pace %.0f s/km, longest run %.1f km",
+				ws.WeekStart.Format("Jan 2"),
+				distKm,
+				ws.RunCount,
+				ws.AveragePaceSecondsPerKm,
+				longestKm,
+			)
+		}
+		parts = append(parts, weeklyInfo)
+
+		// Trend direction
+		if len(summaries) >= 2 {
+			thisWeek := summaries[0].TotalDistanceMeters
+			prevAvg := 0.0
+			for i := 1; i < len(summaries) && i <= 3; i++ {
+				prevAvg += summaries[i].TotalDistanceMeters
+			}
+			count := float64(len(summaries) - 1)
+			if count > 3 {
+				count = 3
+			}
+			if count > 0 {
+				prevAvg /= count
+			}
+			if prevAvg > 0 {
+				ratio := thisWeek / prevAvg
+				trend := "stable"
+				if ratio > 1.1 {
+					trend = "increasing"
+				} else if ratio < 0.8 {
+					trend = "decreasing"
+				}
+				parts = append(parts, fmt.Sprintf("Volume Trend: %s (this week %.1f km vs avg %.1f km)", trend, thisWeek/1000, prevAvg/1000))
+			}
+		}
+
+		// Consistency metric
+		consistentWeeks := 0
+		for i := 0; i < len(summaries) && i < 4; i++ {
+			if summaries[i].RunCount >= 3 {
+				consistentWeeks++
+			}
+		}
+		parts = append(parts, fmt.Sprintf("Consistency: %d out of last %d weeks had 3+ runs", consistentWeeks, min(len(summaries), 4)))
+	}
+
+	// Longest run in last 3 weeks
+	var longestRun float64
+	longestQuery := `SELECT COALESCE(MAX(distance_meters), 0) FROM activities WHERE user_id = $1 AND start_time >= NOW() - INTERVAL '21 days'`
+	_ = s.db.GetContext(ctx, &longestRun, longestQuery, userID)
+	if longestRun > 0 {
+		parts = append(parts, fmt.Sprintf("Longest Run (last 3 weeks): %.1f km", longestRun/1000))
+	}
+
+	// Upcoming calendar entries (next 7 days)
+	if s.calendarService != nil {
+		now := time.Now()
+		upcoming, calErr := s.calendarService.GetWeekEntries(ctx, userID, now)
+		if calErr == nil && len(upcoming) > 0 {
+			calInfo := "Upcoming Planned Workouts (next 7 days):"
+			for _, entry := range upcoming {
+				distInfo := ""
+				if entry.PlannedDistanceMeters != nil {
+					distInfo = fmt.Sprintf(", %.1f km", float64(*entry.PlannedDistanceMeters)/1000)
+				}
+				calInfo += fmt.Sprintf("\n- %s: %s (%s%s)", entry.Date.Format("Mon Jan 2"), entry.Title, entry.WorkoutType, distInfo)
+			}
+			parts = append(parts, calInfo)
+		}
+	}
+
 	contextStr := ""
 	for i, part := range parts {
 		if i > 0 {
@@ -377,6 +467,13 @@ Target Time: %s`,
 	}
 
 	return contextStr, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // formatTime formats seconds into HH:MM:SS
@@ -429,6 +526,152 @@ Rules:
 	}
 
 	return response, nil
+}
+
+// PlanEntry represents a single day's workout in a generated plan
+type PlanEntry struct {
+	Date         string `json:"date"`
+	WorkoutType  string `json:"workout_type"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	DistanceKm   float64 `json:"distance_km"`
+	PacePerKm    int     `json:"pace_per_km"`
+}
+
+// PlanResponse is the structured response from the AI for plan generation
+type PlanResponse struct {
+	Plan    []PlanEntry `json:"plan"`
+	Summary string      `json:"summary"`
+}
+
+// GeneratePlan generates a training plan and optionally writes it to the calendar
+func (s *CoachService) GeneratePlan(ctx context.Context, userID uuid.UUID, days int) (*PlanResponse, error) {
+	trainingContext, err := s.buildTrainingContext(ctx, userID)
+	if err != nil {
+		trainingContext = "No training data available yet."
+	}
+
+	if days <= 0 || days > 14 {
+		days = 7
+	}
+
+	// Build dates for the plan
+	now := time.Now()
+	dateList := ""
+	for i := 0; i < days; i++ {
+		d := now.AddDate(0, 0, i+1)
+		dateList += fmt.Sprintf("- %s (%s)\n", d.Format("2006-01-02"), d.Format("Monday"))
+	}
+
+	systemPrompt := fmt.Sprintf(`You are Korsana, an expert running coach. Generate a structured training plan.
+
+Runner's context:
+%s
+
+IMPORTANT: You MUST respond with ONLY a valid JSON object in this exact format, no markdown, no extra text:
+{
+  "plan": [
+    {
+      "date": "YYYY-MM-DD",
+      "workout_type": "easy|tempo|interval|long|recovery|rest|race|cross_train",
+      "title": "Workout Title",
+      "description": "Brief description of the workout",
+      "distance_km": 8.0,
+      "pace_per_km": 360
+    }
+  ],
+  "summary": "Brief 1-2 sentence summary of the plan"
+}
+
+Rules:
+- Generate exactly one entry per date listed below
+- Use appropriate workout_type values
+- distance_km should be 0 for rest days
+- pace_per_km is in seconds (e.g., 360 = 6:00/km)
+- Balance easy/hard days (80/20 rule)
+- Include at least 1 rest day per week
+- Adapt to the runner's current fitness level and goal
+
+Dates to plan:
+%s`, trainingContext, dateList)
+
+	messages := []ChatMessage{
+		{Role: "user", Content: fmt.Sprintf("Generate a %d-day training plan for me starting tomorrow. Respond with ONLY the JSON.", days)},
+	}
+
+	var response string
+	if s.config.GeminiAPIKey != "" {
+		response, err = s.callGeminiAPI(messages, systemPrompt)
+	} else if s.config.ClaudeAPIKey != "" {
+		response, err = s.callClaudeAPI(messages, systemPrompt)
+	} else {
+		return nil, errors.New("no AI API key configured")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Strip markdown code fences if present
+	response = stripCodeFences(response)
+
+	// Parse JSON response
+	var planResp PlanResponse
+	if err := json.Unmarshal([]byte(response), &planResp); err != nil {
+		log.Printf("[Coach] Failed to parse plan JSON: %v\nRaw response: %s", err, response)
+		return nil, fmt.Errorf("failed to parse AI plan response: %v", err)
+	}
+
+	return &planResp, nil
+}
+
+// WritePlanToCalendar writes a generated plan to the training calendar
+func (s *CoachService) WritePlanToCalendar(ctx context.Context, userID uuid.UUID, plan []PlanEntry) error {
+	if s.calendarService == nil {
+		return errors.New("calendar service not available")
+	}
+
+	for _, entry := range plan {
+		entryDate, err := time.Parse("2006-01-02", entry.Date)
+		if err != nil {
+			continue
+		}
+
+		distMeters := int(entry.DistanceKm * 1000)
+		desc := entry.Description
+
+		calEntry := &models.CalendarEntry{
+			Date:                  entryDate,
+			WorkoutType:           entry.WorkoutType,
+			Title:                 entry.Title,
+			Description:           &desc,
+			PlannedDistanceMeters: &distMeters,
+			PlannedPacePerKm:      &entry.PacePerKm,
+			Status:                "planned",
+			Source:                "ai_coach",
+		}
+
+		if _, err := s.calendarService.UpsertEntry(ctx, userID, calEntry); err != nil {
+			log.Printf("[Coach] Failed to write calendar entry for %s: %v", entry.Date, err)
+		}
+	}
+
+	return nil
+}
+
+// stripCodeFences removes markdown code fences from AI responses
+func stripCodeFences(s string) string {
+	// Remove ```json ... ``` or ``` ... ```
+	result := s
+	for _, prefix := range []string{"```json\n", "```json", "```\n", "```"} {
+		if len(result) > len(prefix) && result[:len(prefix)] == prefix {
+			result = result[len(prefix):]
+			break
+		}
+	}
+	if len(result) > 3 && result[len(result)-3:] == "```" {
+		result = result[:len(result)-3]
+	}
+	return result
 }
 
 // GetConversationHistory retrieves the conversation history for a user

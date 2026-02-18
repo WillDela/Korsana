@@ -23,8 +23,7 @@ const Landing = () => {
                 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-text-primary mb-6"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
-                Train with <span className="text-navy">purpose</span>.<br />
-                Race with <span className="text-sage">confidence</span>.
+                Your plan, our <span className="text-navy">goal</span>.
               </motion.h1>
 
               <motion.p
@@ -112,17 +111,36 @@ const Landing = () => {
               </div>
             </motion.div>
           </div>
+
+          {/* Social proof strip */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="flex gap-8 mt-12 pt-8 border-t border-border-light"
+          >
+            {[
+              { value: '10,000+', label: 'Miles Tracked' },
+              { value: '2,500+', label: 'Athletes' },
+              { value: '98%', label: 'PR Rate' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <span className="text-xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-mono)' }}>{stat.value}</span>
+                <span className="text-xs text-text-muted uppercase tracking-wider ml-2">{stat.label}</span>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="section-padding">
+      {/* How It Works — deep blue gradient */}
+      <section id="how-it-works" className="py-16 md:py-20" style={{ background: 'linear-gradient(135deg, #1B2559 0%, #2a3a7c 100%)' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-xl mx-auto mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
               Three steps to race day
             </h2>
-            <p className="text-text-secondary text-lg">From data to finish line — no guesswork.</p>
+            <p className="text-white/70 text-lg">From data to finish line — no guesswork.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -131,19 +149,16 @@ const Landing = () => {
                 step: '01',
                 title: 'Connect Strava',
                 desc: 'Import your running history with one click. We analyze your fitness baseline.',
-                color: 'bg-navy',
               },
               {
                 step: '02',
                 title: 'Set Your Goal',
                 desc: 'Pick your race, date, distance, and target time. We build the plan.',
-                color: 'bg-sage',
               },
               {
                 step: '03',
                 title: 'Train Smart',
                 desc: 'Follow daily workouts with AI coaching that adapts to your progress.',
-                color: 'bg-coral',
               },
             ].map((item, i) => (
               <motion.div
@@ -152,13 +167,13 @@ const Landing = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="bg-white rounded-xl border border-border p-6 md:p-8"
+                className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-6 md:p-8"
               >
-                <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center mb-5`}>
+                <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center mb-5">
                   <span className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-mono)' }}>{item.step}</span>
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{item.title}</h3>
-                <p className="text-text-secondary leading-relaxed">{item.desc}</p>
+                <h3 className="text-lg font-semibold text-white mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{item.title}</h3>
+                <p className="text-white/70 leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
