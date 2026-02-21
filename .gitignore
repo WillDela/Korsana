@@ -44,3 +44,4 @@ postgres_data/
 redis_data/
 
 extras
+claude-code-config
