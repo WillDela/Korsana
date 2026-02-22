@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/korsana/backend/internal/services"
 )
 
 type GoalsHandler struct {
@@ -20,8 +20,8 @@ func NewGoalsHandler(goalsService *services.GoalsService) *GoalsHandler {
 }
 
 type createGoalRequest struct {
-	RaceName          string `json:"race_name" binding:"required"`
-	RaceDate          string `json:"race_date" binding:"required"` // Format: "2026-01-26"
+	RaceName          string  `json:"race_name" binding:"required"`
+	RaceDate          string  `json:"race_date" binding:"required"` // Format: "2026-01-26"
 	RaceDistanceKm    float64 `json:"race_distance_km" binding:"required"`
 	TargetTimeSeconds *int    `json:"target_time_seconds"`
 	GoalType          string  `json:"goal_type" binding:"required"` // "finish", "time", "pr"
@@ -45,6 +45,24 @@ func (h *GoalsHandler) CreateGoal(c *gin.Context) {
 	raceDate, err := time.Parse("2006-01-02", req.RaceDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
+		return
+	}
+
+	if req.RaceName == "" || len(req.RaceName) > 255 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "race name is required (max 255 chars)"})
+		return
+	}
+	if req.RaceDistanceKm <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "distance must be positive"})
+		return
+	}
+	if req.TargetTimeSeconds != nil && *req.TargetTimeSeconds <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "target time must be positive"})
+		return
+	}
+	// Race date should be in the future (for new goals)
+	if raceDate.Before(time.Now().Truncate(24 * time.Hour)) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "race date must be in the future"})
 		return
 	}
 
@@ -126,8 +144,8 @@ func (h *GoalsHandler) GetGoal(c *gin.Context) {
 }
 
 type updateGoalRequest struct {
-	RaceName          string `json:"race_name" binding:"required"`
-	RaceDate          string `json:"race_date" binding:"required"`
+	RaceName          string  `json:"race_name" binding:"required"`
+	RaceDate          string  `json:"race_date" binding:"required"`
 	RaceDistanceKm    float64 `json:"race_distance_km" binding:"required"`
 	TargetTimeSeconds *int    `json:"target_time_seconds"`
 	GoalType          string  `json:"goal_type" binding:"required"`
@@ -156,6 +174,19 @@ func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
 	raceDate, err := time.Parse("2006-01-02", req.RaceDate)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
+		return
+	}
+
+	if req.RaceName == "" || len(req.RaceName) > 255 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "race name is required (max 255 chars)"})
+		return
+	}
+	if req.RaceDistanceKm <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "distance must be positive"})
+		return
+	}
+	if req.TargetTimeSeconds != nil && *req.TargetTimeSeconds <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "target time must be positive"})
 		return
 	}
 

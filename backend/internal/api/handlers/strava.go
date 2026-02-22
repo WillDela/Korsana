@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
-	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/korsana/backend/internal/services"
 )
 
 type StravaHandler struct {
@@ -99,7 +100,18 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	activities, err := h.stravaService.GetUserActivities(c.Request.Context(), userID, 20)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "30"))
+
+	if perPage > 100 {
+		perPage = 100
+	}
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * perPage
+
+	activities, total, err := h.stravaService.GetUserActivities(c.Request.Context(), userID, perPage, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -107,5 +119,8 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"activities": activities,
+		"total":      total,
+		"page":       page,
+		"per_page":   perPage,
 	})
 }

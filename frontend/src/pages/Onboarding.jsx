@@ -125,11 +125,10 @@ const Onboarding = () => {
           {['Welcome', 'Connect', 'Goal', 'Ready'].map((label, i) => (
             <span
               key={label}
-              className={`text-xs transition-colors ${
-                i <= step
+              className={`text-xs transition-colors ${i <= step
                   ? 'font-semibold text-navy'
                   : 'font-normal text-text-muted'
-              }`}
+                }`}
             >
               {label}
             </span>
@@ -213,7 +212,7 @@ const Onboarding = () => {
                   disabled={connectingStrava}
                   className="btn w-full py-3 mb-4 font-semibold text-white border-none"
                   style={{
-                    background: '#FC4C02',
+                    background: 'var(--color-strava)',
                     opacity: connectingStrava ? 0.7 : 1,
                   }}
                 >
@@ -288,11 +287,10 @@ const Onboarding = () => {
                         key={d.label}
                         type="button"
                         onClick={() => { setSelectedDistance(d.label); setCustomDistance(''); }}
-                        className={`btn text-sm py-2 ${
-                          selectedDistance === d.label
+                        className={`btn text-sm py-2 ${selectedDistance === d.label
                             ? 'bg-navy text-white font-semibold border-navy'
                             : 'bg-bg-elevated text-text-primary border border-border'
-                        }`}
+                          }`}
                       >
                         {d.label}
                       </button>
@@ -320,11 +318,10 @@ const Onboarding = () => {
                         key={gt.value}
                         type="button"
                         onClick={() => setGoalType(gt.value)}
-                        className={`btn flex-1 text-sm py-2 ${
-                          goalType === gt.value
+                        className={`btn flex-1 text-sm py-2 ${goalType === gt.value
                             ? 'bg-navy text-white font-semibold border-navy'
                             : 'bg-bg-elevated text-text-primary border border-border'
-                        }`}
+                          }`}
                       >
                         {gt.label}
                       </button>

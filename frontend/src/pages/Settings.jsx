@@ -167,7 +167,7 @@ const Settings = () => {
           {/* Strava Connection Section */}
           <div className="card">
             <div className="flex items-center gap-2 mb-6">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-strava)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
@@ -178,9 +178,8 @@ const Settings = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`rounded-lg px-4 py-3 mb-4 text-sm font-medium text-white ${
-                  stravaMessage.type === 'success' ? 'bg-success' : 'bg-error'
-                }`}
+                className={`rounded-lg px-4 py-3 mb-4 text-sm font-medium text-white ${stravaMessage.type === 'success' ? 'bg-success' : 'bg-error'
+                  }`}
               >
                 {stravaMessage.text}
               </motion.div>
@@ -207,7 +206,7 @@ const Settings = () => {
                   className="btn text-sm font-semibold text-white border-none"
                   onClick={handleConnectStrava}
                   disabled={connectingStrava}
-                  style={{ background: '#FC4C02' }}
+                  style={{ background: 'var(--color-strava)' }}
                 >
                   {connectingStrava ? 'Connecting...' : 'Connect Strava'}
                 </button>

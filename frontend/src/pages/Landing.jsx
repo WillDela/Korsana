@@ -21,9 +21,9 @@ const Landing = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-text-primary mb-6"
-                style={{ fontFamily: 'var(--font-heading)' }}
+                style={{ fontFamily: 'var(--font-serif, var(--font-heading))' }}
               >
-                Your plan, our <span className="text-navy">goal</span>.
+                Your <span className="text-navy">plan</span>, our <span className="text-coral">goal</span>.
               </motion.h1>
 
               <motion.p
@@ -134,7 +134,7 @@ const Landing = () => {
       </section>
 
       {/* How It Works — deep blue gradient */}
-      <section id="how-it-works" className="py-16 md:py-20" style={{ background: 'linear-gradient(135deg, #1B2559 0%, #2a3a7c 100%)' }}>
+      <section id="how-it-works" className="py-16 md:py-20 bg-navy">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-xl mx-auto mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -152,12 +152,12 @@ const Landing = () => {
               },
               {
                 step: '02',
-                title: 'Set Your Goal',
+                title: 'Set Race Goal',
                 desc: 'Pick your race, date, distance, and target time. We build the plan.',
               },
               {
                 step: '03',
-                title: 'Train Smart',
+                title: 'Train with AI Coach',
                 desc: 'Follow daily workouts with AI coaching that adapts to your progress.',
               },
             ].map((item, i) => (
@@ -233,11 +233,14 @@ const Landing = () => {
       <footer className="bg-navy py-12 border-t border-navy-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-white/15 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs">K</span>
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 bg-white/15 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">K</span>
+                </div>
+                <span className="text-white font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
               </div>
-              <span className="text-white font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
+              <span className="text-white/60 text-sm mt-1">Your plan, our goal.</span>
             </div>
             <div className="flex gap-6 text-sm text-white/60">
               <Link to="/" className="hover:text-white transition-colors no-underline">Home</Link>

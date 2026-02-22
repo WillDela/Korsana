@@ -27,6 +27,9 @@ type Config struct {
 	ClaudeAPIKey string
 	GeminiAPIKey string
 
+	// CORS
+	AllowedOrigins string
+
 	// Environment
 	Environment string // "development", "production"
 }
@@ -43,6 +46,7 @@ func Load() *Config {
 		StravaRedirectURI:  getEnv("STRAVA_REDIRECT_URI", "http://localhost:8080/api/strava/callback"),
 		ClaudeAPIKey:       getEnv("CLAUDE_API_KEY", ""),
 		GeminiAPIKey:       getEnv("GEMINI_API_KEY", ""),
+		AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "http://localhost:5173"),
 		Environment:        getEnv("ENVIRONMENT", "development"),
 	}
 }

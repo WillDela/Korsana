@@ -14,8 +14,8 @@ export const stravaAPI = {
   },
 
   // Get user's activities
-  getActivities: async () => {
-    const response = await api.get('/strava/activities');
+  getActivities: async (page = 1, perPage = 30) => {
+    const response = await api.get(`/strava/activities?page=${page}&per_page=${perPage}`);
     return response.data;
   },
 };

@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
 	"github.com/korsana/backend/pkg/strava"
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -324,9 +324,15 @@ func (s *StravaService) computeWeeklySummaries(ctx context.Context, userID uuid.
 }
 
 // GetUserActivities retrieves activities for a user
-func (s *StravaService) GetUserActivities(ctx context.Context, userID uuid.UUID, limit int) ([]models.Activity, error) {
-	if limit == 0 {
-		limit = 20
+func (s *StravaService) GetUserActivities(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Activity, int, error) {
+	if limit <= 0 {
+		limit = 30
+	}
+
+	var total int
+	err := s.db.GetContext(ctx, &total, "SELECT COUNT(*) FROM activities WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	var activities []models.Activity
@@ -334,12 +340,12 @@ func (s *StravaService) GetUserActivities(ctx context.Context, userID uuid.UUID,
 		SELECT * FROM activities
 		WHERE user_id = $1
 		ORDER BY start_time DESC
-		LIMIT $2
+		LIMIT $2 OFFSET $3
 	`
-	err := s.db.SelectContext(ctx, &activities, query, userID, limit)
+	err = s.db.SelectContext(ctx, &activities, query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return activities, nil
+	return activities, total, nil
 }

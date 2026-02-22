@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/korsana/backend/internal/api/handlers"
@@ -59,10 +60,14 @@ func main() {
 	r := gin.Default()
 
 	// CORS Configuration
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:5173"} // Frontend URL
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
-	r.Use(cors.New(config))
+	corsConfig := cors.DefaultConfig()
+	origins := strings.Split(cfg.AllowedOrigins, ",")
+	for i := range origins {
+		origins[i] = strings.TrimSpace(origins[i])
+	}
+	corsConfig.AllowOrigins = origins
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	r.Use(cors.New(corsConfig))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {

@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
-	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/korsana/backend/internal/services"
 )
 
 type AuthHandler struct {
@@ -27,6 +28,15 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 	var req signupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !strings.Contains(req.Email, "@") || !strings.Contains(req.Email, ".") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email format"})
+		return
+	}
+	if len(req.Password) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 6 characters"})
 		return
 	}
 

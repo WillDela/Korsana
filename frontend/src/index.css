@@ -22,6 +22,7 @@
   --color-coral-light: #FFF0ED;
   --color-amber:       #E5A830;
   --color-amber-light: #FFF8E8;
+  --color-strava:      #FC4C02;
 
   /* Surfaces */
   --color-bg-app:      #F5F6FA;
@@ -77,6 +78,7 @@
 
   --color-border: #E1E4ED;
   --color-border-light: #ECEEF5;
+  --color-strava: #FC4C02;
 }
 
 /* ============================================

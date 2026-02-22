@@ -105,6 +105,16 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 		return
 	}
 
+	if req.Title == "" || len(req.Title) > 255 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "title is required (max 255 chars)"})
+		return
+	}
+
+	if req.PlannedDistanceMeters != nil && *req.PlannedDistanceMeters < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "planned distance cannot be negative"})
+		return
+	}
+
 	status := req.Status
 	if status == "" {
 		status = "planned"

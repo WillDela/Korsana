@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
-	"github.com/google/uuid"
 )
 
 // CoachService handles AI coaching logic
@@ -276,7 +276,7 @@ func (s *CoachService) callGeminiAPI(messages []ChatMessage, systemPrompt string
 		return "", err
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", s.config.GeminiAPIKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s", s.config.GeminiAPIKey)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", err
@@ -530,12 +530,12 @@ Rules:
 
 // PlanEntry represents a single day's workout in a generated plan
 type PlanEntry struct {
-	Date         string `json:"date"`
-	WorkoutType  string `json:"workout_type"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	DistanceKm   float64 `json:"distance_km"`
-	PacePerKm    int     `json:"pace_per_km"`
+	Date        string  `json:"date"`
+	WorkoutType string  `json:"workout_type"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	DistanceKm  float64 `json:"distance_km"`
+	PacePerKm   int     `json:"pace_per_km"`
 }
 
 // PlanResponse is the structured response from the AI for plan generation

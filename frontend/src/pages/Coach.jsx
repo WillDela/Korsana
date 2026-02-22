@@ -186,28 +186,25 @@ const Coach = () => {
               >
                 {/* Avatar */}
                 <div
-                  className={`coach-msg-avatar rounded-full text-white flex items-center justify-center text-sm font-semibold shrink-0 ${
-                    message.role === 'user' ? 'bg-navy' : 'bg-sage'
-                  }`}
+                  className={`coach-msg-avatar rounded-full text-white flex items-center justify-center text-sm font-semibold shrink-0 ${message.role === 'user' ? 'bg-navy' : 'bg-sage'
+                    }`}
                 >
                   {message.role === 'user' ? user?.email?.[0].toUpperCase() : 'K'}
                 </div>
 
                 {/* Message bubble */}
                 <div
-                  className={`coach-msg-bubble px-4 py-3 shadow-sm ${
-                    message.role === 'user'
+                  className={`coach-msg-bubble px-4 py-3 shadow-sm ${message.role === 'user'
                       ? 'bg-navy text-white rounded-2xl rounded-br-none'
                       : 'bg-white text-text-primary border border-border rounded-2xl rounded-bl-none'
-                  }`}
+                    }`}
                 >
                   <p className="leading-relaxed text-[0.9375rem] whitespace-pre-wrap m-0">
                     {message.content}
                   </p>
                   <div
-                    className={`text-xs mt-2 opacity-70 ${
-                      message.role === 'user' ? 'text-right' : 'text-left'
-                    }`}
+                    className={`text-xs mt-2 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'
+                      }`}
                   >
                     {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -268,14 +265,13 @@ const Coach = () => {
             {planData.plan?.map((entry, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-bg-elevated text-sm">
                 <span className="text-xs font-mono text-text-muted w-20 shrink-0">{entry.date}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                  entry.workout_type === 'rest' ? 'bg-gray-100 text-gray-500' :
-                  entry.workout_type === 'easy' ? 'bg-sage/15 text-sage' :
-                  entry.workout_type === 'long' ? 'bg-navy/10 text-navy' :
-                  entry.workout_type === 'tempo' ? 'bg-amber/15 text-amber' :
-                  entry.workout_type === 'interval' ? 'bg-coral/15 text-coral' :
-                  'bg-gray-100 text-gray-600'
-                }`}>{entry.workout_type}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${entry.workout_type === 'rest' ? 'bg-gray-100 text-gray-500' :
+                    entry.workout_type === 'easy' ? 'bg-sage/15 text-sage' :
+                      entry.workout_type === 'long' ? 'bg-navy/10 text-navy' :
+                        entry.workout_type === 'tempo' ? 'bg-amber/15 text-amber' :
+                          entry.workout_type === 'interval' ? 'bg-coral/15 text-coral' :
+                            'bg-gray-100 text-gray-600'
+                  }`}>{entry.workout_type}</span>
                 <span className="font-medium text-text-primary truncate">{entry.title}</span>
                 {entry.distance_km > 0 && (
                   <span className="text-xs font-mono text-text-muted ml-auto shrink-0">{(entry.distance_km * 0.621371).toFixed(1)} mi</span>
@@ -312,7 +308,7 @@ const Coach = () => {
             placeholder="Ask your coach anything..."
             disabled={isLoading}
             className="flex-1 px-2.5 py-2 border-none outline-none text-[0.9375rem] resize-none min-h-[44px] max-h-[120px] bg-transparent text-text-primary"
-            style={{ fontFamily: 'var(--font-sans)' }}
+            style={{ fontFamily: 'var(--font-heading)' }}
             rows={1}
           />
           <button
