@@ -164,14 +164,14 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Strava Connection Section */}
+          {/* Connections Section */}
           <div className="card">
             <div className="flex items-center gap-2 mb-6">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-strava)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                <polyline points="17 2 12 7 7 2" />
               </svg>
-              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Strava Connection</h2>
+              <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Connections</h2>
             </div>
 
             {stravaMessage.text && (
@@ -200,16 +200,38 @@ const Settings = () => {
             ) : (
               <div>
                 <p className="text-sm text-text-secondary mb-4 leading-relaxed">
-                  Connect your Strava account to sync your running activities and get personalized coaching.
+                  Connect your accounts to sync your running activities and get personalized coaching.
                 </p>
-                <button
-                  className="btn text-sm font-semibold text-white border-none"
-                  onClick={handleConnectStrava}
-                  disabled={connectingStrava}
-                  style={{ background: 'var(--color-strava)' }}
-                >
-                  {connectingStrava ? 'Connecting...' : 'Connect Strava'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    className="btn text-sm font-semibold text-white border-none flex-1"
+                    onClick={handleConnectStrava}
+                    disabled={connectingStrava}
+                    style={{ background: 'var(--color-strava)' }}
+                  >
+                    {connectingStrava ? 'Connecting...' : 'Connect Strava'}
+                  </button>
+                  <button
+                    className="btn text-sm font-semibold text-white border-none flex-1 opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled
+                    style={{ background: 'var(--color-garmin)' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M11.967 0L19.5 4.35V13.05L11.967 17.4L4.433 13.05V4.35L11.967 0ZM11.967 2.053L6.2 5.38V12.033L11.967 15.36L17.734 12.033V5.38L11.967 2.053ZM11.967 7.2L16.2 9.64V14.5L11.967 16.94L7.734 14.5V9.64L11.967 7.2ZM11.967 24L8.334 21.9L11.967 19.8L15.6 21.9L11.967 24Z" />
+                    </svg>
+                    Garmin (Soon)
+                  </button>
+                  <button
+                    className="btn text-sm font-semibold text-white border-none flex-1 opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled
+                    style={{ background: 'var(--color-coros)' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12c0 6.627 5.373 12 12 12 6.627 0 12-5.373 12-12C24 5.373 18.627 0 12 0zm0 17.5c-3.038 0-5.5-2.462-5.5-5.5S8.962 6.5 12 6.5s5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9.5c-2.206 0-4 1.794-4 4s1.794 4 4 4 4-1.794 4-4-1.794-4-4-4z" />
+                    </svg>
+                    Coros (Soon)
+                  </button>
+                </div>
               </div>
             )}
           </div>

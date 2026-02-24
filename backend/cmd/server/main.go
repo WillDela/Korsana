@@ -57,6 +57,9 @@ func main() {
 	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService)
 
 	// 6. Setup Router
+	if cfg.Environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.Default()
 
 	// CORS Configuration

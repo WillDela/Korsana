@@ -2,7 +2,7 @@ import TrainingBlock from '../components/TrainingBlock';
 
 const Calendar = () => {
   return (
-    <div className="bg-white border border-border rounded-xl p-6">
+    <div className="card">
       <TrainingBlock />
     </div>
   );

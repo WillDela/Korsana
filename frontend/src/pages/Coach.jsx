@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';
 import { getErrorMessage } from '../api/client';
+import ReactMarkdown from 'react-markdown';
 
 const Coach = () => {
   const { user } = useAuth();
@@ -195,13 +196,29 @@ const Coach = () => {
                 {/* Message bubble */}
                 <div
                   className={`coach-msg-bubble px-4 py-3 shadow-sm ${message.role === 'user'
-                      ? 'bg-navy text-white rounded-2xl rounded-br-none'
-                      : 'bg-white text-text-primary border border-border rounded-2xl rounded-bl-none'
+                    ? 'bg-navy text-white rounded-2xl rounded-br-none'
+                    : 'bg-white text-text-primary border border-border rounded-2xl rounded-bl-none'
                     }`}
                 >
-                  <p className="leading-relaxed text-[0.9375rem] whitespace-pre-wrap m-0">
-                    {message.content}
-                  </p>
+                  {message.role === 'user' ? (
+                    <p className="leading-relaxed text-[0.9375rem] whitespace-pre-wrap m-0">
+                      {message.content}
+                    </p>
+                  ) : (
+                    <ReactMarkdown
+                      className="leading-relaxed text-[0.9375rem] space-y-3"
+                      components={{
+                        p: ({ node, ...props }) => <p className="m-0 whitespace-pre-wrap" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 m-0 space-y-1" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 m-0 space-y-1" {...props} />,
+                        li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                        strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2" {...props} />,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
                   <div
                     className={`text-xs mt-2 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'
                       }`}
@@ -266,11 +283,11 @@ const Coach = () => {
               <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-bg-elevated text-sm">
                 <span className="text-xs font-mono text-text-muted w-20 shrink-0">{entry.date}</span>
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${entry.workout_type === 'rest' ? 'bg-gray-100 text-gray-500' :
-                    entry.workout_type === 'easy' ? 'bg-sage/15 text-sage' :
-                      entry.workout_type === 'long' ? 'bg-navy/10 text-navy' :
-                        entry.workout_type === 'tempo' ? 'bg-amber/15 text-amber' :
-                          entry.workout_type === 'interval' ? 'bg-coral/15 text-coral' :
-                            'bg-gray-100 text-gray-600'
+                  entry.workout_type === 'easy' ? 'bg-sage/15 text-sage' :
+                    entry.workout_type === 'long' ? 'bg-navy/10 text-navy' :
+                      entry.workout_type === 'tempo' ? 'bg-amber/15 text-amber' :
+                        entry.workout_type === 'interval' ? 'bg-coral/15 text-coral' :
+                          'bg-gray-100 text-gray-600'
                   }`}>{entry.workout_type}</span>
                 <span className="font-medium text-text-primary truncate">{entry.title}</span>
                 {entry.distance_km > 0 && (

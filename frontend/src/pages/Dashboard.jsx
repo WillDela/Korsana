@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [syncError, setSyncError] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState('');
+  const [isSyncMenuOpen, setIsSyncMenuOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -117,7 +118,14 @@ const Dashboard = () => {
     }
   };
 
-  const handleSyncActivities = async () => {
+  const handleSyncActivities = async (provider = 'strava') => {
+    setIsSyncMenuOpen(false);
+    if (provider !== 'strava') {
+      setSyncError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} integration coming soon!`);
+      setTimeout(() => setSyncError(''), 3000);
+      return;
+    }
+
     try {
       setSyncError('');
       setSyncSuccess('');
@@ -370,17 +378,49 @@ const Dashboard = () => {
             </span>
           )}
           {syncError && <span className="text-xs font-medium text-error">{syncError}</span>}
-          <button
-            onClick={handleSyncActivities}
-            disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy-light transition-colors cursor-pointer border-none disabled:opacity-60"
-          >
-            <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            {isSyncing ? 'Syncing...' : 'Sync Activities'}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsSyncMenuOpen(!isSyncMenuOpen)}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy-light transition-colors cursor-pointer border-none disabled:opacity-60"
+            >
+              <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              {isSyncing ? 'Syncing...' : 'Sync Activities'}
+              <svg className="w-4 h-4 ml-1 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
+
+            {isSyncMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsSyncMenuOpen(false)}></div>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border z-20 py-1 overflow-hidden">
+                  <button
+                    onClick={() => handleSyncActivities('strava')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-strava)' }}></div>
+                    Sync Strava
+                  </button>
+                  <button
+                    onClick={() => handleSyncActivities('garmin')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-garmin)' }}></div>
+                    Sync Garmin
+                  </button>
+                  <button
+                    onClick={() => handleSyncActivities('coros')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-coros)' }}></div>
+                    Sync Coros
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -388,7 +428,7 @@ const Dashboard = () => {
       <ActiveGoalBanner goal={activeGoal} loading={loadingGoal} trainingProgress={trainingProgress} />
 
       {/* Row 2: Calendar Strip */}
-      <section className="mt-6 bg-white rounded-xl border border-border p-5">
+      <section className="mt-6 card p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>This Week</h3>
           <Link to="/calendar" className="text-xs font-medium text-navy hover:text-navy-light transition-colors no-underline">
@@ -451,7 +491,7 @@ const Dashboard = () => {
 
       {/* Row 6: Volume Trend + Recent Activities */}
       <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
-        <div className="lg:col-span-3 bg-white rounded-xl border border-border p-5">
+        <div className="lg:col-span-3 card p-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
             Weekly Volume
           </h3>
