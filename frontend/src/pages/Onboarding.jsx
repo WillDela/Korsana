@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { stravaAPI } from '../api/strava';
 import { goalsAPI } from '../api/goals';
+import BrandIcon from '../components/BrandIcon';
 
 const DISTANCES = [
   { label: '5K', km: 5 },
@@ -224,9 +225,7 @@ const Onboarding = () => {
                     className="w-full flex items-center justify-center gap-2 py-3 font-semibold text-white border-none opacity-50 cursor-not-allowed rounded-lg"
                     style={{ background: 'var(--color-garmin)' }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11.967 0L19.5 4.35V13.05L11.967 17.4L4.433 13.05V4.35L11.967 0ZM11.967 2.053L6.2 5.38V12.033L11.967 15.36L17.734 12.033V5.38L11.967 2.053ZM11.967 7.2L16.2 9.64V14.5L11.967 16.94L7.734 14.5V9.64L11.967 7.2ZM11.967 24L8.334 21.9L11.967 19.8L15.6 21.9L11.967 24Z" />
-                    </svg>
+                    <BrandIcon brand="garmin" size={18} />
                     Connect Garmin (Soon)
                   </button>
                   <button
@@ -234,9 +233,7 @@ const Onboarding = () => {
                     className="w-full flex items-center justify-center gap-2 py-3 font-semibold text-white border-none opacity-50 cursor-not-allowed rounded-lg"
                     style={{ background: 'var(--color-coros)' }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 0C5.373 0 0 5.373 0 12c0 6.627 5.373 12 12 12 6.627 0 12-5.373 12-12C24 5.373 18.627 0 12 0zm0 17.5c-3.038 0-5.5-2.462-5.5-5.5S8.962 6.5 12 6.5s5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9.5c-2.206 0-4 1.794-4 4s1.794 4 4 4 4-1.794 4-4-1.794-4-4-4z" />
-                    </svg>
+                    <BrandIcon brand="coros" size={18} />
                     Connect Coros (Soon)
                   </button>
                 </div>

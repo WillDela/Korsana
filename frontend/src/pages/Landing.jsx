@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import BrandIcon from '../components/BrandIcon';
 
 /* ─── Marathon Majors data ─────────────────────────────────────── */
 const MAJORS = [
@@ -252,14 +253,6 @@ const Landing = () => {
               <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>500+</span>
               <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Miles Analyzed</span>
             </div>
-            <div className="flex items-center gap-3">
-              {/* Strava badge */}
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-bg-app">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
-                <span className="text-xs font-bold text-navy font-mono">Strava Connected</span>
-              </div>
-              <span className="text-xs text-text-muted font-mono">Coros · Garmin <span className="text-amber font-bold">(soon)</span></span>
-            </div>
           </motion.div>
         </div>
       </section>
@@ -495,7 +488,7 @@ const Landing = () => {
                 {/* Strava - live */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-bg-app">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border shadow-sm flex items-center justify-center shrink-0">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
+                    <BrandIcon brand="strava" size={24} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -509,7 +502,7 @@ const Landing = () => {
                 {/* Garmin - coming soon */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border-light bg-bg-app opacity-70">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border-light shadow-sm flex items-center justify-center shrink-0">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#007CC3"><path d="M11.967 0L19.5 4.35V13.05L11.967 17.4L4.433 13.05V4.35L11.967 0ZM11.967 2.053L6.2 5.38V12.033L11.967 15.36L17.734 12.033V5.38L11.967 2.053Z" /></svg>
+                    <BrandIcon brand="garmin" size={32} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -523,7 +516,7 @@ const Landing = () => {
                 {/* Coros - coming soon */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border-light bg-bg-app opacity-70">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border-light shadow-sm flex items-center justify-center shrink-0">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12a4 4 0 0 1 8 0" /></svg>
+                    <BrandIcon brand="coros" size={48} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -546,14 +539,14 @@ const Landing = () => {
             >
               <div className="w-full max-w-[360px] bg-bg-app rounded-2xl border border-border p-8 shadow-lg text-center">
                 <div className="w-16 h-16 rounded-2xl bg-[#FC4C02]/10 border border-[#FC4C02]/20 flex items-center justify-center mx-auto mb-6">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
+                  <BrandIcon brand="strava" size={32} />
                 </div>
                 <h3 className="text-lg font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Connect with Strava</h3>
                 <p className="text-sm text-text-secondary mb-6 leading-relaxed">
                   One click. Korsana reads your history and starts building your plan immediately.
                 </p>
                 <button className="w-full btn bg-[#FC4C02] hover:bg-[#e04400] text-white btn-md border-none transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
+                  <BrandIcon brand="strava" size={16} />
                   Connect Strava
                 </button>
                 <p className="text-[10px] font-mono text-text-muted mt-4 uppercase tracking-widest">Read-only access · We never post on your behalf</p>
@@ -667,17 +660,17 @@ const Landing = () => {
               <p className="text-xs font-mono font-bold text-text-muted uppercase tracking-widest mb-4">Integrations</p>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
+                  <BrandIcon brand="strava" size={13} />
                   <span className="text-sm text-text-secondary">Strava</span>
                   <span className="text-[10px] font-mono font-bold text-sage ml-auto">Live</span>
                 </div>
                 <div className="flex items-center gap-2 opacity-50">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#007CC3"><path d="M11.967 0L19.5 4.35V13.05L11.967 17.4L4.433 13.05V4.35L11.967 0ZM11.967 2.053L6.2 5.38V12.033L11.967 15.36L17.734 12.033V5.38L11.967 2.053Z" /></svg>
+                  <BrandIcon brand="garmin" size={13} />
                   <span className="text-sm text-text-secondary">Garmin</span>
                   <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
                 </div>
                 <div className="flex items-center gap-2 opacity-50">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12a4 4 0 0 1 8 0" /></svg>
+                  <BrandIcon brand="coros" size={13} />
                   <span className="text-sm text-text-secondary">Coros</span>
                   <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
                 </div>

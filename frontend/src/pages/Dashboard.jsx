@@ -8,6 +8,7 @@ import { getErrorMessage } from '../api/client';
 import WeekCalendar from '../components/WeekCalendar';
 import ActiveGoalBanner from '../components/ActiveGoalBanner';
 import MetricCard from '../components/MetricCard';
+import BrandIcon from '../components/BrandIcon';
 import ReadinessGauge from '../components/ReadinessGauge';
 import PaceEngineer from '../components/PaceEngineer';
 import PhysiologyZones from '../components/PhysiologyZones';
@@ -400,21 +401,21 @@ const Dashboard = () => {
                     onClick={() => handleSyncActivities('strava')}
                     className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
                   >
-                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-strava)' }}></div>
+                    <BrandIcon brand="strava" size={18} />
                     Sync Strava
                   </button>
                   <button
                     onClick={() => handleSyncActivities('garmin')}
-                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent opacity-50"
                   >
-                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-garmin)' }}></div>
+                    <BrandIcon brand="garmin" size={18} />
                     Sync Garmin
                   </button>
                   <button
                     onClick={() => handleSyncActivities('coros')}
-                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent"
+                    className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-bg-app flex items-center gap-2 cursor-pointer border-none bg-transparent opacity-50"
                   >
-                    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-coros)' }}></div>
+                    <BrandIcon brand="coros" size={22} />
                     Sync Coros
                   </button>
                 </div>

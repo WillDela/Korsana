@@ -61,6 +61,23 @@ type Activity struct {
 	SyncedAt                time.Time `json:"synced_at" db:"synced_at"`
 }
 
+// ConnectedIntegration tracks a user's OAuth connection to an external data source.
+// Valid sources: "strava", "garmin", "coros".
+// Strava is always is_primary when connected. Only one primary per user (enforced by DB index).
+type ConnectedIntegration struct {
+	ID             uuid.UUID  `json:"id" db:"id"`
+	UserID         uuid.UUID  `json:"user_id" db:"user_id"`
+	Source         string     `json:"source" db:"source"`
+	AccessToken    string     `json:"-" db:"access_token"`
+	RefreshToken   *string    `json:"-" db:"refresh_token"`
+	TokenExpiresAt *time.Time `json:"token_expires_at" db:"token_expires_at"`
+	ExternalUserID *string    `json:"external_user_id" db:"external_user_id"`
+	IsActive       bool       `json:"is_active" db:"is_active"`
+	IsPrimary      bool       `json:"is_primary" db:"is_primary"`
+	ConnectedAt    time.Time  `json:"connected_at" db:"connected_at"`
+	LastSyncedAt   *time.Time `json:"last_synced_at" db:"last_synced_at"`
+}
+
 // CoachConversation represents a message in the AI coach conversation
 type CoachConversation struct {
 	ID        uuid.UUID `json:"id" db:"id"`
