@@ -66,20 +66,10 @@ const Landing = () => {
 
             {/* Left: copy */}
             <div className="max-w-xl">
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy/5 border border-navy/10 mb-8"
-              >
-                <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
-                <span className="text-xs font-bold text-navy tracking-widest uppercase font-mono">System Operational</span>
-              </motion.div>
-
               <motion.h1
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.08 }}
+                transition={{ duration: 0.45 }}
                 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.05] text-navy mb-6"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
@@ -90,17 +80,17 @@ const Landing = () => {
               <motion.p
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.16 }}
+                transition={{ duration: 0.45, delay: 0.1 }}
                 className="text-lg md:text-xl text-text-secondary mb-10 leading-relaxed font-medium"
               >
-                Korsana connects to your Strava data and builds a personalized marathon plan around
-                your schedule, your physiology, and your goal race — then coaches you through it.
+                You've signed up for the race. Now you need a plan — one that fits your schedule,
+                your current fitness, and gets you to the finish line.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.24 }}
+                transition={{ duration: 0.45, delay: 0.18 }}
                 className="flex flex-col sm:flex-row items-center gap-4"
               >
                 <Link
@@ -248,7 +238,7 @@ const Landing = () => {
               <div className="p-5 space-y-4">
                 <div className="flex justify-end">
                   <div className="max-w-[75%] bg-garmin/20 border border-garmin/20 rounded-2xl rounded-tr-sm px-4 py-3">
-                    <p className="text-sm text-white/90">How should I adjust my training for the marathon next month based on my last long run?</p>
+                    <p className="text-sm text-white/90">I've never run more than 5 miles. I signed up for a half marathon in 14 weeks — where do I even start?</p>
                   </div>
                 </div>
 
@@ -258,13 +248,13 @@ const Landing = () => {
                       <span className="text-[10px] font-mono font-bold text-garmin uppercase tracking-widest">Korsana AI</span>
                     </div>
                     <p className="text-sm text-white/85">
-                      Your 20-miler last Sunday showed solid aerobic base — average HR stayed in Zone 2 the whole way through.
+                      14 weeks is plenty of time — I've seen your recent runs on Strava and your aerobic base is stronger than you think.
                     </p>
                     <p className="text-sm text-white/85">
-                      I've adjusted next week to a <span className="text-sage font-bold">recovery week</span> (cut 15% volume), then a final quality block the week after before your taper starts.
+                      I've built you a <span className="text-sage font-bold">16-week plan</span> (starting conservatively this week) with 4 runs per week. Your long run grows by no more than 10% each week so you stay injury-free.
                     </p>
                     <p className="text-sm text-white/85">
-                      Your target pace of <span className="text-garmin font-bold font-mono">6:52/mi</span> is within reach — stay conservative the first 10 miles on race day.
+                      Your first goal is simple: finish comfortable. Target <span className="text-garmin font-bold font-mono">11:30/mi</span> for your long runs — slower than you think you need to go, which is exactly right.
                     </p>
                   </div>
                 </div>
@@ -338,16 +328,16 @@ const Landing = () => {
       <section className="py-24 bg-bg-app border-b border-border-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Race Goals</p>
+            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Dream big</p>
             <h2
               className="text-3xl md:text-4xl font-bold text-navy mb-4"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Built for the races that matter.
+              Everyone starts somewhere.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              Whether it's your first local 5K or a World Marathon Major, Korsana builds a plan around your specific
-              race date, course profile, and goal time.
+              Your first race might be a local 5K. But the plan you build today is the same foundation that gets
+              runners to Boston, London, and Tokyo. It all starts with a goal and a training block.
             </p>
           </div>
 
@@ -491,10 +481,10 @@ const Landing = () => {
               className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Your goal race is waiting.<br />Let's build toward it.
+              Don't know where to start?<br />That's exactly what we're for.
             </h2>
             <p className="text-white/60 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
-              Connect Strava, set your race, and get a plan that adapts to you — not the other way around.
+              Connect Strava and tell us your race. We'll handle the rest — a plan built around your life, not someone else's template.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -518,23 +508,85 @@ const Landing = () => {
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────── */}
-      <footer className="bg-white py-12 border-t border-border-light">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
+      <footer className="bg-white border-t border-border-light">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-16">
+
+          {/* Top row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
+                  <img
+                    src="/KorsanaLogo.jpg"
+                    alt="Korsana"
+                    className="w-6 h-6 rounded"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                  />
+                  <span className="text-white font-bold text-sm hidden">K</span>
+                </div>
+                <span className="text-navy text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Korsana
+                </span>
               </div>
-              <span className="text-navy text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
+              <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
+                AI-powered running coach that turns your Strava data into a personalized training plan — then adapts it as you go.
+              </p>
             </div>
-            <p className="text-sm text-text-muted text-center">
-              Built for runners. Powered by your data.
-            </p>
+
+            {/* Product links */}
+            <div>
+              <p className="text-xs font-mono font-bold text-text-muted uppercase tracking-widest mb-4">Product</p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="block text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer"
+                >
+                  Features
+                </button>
+                <button
+                  onClick={() => document.getElementById('coach')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="block text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer"
+                >
+                  How it works
+                </button>
+                <Link to="/signup" className="block text-sm text-text-secondary hover:text-navy transition-colors no-underline">
+                  Sign up
+                </Link>
+                <Link to="/login" className="block text-sm text-text-secondary hover:text-navy transition-colors no-underline">
+                  Log in
+                </Link>
+              </div>
+            </div>
+
+            {/* Integrations */}
+            <div>
+              <p className="text-xs font-mono font-bold text-text-muted uppercase tracking-widest mb-4">Integrations</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#FC4C02"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" /></svg>
+                  <span className="text-sm text-text-secondary">Strava</span>
+                  <span className="text-[10px] font-mono font-bold text-sage ml-auto">Live</span>
+                </div>
+                <div className="flex items-center gap-2 opacity-50">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#007CC3"><path d="M11.967 0L19.5 4.35V13.05L11.967 17.4L4.433 13.05V4.35L11.967 0ZM11.967 2.053L6.2 5.38V12.033L11.967 15.36L17.734 12.033V5.38L11.967 2.053Z" /></svg>
+                  <span className="text-sm text-text-secondary">Garmin</span>
+                  <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
+                </div>
+                <div className="flex items-center gap-2 opacity-50">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B1B1B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12a4 4 0 0 1 8 0" /></svg>
+                  <span className="text-sm text-text-secondary">Coros</span>
+                  <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-border-light text-xs text-text-muted font-mono">
+          {/* Bottom row */}
+          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-border-light text-xs text-text-muted font-mono gap-4">
             <p>&copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.</p>
-            <div className="flex gap-6 mt-4 md:mt-0">
+            <div className="flex gap-6">
               <Link to="#" className="text-text-muted hover:text-navy transition-colors no-underline">Privacy Policy</Link>
               <Link to="#" className="text-text-muted hover:text-navy transition-colors no-underline">Terms of Service</Link>
             </div>
