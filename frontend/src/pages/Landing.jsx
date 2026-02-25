@@ -448,53 +448,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── Marathon Majors ───────────────────────────────────────── */}
-      <section className="py-24 bg-bg-app border-b border-border-light">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Dream big</p>
-            <h2
-              className="text-3xl md:text-4xl font-bold text-navy mb-4"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Everyone starts somewhere.
-            </h2>
-            <p className="text-lg text-text-secondary leading-relaxed">
-              Your first race might be a local 5K. But the plan you build today is the same foundation that gets
-              runners to any race you put your mind to including the World Major Marathons. It all starts with a goal and a training block.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {MAJORS.map((race, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.4, delay: i * 0.07 }}
-                className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default"
-              >
-                <img
-                  src={race.img}
-                  alt={`${race.city} Marathon`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{race.city}</p>
-                  <p className="text-white/60 font-mono text-[10px] uppercase tracking-widest">{race.month}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <p className="text-center text-xs font-mono text-text-muted mt-8 uppercase tracking-widest">
-            World Marathon Majors · Boston · London · Berlin · Chicago · New York · Tokyo
-          </p>
-        </div>
-      </section>
-
       {/* ── Integrations ─────────────────────────────────────────── */}
       <section className="py-24 border-b border-border-light relative overflow-hidden">
         <div
@@ -591,6 +544,53 @@ const Landing = () => {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Marathon Majors ───────────────────────────────────────── */}
+      <section className="py-24 bg-bg-app border-b border-border-light">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Dream big</p>
+            <h2
+              className="text-3xl md:text-4xl font-bold text-navy mb-4"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Everyone starts somewhere.
+            </h2>
+            <p className="text-lg text-text-secondary leading-relaxed">
+              Your first race might be a local 5K. But the plan you build today is the same foundation that gets
+              runners to any race you put your mind to including the World Major Marathons. It all starts with a goal and a training block.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {MAJORS.map((race, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: i * 0.07 }}
+                className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default"
+              >
+                <img
+                  src={race.img}
+                  alt={`${race.city} Marathon`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{race.city}</p>
+                  <p className="text-white/60 font-mono text-[10px] uppercase tracking-widest">{race.month}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs font-mono text-text-muted mt-8 uppercase tracking-widest">
+            World Marathon Majors · Boston · London · Berlin · Chicago · New York · Tokyo
+          </p>
         </div>
       </section>
 
