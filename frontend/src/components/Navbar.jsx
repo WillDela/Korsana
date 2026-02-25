@@ -14,6 +14,20 @@ const landingLinks = [
   { label: 'How it works', id: 'coach'    },
 ];
 
+const SPLITS = [
+  { label: '5K',   time: '19:59'   },
+  { label: '5K',   time: '24:59'   },
+  { label: '10K',  time: '39:59'   },
+  { label: '10K',  time: '49:59'   },
+  { label: 'Half', time: '1:29:59' },
+  { label: 'Half', time: '1:44:59' },
+  { label: 'Half', time: '1:59:59' },
+  { label: 'Full', time: '2:59:59' },
+  { label: 'Full', time: '3:29:59' },
+  { label: 'Full', time: '3:59:59' },
+  { label: 'Full', time: '4:29:59' },
+];
+
 /* ─── Icons ───────────────────────────────────────────────────── */
 const ChevronDown = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -231,50 +245,119 @@ const Navbar = ({ variant = 'landing' }) => {
   /* ════════════════════════════════════════════════════════════
      LANDING NAV — public pages
   ════════════════════════════════════════════════════════════ */
-  return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-border-light">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+  const [scrolled,     setScrolled]     = useState(false);
+  const [tickerIdx,    setTickerIdx]    = useState(0);
+  const [tickerVisible, setTickerVisible] = useState(true);
 
-        {/* Logo */}
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTickerVisible(false);
+      setTimeout(() => {
+        setTickerIdx((i) => (i + 1) % SPLITS.length);
+        setTickerVisible(true);
+      }, 300);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <nav
+      className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] transition-shadow duration-200"
+      style={{ boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none' }}
+    >
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 h-16 flex items-center gap-6">
+
+        {/* Zone 1 — Brand */}
         <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0">
           <Logo />
           <span
-            className="text-navy text-lg font-bold tracking-tight"
+            className="text-[#1B2559] text-[15px] font-bold tracking-widest uppercase"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
             Korsana
           </span>
         </Link>
 
-        {/* Center links */}
+        {/* Divider */}
+        <div className="hidden md:block w-px h-5 bg-[#e5e7eb] shrink-0 ml-1" />
+
+        {/* Zone 2 — PR Ticker */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          <span className="text-[12px] text-[#9ca3af]" style={{ fontFamily: 'var(--font-sans)' }}>
+            Your next PR
+          </span>
+          <div
+            style={{
+              opacity: tickerVisible ? 1 : 0,
+              transition: 'opacity 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span
+              className="text-[11px] uppercase text-[#9ca3af] w-[30px] text-right"
+              style={{ fontFamily: 'var(--font-sans)' }}
+            >
+              {SPLITS[tickerIdx].label}
+            </span>
+            <span
+              className="text-[15px] font-bold text-[#E8614A]"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              {SPLITS[tickerIdx].time}
+            </span>
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Zone 3 — Nav links */}
         <div className="hidden md:flex items-center gap-1">
           {landingLinks.map((link) => (
             <button
               key={link.id}
               onClick={() => scrollTo(link.id)}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-navy hover:bg-bg-app transition-colors cursor-pointer"
+              className="px-4 py-2 text-[14px] font-medium text-[#374151] hover:text-[#1B2559] transition-colors cursor-pointer bg-transparent border-none"
+              style={{ fontFamily: 'var(--font-sans)' }}
             >
               {link.label}
             </button>
           ))}
         </div>
 
-        {/* Right: auth */}
-        <div className="flex items-center gap-3">
+        {/* Zone 4 — Auth */}
+        <div className="flex items-center gap-2">
           {!user ? (
             <>
               <Link
                 to="/login"
-                className="hidden sm:block text-sm font-medium text-text-secondary hover:text-navy transition-colors no-underline"
+                className="hidden sm:block text-[14px] text-[#6b7280] hover:text-[#374151] transition-colors no-underline px-2"
+                style={{ fontFamily: 'var(--font-sans)' }}
               >
                 Log in
               </Link>
-              <Link to="/signup" className="btn btn-primary btn-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <Link
+                to="/signup"
+                className="no-underline text-white text-[13px] font-bold uppercase tracking-wide px-[18px] py-2 rounded-[6px] bg-[#1B2559] hover:bg-[#253070] transition-colors"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
                 Get Started
               </Link>
             </>
           ) : (
-            <Link to="/dashboard" className="btn btn-primary btn-sm">
+            <Link
+              to="/dashboard"
+              className="no-underline text-white text-[13px] font-bold uppercase tracking-wide px-[18px] py-2 rounded-[6px] bg-[#1B2559] hover:bg-[#253070] transition-colors"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
               Dashboard
             </Link>
           )}
@@ -282,7 +365,7 @@ const Navbar = ({ variant = 'landing' }) => {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden w-9 h-9 flex items-center justify-center text-text-secondary hover:text-navy transition-colors cursor-pointer rounded-lg hover:bg-bg-app"
+            className="md:hidden w-9 h-9 flex items-center justify-center text-[#374151] hover:text-[#1B2559] transition-colors cursor-pointer rounded-lg hover:bg-[#f9fafb]"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
@@ -292,29 +375,29 @@ const Navbar = ({ variant = 'landing' }) => {
 
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-border-light shadow-lg">
+        <div className="md:hidden bg-white border-t border-[#e5e7eb] shadow-lg">
           <div className="px-4 py-4 space-y-1">
             {landingLinks.map((link) => (
               <button
                 key={link.id}
                 onClick={() => { scrollTo(link.id); setMobileOpen(false); }}
-                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:text-navy hover:bg-bg-app transition-colors cursor-pointer"
+                className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-[#374151] hover:text-[#1B2559] hover:bg-[#f9fafb] transition-colors cursor-pointer"
               >
                 {link.label}
               </button>
             ))}
-            <div className="border-t border-border-light mt-3 pt-3 space-y-1">
+            <div className="border-t border-[#e5e7eb] mt-3 pt-3 space-y-1">
               {!user ? (
                 <>
                   <Link
                     to="/login"
-                    className="block px-4 py-3 rounded-xl text-sm font-medium text-text-secondary hover:text-navy hover:bg-bg-app no-underline transition-colors"
+                    className="block px-4 py-3 rounded-xl text-sm font-medium text-[#6b7280] hover:text-[#374151] hover:bg-[#f9fafb] no-underline transition-colors"
                   >
                     Log in
                   </Link>
                   <Link
                     to="/signup"
-                    className="block px-4 py-3 rounded-xl text-sm font-bold text-navy bg-bg-app hover:bg-border no-underline transition-colors"
+                    className="block px-4 py-3 rounded-xl text-sm font-bold text-white bg-[#1B2559] hover:bg-[#253070] no-underline transition-colors"
                   >
                     Get Started
                   </Link>
@@ -322,7 +405,7 @@ const Navbar = ({ variant = 'landing' }) => {
               ) : (
                 <Link
                   to="/dashboard"
-                  className="block px-4 py-3 rounded-xl text-sm font-bold text-navy bg-bg-app no-underline transition-colors"
+                  className="block px-4 py-3 rounded-xl text-sm font-bold text-white bg-[#1B2559] no-underline transition-colors"
                 >
                   Dashboard
                 </Link>

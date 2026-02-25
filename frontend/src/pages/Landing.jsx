@@ -90,7 +90,18 @@ const Landing = () => {
       <Navbar variant="landing" />
 
       {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="bg-white border-b border-border-light relative overflow-hidden">
+      <section className="border-b border-border-light relative overflow-hidden">
+        {/* Background photo */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: 'url(/landing_run.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 70%',
+          }}
+        />
+        {/* Overlay: left-heavy gradient so left copy is readable, right stays visible */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-white/95 via-white/80 to-white/30" />
         <div
           className="absolute inset-0 z-0 opacity-[0.03]"
           style={{
@@ -99,7 +110,7 @@ const Landing = () => {
           }}
         />
 
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-20 md:py-28 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-10 md:py-14 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
             {/* Left: copy */}
@@ -183,7 +194,7 @@ const Landing = () => {
               transition={{ duration: 0.7, delay: 0.18 }}
               className="hidden lg:flex flex-col items-center justify-center"
             >
-              <div className="w-full max-w-[420px] bg-white rounded-2xl border border-border shadow-2xl overflow-hidden">
+              <div className="w-full max-w-[520px] bg-white rounded-2xl border border-border shadow-2xl overflow-hidden">
                 {/* Card header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-light bg-bg-app">
                   <div className="flex items-center gap-2">
@@ -203,7 +214,7 @@ const Landing = () => {
                     Projected Finish Time
                   </p>
                   <div
-                    className="text-6xl font-extrabold text-navy tracking-tight"
+                    className="text-7xl font-extrabold text-navy tracking-tight"
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     2:59:59
@@ -221,17 +232,24 @@ const Landing = () => {
                     <p className="text-2xl font-bold text-navy" style={{ fontFamily: 'var(--font-mono)' }}>58.2</p>
                   </div>
                   <div className="bg-white px-4 py-3">
-                    <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Threshold</p>
-                    <p className="text-2xl font-bold text-navy" style={{ fontFamily: 'var(--font-mono)' }}>172 <span className="text-sm font-normal text-text-muted">bpm</span></p>
+                    <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Weekly Load</p>
+                    <p className="text-2xl font-bold text-navy" style={{ fontFamily: 'var(--font-mono)' }}>+22 <span className="text-sm font-normal text-text-muted">%</span></p>
                   </div>
                 </div>
 
-                {/* Alert banner */}
-                <div className="mx-6 mb-6 flex items-start gap-3 bg-amber/10 border border-amber/20 rounded-xl px-4 py-3">
+                {/* Alert banners */}
+                <div className="mx-6 mb-3 flex items-start gap-3 bg-amber/10 border border-amber/20 rounded-xl px-4 py-3">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                   <div>
-                    <p className="text-xs font-bold text-navy">Recovery suggested.</p>
-                    <p className="text-xs text-text-muted mt-0.5">HRV dropped 10% overnight. Rest day advised.</p>
+                    <p className="text-xs font-bold text-navy">Effort spike detected.</p>
+                    <p className="text-xs text-text-muted mt-0.5">Last 3 runs averaged 15% harder than baseline. Easy day advised.</p>
+                  </div>
+                </div>
+                <div className="mx-6 mb-6 flex items-start gap-3 bg-coral/10 border border-coral/20 rounded-xl px-4 py-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-coral)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                  <div>
+                    <p className="text-xs font-bold text-navy">Training load up 22% this week.</p>
+                    <p className="text-xs text-text-muted mt-0.5">Consider an easy run before your long run Sunday.</p>
                   </div>
                 </div>
               </div>
@@ -249,9 +267,20 @@ const Landing = () => {
               <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>10+</span>
               <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Active Runners</span>
             </div>
+            <div className="w-px h-8 bg-border-light hidden sm:block" />
+            <div>
+              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>15+</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Plans Generated</span>
+            </div>
+            <div className="w-px h-8 bg-border-light hidden sm:block" />
             <div>
               <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>500+</span>
               <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Miles Analyzed</span>
+            </div>
+            <div className="w-px h-8 bg-border-light hidden sm:block" />
+            <div>
+              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>12+</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Races Targeted</span>
             </div>
           </motion.div>
         </div>
@@ -323,7 +352,7 @@ const Landing = () => {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-garmin)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 8v4l3 3" /></svg>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Korsana AI Coach</p>
+                  <p className="text-sm font-bold text-white">Korsana The Coach</p>
                   <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Analyzing your data</p>
                 </div>
                 <div className="ml-auto w-2 h-2 rounded-full bg-sage animate-pulse" />
@@ -340,7 +369,7 @@ const Landing = () => {
                 <div className="flex justify-start">
                   <div className="max-w-[80%] bg-white/10 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 space-y-2">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-mono font-bold text-garmin uppercase tracking-widest">Korsana AI</span>
+                      <span className="text-[10px] font-mono font-bold text-garmin uppercase tracking-widest">Korsana</span>
                     </div>
                     <p className="text-sm text-white/85">
                       14 weeks is plenty of time — I've seen your recent runs on Strava and your aerobic base is stronger than you think.
@@ -372,7 +401,7 @@ const Landing = () => {
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-4">AI Coach</p>
+              <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-4">Your Own Personal Coach</p>
               <h2
                 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-6"
                 style={{ fontFamily: 'var(--font-heading)' }}
@@ -432,7 +461,7 @@ const Landing = () => {
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
               Your first race might be a local 5K. But the plan you build today is the same foundation that gets
-              runners to Boston, London, and Tokyo. It all starts with a goal and a training block.
+              runners to any race you put your mind to including the World Major Marathons. It all starts with a goal and a training block.
             </p>
           </div>
 
@@ -467,8 +496,17 @@ const Landing = () => {
       </section>
 
       {/* ── Integrations ─────────────────────────────────────────── */}
-      <section className="py-24 bg-white border-b border-border-light">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
+      <section className="py-24 border-b border-border-light relative overflow-hidden">
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: 'url(/black&white_run.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="absolute inset-0 z-0 bg-white/75" />
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
             <div>
@@ -596,7 +634,7 @@ const Landing = () => {
               </Link>
             </div>
             <p className="mt-8 text-xs font-mono text-white/30 tracking-wide uppercase">
-              Strava connected · Coros + Garmin coming soon
+              We are here to help!
             </p>
           </motion.div>
         </div>
@@ -607,11 +645,11 @@ const Landing = () => {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-16">
 
           {/* Top row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
 
             {/* Brand */}
-            <div>
-              <div className="flex items-center gap-2.5 mb-4">
+            <div className="shrink-0">
+              <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
                   <img
                     src="/KorsanaLogo.jpg"
@@ -630,52 +668,28 @@ const Landing = () => {
               </p>
             </div>
 
-            {/* Product links */}
-            <div>
-              <p className="text-xs font-mono font-bold text-text-muted uppercase tracking-widest mb-4">Product</p>
-              <div className="space-y-3">
-                <button
-                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="block text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer"
-                >
-                  Features
-                </button>
-                <button
-                  onClick={() => document.getElementById('coach')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="block text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer"
-                >
-                  How it works
-                </button>
-                <Link to="/signup" className="block text-sm text-text-secondary hover:text-navy transition-colors no-underline">
-                  Sign up
-                </Link>
-                <Link to="/login" className="block text-sm text-text-secondary hover:text-navy transition-colors no-underline">
-                  Log in
-                </Link>
-              </div>
+            {/* Product links — horizontal */}
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+              <button
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer bg-transparent border-none"
+              >
+                Features
+              </button>
+              <button
+                onClick={() => document.getElementById('coach')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer bg-transparent border-none"
+              >
+                How it works
+              </button>
+              <Link to="/signup" className="text-sm text-text-secondary hover:text-navy transition-colors no-underline">
+                Sign up
+              </Link>
+              <Link to="/login" className="text-sm text-text-secondary hover:text-navy transition-colors no-underline">
+                Log in
+              </Link>
             </div>
 
-            {/* Integrations */}
-            <div>
-              <p className="text-xs font-mono font-bold text-text-muted uppercase tracking-widest mb-4">Integrations</p>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <BrandIcon brand="strava" size={13} />
-                  <span className="text-sm text-text-secondary">Strava</span>
-                  <span className="text-[10px] font-mono font-bold text-sage ml-auto">Live</span>
-                </div>
-                <div className="flex items-center gap-2 opacity-50">
-                  <BrandIcon brand="garmin" size={13} />
-                  <span className="text-sm text-text-secondary">Garmin</span>
-                  <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
-                </div>
-                <div className="flex items-center gap-2 opacity-50">
-                  <BrandIcon brand="coros" size={13} />
-                  <span className="text-sm text-text-secondary">Coros</span>
-                  <span className="text-[10px] font-mono font-bold text-amber ml-auto">Soon</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Bottom row */}
