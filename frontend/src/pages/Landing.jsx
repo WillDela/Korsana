@@ -13,6 +13,43 @@ const MAJORS = [
   { city: 'Tokyo',   country: 'Japan',   month: 'Mar', img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=600' },
 ];
 
+/* ─── Feature cards ─────────────────────────────────────────────── */
+const FEATURES = [
+  {
+    label: 'Performance Trends',
+    desc: 'Track your VO2 Max and lactate threshold evolution with predictive modeling.',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+      </svg>
+    ),
+    accent: 'text-garmin',
+    bg: 'bg-garmin/10 border-garmin/20',
+  },
+  {
+    label: 'Recovery Analysis',
+    desc: "Understand your body's readiness to train daily based on HRV and sleep quality.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+    accent: 'text-coral',
+    bg: 'bg-coral/10 border-coral/20',
+  },
+  {
+    label: 'Predictive Pacing',
+    desc: 'AI-calculated race pace strategies based on recent efforts and course topography.',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+    accent: 'text-sage',
+    bg: 'bg-sage/10 border-sage/20',
+  },
+];
+
 /* ─── AI Coach benefits ─────────────────────────────────────────── */
 const BENEFITS = [
   {
@@ -66,6 +103,16 @@ const Landing = () => {
 
             {/* Left: copy */}
             <div className="max-w-xl">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sage/10 border border-sage/25 mb-6"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sage animate-pulse" />
+                <span className="text-[11px] font-mono font-bold text-sage uppercase tracking-widest">Now in Beta</span>
+              </motion.div>
+
               <motion.h1
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -109,6 +156,22 @@ const Landing = () => {
                   See how it works
                 </button>
               </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="mt-4 text-[11px] font-mono text-text-muted uppercase tracking-widest flex items-center gap-4"
+              >
+                <span className="flex items-center gap-1.5">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  No credit card required
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Free to get started
+                </span>
+              </motion.p>
 
             </div>
 
@@ -198,6 +261,45 @@ const Landing = () => {
               <span className="text-xs text-text-muted font-mono">Coros · Garmin <span className="text-amber font-bold">(soon)</span></span>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Precision Metrics / Features ─────────────────────────── */}
+      <section id="features" className="py-24 bg-white border-b border-border-light">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Precision Metrics</p>
+            <h2
+              className="text-3xl md:text-4xl font-bold text-navy mb-4"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              A dashboard designed for clarity.
+            </h2>
+            <p className="text-lg text-text-secondary leading-relaxed">
+              Visualize your progress with metric-focused precision that cuts through the noise of traditional trackers.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {FEATURES.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className="card p-8 flex flex-col gap-5"
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${f.bg} ${f.accent} shrink-0`}>
+                  {f.icon}
+                </div>
+                <div>
+                  <h3 className="font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{f.label}</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">{f.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
