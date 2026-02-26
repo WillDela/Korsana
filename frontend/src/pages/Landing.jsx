@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import BrandIcon from '../components/BrandIcon';
+import { stravaAPI } from '../api/strava';
 
 /* ─── Marathon Majors data ─────────────────────────────────────── */
 const MAJORS = [
@@ -84,6 +85,20 @@ const BENEFITS = [
 
 const Landing = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleConnectStrava = async () => {
+    if (!user) {
+      navigate('/signup');
+      return;
+    }
+    try {
+      const { url } = await stravaAPI.getAuthURL();
+      window.location.href = url;
+    } catch {
+      navigate('/settings');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-bg-app font-sans">
@@ -287,7 +302,7 @@ const Landing = () => {
       </section>
 
       {/* ── Precision Metrics / Features ─────────────────────────── */}
-      <section id="features" className="py-24 bg-white border-b border-border-light">
+      <section id="features" className="py-14 bg-white border-b border-border-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Precision Metrics</p>
@@ -536,9 +551,12 @@ const Landing = () => {
                 <p className="text-sm text-text-secondary mb-6 leading-relaxed">
                   One click. Korsana reads your history and starts building your plan immediately.
                 </p>
-                <button className="w-full btn bg-[#FC4C02] hover:bg-[#e04400] text-white btn-md border-none transition-colors">
+                <button
+                  onClick={handleConnectStrava}
+                  className="w-full btn bg-[#FC4C02] hover:bg-[#e04400] text-white btn-md border-none transition-colors"
+                >
                   <BrandIcon brand="strava" size={16} />
-                  Connect Strava
+                  {user ? 'Connect Strava' : 'Get Started with Strava'}
                 </button>
                 <p className="text-[10px] font-mono text-text-muted mt-4 uppercase tracking-widest">Read-only access · We never post on your behalf</p>
               </div>
@@ -548,7 +566,7 @@ const Landing = () => {
       </section>
 
       {/* ── Marathon Majors ───────────────────────────────────────── */}
-      <section className="py-24 bg-bg-app border-b border-border-light">
+      <section className="py-14 bg-bg-app border-b border-border-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Dream big</p>
@@ -594,8 +612,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────── */}
-      <section className="py-24 bg-navy relative overflow-hidden">
+      {/* ── Footer / CTA ──────────────────────────────────────────── */}
+      <footer className="py-14 bg-navy relative overflow-hidden">
         <div
           className="absolute inset-0 z-0 opacity-10"
           style={{
@@ -616,90 +634,13 @@ const Landing = () => {
             >
               Don't know where to start?<br />That's exactly what we're for.
             </h2>
-            <p className="text-white/60 text-lg md:text-xl mb-10 max-w-xl mx-auto leading-relaxed">
+            <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
               Connect Strava and tell us your race. We'll handle the rest — a plan built around your life, not someone else's template.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/signup"
-                className="btn bg-sage hover:bg-[#4a7232] text-white btn-lg w-full sm:w-auto border-none shadow-xl hover:-translate-y-0.5 transition-all"
-              >
-                Get Started
-              </Link>
-              <Link
-                to="/login"
-                className="btn bg-transparent border border-white/20 text-white hover:bg-white/10 btn-lg w-full sm:w-auto transition-colors"
-              >
-                Log in
-              </Link>
-            </div>
-            <p className="mt-8 text-xs font-mono text-white/30 tracking-wide uppercase">
-              We are here to help!
+            <p className="mt-10 text-xs font-mono text-white/30 tracking-wide uppercase">
+              &copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.
             </p>
           </motion.div>
-        </div>
-      </section>
-
-      {/* ── Footer ────────────────────────────────────────────────── */}
-      <footer className="bg-white border-t border-border-light">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-16">
-
-          {/* Top row */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10">
-
-            {/* Brand */}
-            <div className="shrink-0">
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
-                  <img
-                    src="/KorsanaLogo.jpg"
-                    alt="Korsana"
-                    className="w-6 h-6 rounded"
-                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-                  />
-                  <span className="text-white font-bold text-sm hidden">K</span>
-                </div>
-                <span className="text-navy text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Korsana
-                </span>
-              </div>
-              <p className="text-sm text-text-secondary leading-relaxed max-w-xs">
-                AI-powered running coach that turns your Strava data into a personalized training plan — then adapts it as you go.
-              </p>
-            </div>
-
-            {/* Product links — horizontal */}
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-              <button
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer bg-transparent border-none"
-              >
-                Features
-              </button>
-              <button
-                onClick={() => document.getElementById('coach')?.scrollIntoView({ behavior: 'smooth' })}
-                className="text-sm text-text-secondary hover:text-navy transition-colors cursor-pointer bg-transparent border-none"
-              >
-                How it works
-              </button>
-              <Link to="/signup" className="text-sm text-text-secondary hover:text-navy transition-colors no-underline">
-                Sign up
-              </Link>
-              <Link to="/login" className="text-sm text-text-secondary hover:text-navy transition-colors no-underline">
-                Log in
-              </Link>
-            </div>
-
-          </div>
-
-          {/* Bottom row */}
-          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-border-light text-xs text-text-muted font-mono gap-4">
-            <p>&copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.</p>
-            <div className="flex gap-6">
-              <Link to="#" className="text-text-muted hover:text-navy transition-colors no-underline">Privacy Policy</Link>
-              <Link to="#" className="text-text-muted hover:text-navy transition-colors no-underline">Terms of Service</Link>
-            </div>
-          </div>
         </div>
       </footer>
     </div>
