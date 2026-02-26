@@ -7,12 +7,12 @@ import { stravaAPI } from '../api/strava';
 
 /* ─── Marathon Majors data ─────────────────────────────────────── */
 const MAJORS = [
-  { city: 'Boston',  country: 'USA',     month: 'Apr', img: 'https://images.unsplash.com/photo-1562077981-4d7eafd44932?auto=format&fit=crop&q=80&w=600' },
-  { city: 'London',  country: 'UK',      month: 'Apr', img: 'https://images.unsplash.com/photo-1533929736458-ca588d08c8be?auto=format&fit=crop&q=80&w=600' },
-  { city: 'Berlin',  country: 'Germany', month: 'Sep', img: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&q=80&w=600' },
-  { city: 'Chicago', country: 'USA',     month: 'Oct', img: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&q=80&w=600' },
-  { city: 'NYC',     country: 'USA',     month: 'Nov', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=600' },
-  { city: 'Tokyo',   country: 'Japan',   month: 'Mar', img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=600' },
+  { city: 'Boston',  country: 'USA',     month: 'Apr', img: '/Boston.jpg' },
+  { city: 'London',  country: 'UK',      month: 'Apr', img: '/London.jpg' },
+  { city: 'Berlin',  country: 'Germany', month: 'Sep', img: '/Berlin.jpg' },
+  { city: 'Chicago', country: 'USA',     month: 'Oct', img: '/Chicago.jpg' },
+  { city: 'NYC',     country: 'USA',     month: 'Nov', img: '/NewYorkCity.jpg' },
+  { city: 'Tokyo',   country: 'Japan',   month: 'Mar', img: '/Tokyo.jpg' },
 ];
 
 /* ─── Feature cards ─────────────────────────────────────────────── */
