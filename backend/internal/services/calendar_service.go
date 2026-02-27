@@ -39,6 +39,21 @@ func (s *CalendarService) GetWeekEntries(ctx context.Context, userID uuid.UUID, 
 	return entries, nil
 }
 
+// GetRangeEntries retrieves calendar entries for an explicit date range
+func (s *CalendarService) GetRangeEntries(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]models.CalendarEntry, error) {
+	var entries []models.CalendarEntry
+	query := `
+		SELECT * FROM training_calendar
+		WHERE user_id = $1 AND date >= $2 AND date <= $3
+		ORDER BY date ASC
+	`
+	err := s.db.SelectContext(ctx, &entries, query, userID, start, end)
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
 // UpsertEntry creates or updates a calendar entry (upsert on user_id + date)
 func (s *CalendarService) UpsertEntry(ctx context.Context, userID uuid.UUID, entry *models.CalendarEntry) (*models.CalendarEntry, error) {
 	entry.UserID = userID

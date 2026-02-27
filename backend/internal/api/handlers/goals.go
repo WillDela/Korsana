@@ -203,6 +203,35 @@ func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
 	})
 }
 
+func (h *GoalsHandler) SetActive(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	goalID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+		return
+	}
+
+	goal, err := h.goalsService.SetActiveGoal(c.Request.Context(), userID, goalID)
+	if err != nil {
+		if err.Error() == "goal not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "goal not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"goal": goal,
+	})
+}
+
 func (h *GoalsHandler) DeleteGoal(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {

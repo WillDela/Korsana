@@ -105,6 +105,36 @@ func (s *GoalsService) UpdateGoal(ctx context.Context, userID uuid.UUID, goalID 
 	return s.GetGoalByID(ctx, userID, goalID)
 }
 
+// SetActiveGoal deactivates all user goals and activates the specified one
+func (s *GoalsService) SetActiveGoal(ctx context.Context, userID uuid.UUID, goalID uuid.UUID) (*models.RaceGoal, error) {
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, "UPDATE race_goals SET is_active = false WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := tx.ExecContext(ctx, "UPDATE race_goals SET is_active = true, updated_at = $1 WHERE id = $2 AND user_id = $3", time.Now(), goalID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return nil, errors.New("goal not found")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return s.GetGoalByID(ctx, userID, goalID)
+}
+
 // DeleteGoal deletes a goal
 func (s *GoalsService) DeleteGoal(ctx context.Context, userID uuid.UUID, goalID uuid.UUID) error {
 	result, err := s.db.ExecContext(ctx, "DELETE FROM race_goals WHERE id = $1 AND user_id = $2", goalID, userID)

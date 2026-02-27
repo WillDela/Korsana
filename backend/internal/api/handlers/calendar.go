@@ -60,6 +60,53 @@ func (h *CalendarHandler) GetWeek(c *gin.Context) {
 	})
 }
 
+// GetRange returns calendar entries for an arbitrary date range
+// GET /api/calendar/range?start=2026-02-01&end=2026-02-28
+func (h *CalendarHandler) GetRange(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+	if startStr == "" || endStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "start and end query params are required (YYYY-MM-DD)"})
+		return
+	}
+
+	start, err := time.Parse("2006-01-02", startStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start date format, use YYYY-MM-DD"})
+		return
+	}
+
+	end, err := time.Parse("2006-01-02", endStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end date format, use YYYY-MM-DD"})
+		return
+	}
+
+	if end.Before(start) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "end date must not be before start date"})
+		return
+	}
+
+	entries, err := h.calendarService.GetRangeEntries(c.Request.Context(), userID, start, end)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"entries": entries,
+		"start":   startStr,
+		"end":     endStr,
+	})
+}
+
 type upsertEntryRequest struct {
 	Date                   string  `json:"date" binding:"required"`
 	WorkoutType            string  `json:"workout_type" binding:"required"`

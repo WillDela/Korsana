@@ -1,20 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { goalsAPI } from '../api/goals';
 import { stravaAPI } from '../api/strava';
+import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
 import WeekCalendar from '../components/WeekCalendar';
-import ActiveGoalBanner from '../components/ActiveGoalBanner';
 import MetricCard from '../components/MetricCard';
 import BrandIcon from '../components/BrandIcon';
 import ReadinessGauge from '../components/ReadinessGauge';
-import PaceEngineer from '../components/PaceEngineer';
-import PhysiologyZones from '../components/PhysiologyZones';
-import RecentActivitiesCard from '../components/RecentActivitiesCard';
-import RunTypeBreakdown from '../components/RunTypeBreakdown';
-import ConsistencyTracker from '../components/ConsistencyTracker';
+import RaceHeader from '../components/dashboard/RaceHeader';
+import ReadinessBreakdown from '../components/dashboard/ReadinessBreakdown';
+import PaceTrendChart from '../components/dashboard/PaceTrendChart';
+import RecentRunsTable from '../components/dashboard/RecentRunsTable';
+import TodaysPlanCard from '../components/dashboard/TodaysPlanCard';
+import CoachInsightBar from '../components/CoachInsightBar';
 
 const MileageIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,17 +32,15 @@ const PaceIcon = () => (
   </svg>
 );
 
-const ConsistencyIcon = () => (
+const LoadIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
   </svg>
 );
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [activeGoal, setActiveGoal] = useState(null);
   const [activities, setActivities] = useState([]);
   const [loadingGoal, setLoadingGoal] = useState(true);
@@ -47,11 +49,16 @@ const Dashboard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState('');
   const [isSyncMenuOpen, setIsSyncMenuOpen] = useState(false);
+  const [lastSynced, setLastSynced] = useState(null);
+  const [todayEntry, setTodayEntry] = useState(null);
+  const [readinessExpanded, setReadinessExpanded] = useState(false);
+  const [coachInsight, setCoachInsight] = useState(null);
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
-      setIsConnected(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      window.history.replaceState(
+        {}, document.title, window.location.pathname
+      );
       handleSyncActivities();
     }
   }, [searchParams]);
@@ -59,7 +66,32 @@ const Dashboard = () => {
   useEffect(() => {
     fetchActiveGoal();
     fetchActivitiesAndAutoSync();
+    fetchTodayEntry();
   }, []);
+
+  const fetchTodayEntry = async () => {
+    try {
+      const today = new Date();
+      const key = formatDateISO(today);
+      const response = await calendarAPI.getWeek(key);
+      const entries = response.entries || [];
+      const match = entries.find((e) => e.date === key);
+      setTodayEntry(match || null);
+    } catch {
+      setTodayEntry(null);
+    }
+  };
+
+  const handleMarkComplete = async (entryId) => {
+    try {
+      await calendarAPI.updateStatus(entryId, 'completed');
+      setTodayEntry((prev) =>
+        prev ? { ...prev, status: 'completed' } : prev
+      );
+    } catch (err) {
+      console.error('Failed to mark complete:', err);
+    }
+  };
 
   const fetchActivitiesAndAutoSync = async () => {
     try {
@@ -70,14 +102,14 @@ const Dashboard = () => {
           await stravaAPI.syncActivities();
           const syncedResponse = await stravaAPI.getActivities();
           setActivities(syncedResponse.activities || []);
-        } catch (syncError) {
+          setLastSynced(new Date().toISOString());
+        } catch {
           setActivities([]);
         }
       } else {
         setActivities(response.activities || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch activities:', error);
+    } catch {
       setActivities([]);
     } finally {
       setLoadingActivities(false);
@@ -89,8 +121,8 @@ const Dashboard = () => {
       setLoadingGoal(true);
       const response = await goalsAPI.getActiveGoal();
       setActiveGoal(response.goal);
-    } catch (error) {
-      console.error('No active goal:', error);
+    } catch {
+      // No active goal
     } finally {
       setLoadingGoal(false);
     }
@@ -101,43 +133,36 @@ const Dashboard = () => {
       setLoadingActivities(true);
       const response = await stravaAPI.getActivities();
       setActivities(response.activities || []);
-    } catch (error) {
-      console.error('Failed to fetch activities:', error);
+    } catch {
+      // Failed to fetch
     } finally {
       setLoadingActivities(false);
-    }
-  };
-
-  const handleConnectStrava = async () => {
-    try {
-      setIsLoading(true);
-      const response = await stravaAPI.getAuthURL();
-      window.location.href = response.url;
-    } catch (error) {
-      console.error('Failed to start Strava auth:', error);
-      setIsLoading(false);
     }
   };
 
   const handleSyncActivities = async (provider = 'strava') => {
     setIsSyncMenuOpen(false);
     if (provider !== 'strava') {
-      setSyncError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} integration coming soon!`);
+      const name = provider.charAt(0).toUpperCase() + provider.slice(1);
+      setSyncError(`${name} integration coming soon!`);
       setTimeout(() => setSyncError(''), 3000);
       return;
     }
-
     try {
       setSyncError('');
       setSyncSuccess('');
       setIsSyncing(true);
       const result = await stravaAPI.syncActivities();
       await fetchActivities();
+      setLastSynced(new Date().toISOString());
       const count = result?.count || 0;
-      setSyncSuccess(count > 0 ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}` : 'Already up to date');
+      setSyncSuccess(
+        count > 0
+          ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}`
+          : 'Already up to date'
+      );
       setTimeout(() => setSyncSuccess(''), 4000);
     } catch (error) {
-      console.error('Failed to sync activities:', error);
       setSyncError(getErrorMessage(error));
       setTimeout(() => setSyncError(''), 5000);
     } finally {
@@ -146,12 +171,12 @@ const Dashboard = () => {
   };
 
   // --- Helpers ---
-  const calculateDaysUntilRace = () => {
-    if (!activeGoal) return { weeks: 0, days: 0, totalDays: 0 };
-    const raceDate = new Date(activeGoal.race_date);
-    const today = new Date();
-    const diffDays = Math.max(0, Math.ceil((raceDate - today) / (1000 * 60 * 60 * 24)));
-    return { weeks: Math.floor(diffDays / 7), days: diffDays % 7, totalDays: diffDays };
+  const formatDateISO = (date) => {
+    const d = new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const formatPace = (secondsPerKm) => {
@@ -162,31 +187,43 @@ const Dashboard = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const metersToMiles = (meters) => (meters * 0.000621371).toFixed(1);
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-  const { totalDays } = calculateDaysUntilRace();
-
   // --- Computed metrics ---
   const computeWeeklyMileage = () => {
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
-    const weekActivities = activities.filter(a => new Date(a.start_time) >= startOfWeek);
-    const totalMeters = weekActivities.reduce((sum, a) => sum + (a.distance_meters || 0), 0);
+    const weekActs = activities.filter(
+      (a) => new Date(a.start_time) >= startOfWeek
+    );
+    const totalMeters = weekActs.reduce(
+      (sum, a) => sum + (a.distance_meters || 0), 0
+    );
     return parseFloat((totalMeters * 0.000621371).toFixed(1));
   };
 
   const computeCurrentPace = () => {
-    const recentRuns = activities.filter(a => a.average_pace_seconds_per_km);
+    const recentRuns = activities.filter(
+      (a) => a.average_pace_seconds_per_km
+    );
     if (recentRuns.length === 0) return null;
-    return recentRuns.reduce((sum, a) => sum + a.average_pace_seconds_per_km, 0) / recentRuns.length;
+    return (
+      recentRuns.reduce(
+        (sum, a) => sum + a.average_pace_seconds_per_km, 0
+      ) / recentRuns.length
+    );
   };
 
   const computeTargetPace = () => {
-    if (!activeGoal || !activeGoal.target_time_seconds || !activeGoal.distance_meters) return null;
-    return activeGoal.target_time_seconds / (activeGoal.distance_meters / 1000);
+    if (
+      !activeGoal ||
+      !activeGoal.target_time_seconds ||
+      !activeGoal.distance_meters
+    ) {
+      return null;
+    }
+    return activeGoal.target_time_seconds /
+      (activeGoal.distance_meters / 1000);
   };
 
   const computeTrainingProgress = () => {
@@ -197,7 +234,9 @@ const Dashboard = () => {
     const totalDuration = raceDate - createdDate;
     const elapsed = now - createdDate;
     if (totalDuration <= 0) return 100;
-    return Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+    return Math.min(
+      100, Math.max(0, Math.round((elapsed / totalDuration) * 100))
+    );
   };
 
   const computePaceDiff = () => {
@@ -207,14 +246,6 @@ const Dashboard = () => {
     return Math.round((current - target) * 1.60934);
   };
 
-  const countWeeklyRuns = () => {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    return activities.filter(a => new Date(a.start_time) >= startOfWeek).length;
-  };
-
   const weeklyMileageActual = computeWeeklyMileage();
   const currentPaceRaw = computeCurrentPace();
   const trainingProgress = computeTrainingProgress();
@@ -222,15 +253,17 @@ const Dashboard = () => {
 
   const getWeeklyMileageTarget = () => {
     if (!activeGoal) return 30;
-    const raceDistanceMiles = (activeGoal.distance_meters || 42195) * 0.000621371;
-    const peakMileage = Math.min(raceDistanceMiles * 3, 60);
+    const raceDistMiles =
+      (activeGoal.distance_meters || 42195) * 0.000621371;
+    const peakMileage = Math.min(raceDistMiles * 3, 60);
     const rampFactor = Math.min(1, trainingProgress / 80);
-    return Math.round(Math.max(10, peakMileage * (0.5 + 0.5 * rampFactor)));
+    return Math.round(
+      Math.max(10, peakMileage * (0.5 + 0.5 * rampFactor))
+    );
   };
 
   const weeklyTarget = getWeeklyMileageTarget();
 
-  // Consistency (must be before readinessScore which depends on it)
   const consistency = useMemo(() => {
     if (activities.length === 0) return 0;
     const now = new Date();
@@ -241,7 +274,7 @@ const Dashboard = () => {
       start.setHours(0, 0, 0, 0);
       const end = new Date(start);
       end.setDate(end.getDate() + 7);
-      const weekRuns = activities.filter(a => {
+      const weekRuns = activities.filter((a) => {
         const d = new Date(a.start_time);
         return d >= start && d < end;
       }).length;
@@ -251,12 +284,12 @@ const Dashboard = () => {
   }, [activities]);
 
   // 5-component Race Readiness Score
-  const readinessScore = useMemo(() => {
-    // 1. Volume Adequacy (25%): weekly mileage vs target
-    const volumeScore = Math.min(100, (weeklyMileageActual / weeklyTarget) * 100);
+  const readinessFactors = useMemo(() => {
+    const volumeScore = Math.min(
+      100, (weeklyMileageActual / weeklyTarget) * 100
+    );
 
-    // 2. Pace Fitness (25%): current avg pace vs target race pace
-    let paceScore = 50; // default neutral
+    let paceScore = 50;
     if (paceDiff !== null) {
       if (Math.abs(paceDiff) <= 5) paceScore = 100;
       else if (Math.abs(paceDiff) <= 15) paceScore = 75;
@@ -264,26 +297,29 @@ const Dashboard = () => {
       else paceScore = 25;
     }
 
-    // 3. Consistency (20%): weeks with 3+ runs out of last 4
-    const consistencyScore = consistency; // already 0-100
+    const consistencyScore = consistency;
 
-    // 4. Long Run Readiness (15%): longest run in last 3 weeks vs 60% of race distance
     let longRunScore = 50;
     if (activeGoal && activities.length > 0) {
       const threeWeeksAgo = new Date();
       threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
-      const recentRuns = activities.filter(a => new Date(a.start_time) >= threeWeeksAgo);
-      const longestRun = Math.max(0, ...recentRuns.map(a => a.distance_meters || 0));
+      const recentRuns = activities.filter(
+        (a) => new Date(a.start_time) >= threeWeeksAgo
+      );
+      const longestRun = Math.max(
+        0, ...recentRuns.map((a) => a.distance_meters || 0)
+      );
       const raceDistance = activeGoal.distance_meters || 42195;
       const targetLong = raceDistance * 0.6;
-      longRunScore = targetLong > 0 ? Math.min(100, (longestRun / targetLong) * 100) : 50;
+      longRunScore = targetLong > 0
+        ? Math.min(100, (longestRun / targetLong) * 100)
+        : 50;
     }
 
-    // 5. Trend Direction (15%): this week vs avg of previous 3 weeks
     let trendScore = 50;
     if (activities.length > 0) {
       const now = new Date();
-      let prevWeeksMileage = [];
+      const prevWeeksMileage = [];
       for (let w = 1; w <= 3; w++) {
         const start = new Date(now);
         start.setDate(start.getDate() - start.getDay() - w * 7);
@@ -291,11 +327,17 @@ const Dashboard = () => {
         const end = new Date(start);
         end.setDate(end.getDate() + 7);
         const weekMiles = activities
-          .filter(a => { const d = new Date(a.start_time); return d >= start && d < end; })
-          .reduce((sum, a) => sum + (a.distance_meters || 0) * 0.000621371, 0);
+          .filter((a) => {
+            const d = new Date(a.start_time);
+            return d >= start && d < end;
+          })
+          .reduce(
+            (sum, a) => sum + (a.distance_meters || 0) * 0.000621371, 0
+          );
         prevWeeksMileage.push(weekMiles);
       }
-      const avgPrev = prevWeeksMileage.reduce((a, b) => a + b, 0) / 3;
+      const avgPrev =
+        prevWeeksMileage.reduce((a, b) => a + b, 0) / 3;
       if (avgPrev > 0) {
         const ratio = weeklyMileageActual / avgPrev;
         if (ratio >= 1.1) trendScore = 100;
@@ -313,8 +355,20 @@ const Dashboard = () => {
       trendScore * 0.15
     );
 
-    return Math.min(100, Math.max(0, composite));
-  }, [weeklyMileageActual, weeklyTarget, paceDiff, consistency, activities, activeGoal]);
+    return {
+      volume: Math.round(volumeScore),
+      pace: Math.round(paceScore),
+      consistency: Math.round(consistencyScore),
+      longRun: Math.round(longRunScore),
+      trend: Math.round(trendScore),
+      composite: Math.min(100, Math.max(0, composite)),
+    };
+  }, [
+    weeklyMileageActual, weeklyTarget, paceDiff,
+    consistency, activities, activeGoal,
+  ]);
+
+  const readinessScore = readinessFactors.composite;
 
   // Chart data
   const weeklyChartData = useMemo(() => {
@@ -327,9 +381,14 @@ const Dashboard = () => {
       const weekStart = new Date(d);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       const key = weekStart.toISOString().slice(0, 10);
-      weeks[key] = { week: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), miles: 0 };
+      weeks[key] = {
+        week: weekStart.toLocaleDateString(
+          'en-US', { month: 'short', day: 'numeric' }
+        ),
+        miles: 0,
+      };
     }
-    activities.forEach(a => {
+    activities.forEach((a) => {
       const d = new Date(a.start_time);
       const weekStart = new Date(d);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -338,24 +397,54 @@ const Dashboard = () => {
         weeks[key].miles += (a.distance_meters || 0) * 0.000621371;
       }
     });
-    return Object.values(weeks).map(w => ({ ...w, miles: parseFloat(w.miles.toFixed(1)) }));
+    return Object.values(weeks).map((w) => ({
+      ...w,
+      miles: parseFloat(w.miles.toFixed(1)),
+    }));
   }, [activities]);
 
   // Pace status text
   const paceStatus = () => {
-    if (!currentPaceRaw) return { text: 'No data', color: 'var(--color-text-muted)' };
-    if (paceDiff !== null && Math.abs(paceDiff) <= 5) return { text: 'On target', color: 'var(--color-sage)' };
-    if (paceDiff !== null && paceDiff > 0) return { text: `+${paceDiff}s off`, color: 'var(--color-amber)' };
-    if (paceDiff !== null && paceDiff < 0) return { text: `${paceDiff}s faster`, color: 'var(--color-sage)' };
+    if (!currentPaceRaw) {
+      return { text: 'No data', color: 'var(--color-text-muted)' };
+    }
+    if (paceDiff !== null && Math.abs(paceDiff) <= 5) {
+      return { text: 'On target', color: 'var(--color-sage)' };
+    }
+    if (paceDiff !== null && paceDiff > 0) {
+      return { text: `+${paceDiff}s off`, color: 'var(--color-amber)' };
+    }
+    if (paceDiff !== null && paceDiff < 0) {
+      return { text: `${paceDiff}s faster`, color: 'var(--color-sage)' };
+    }
     return { text: 'Tracking', color: 'var(--color-text-secondary)' };
   };
 
   const mileageStatus = () => {
-    const pct = Math.round((weeklyMileageActual / weeklyTarget) * 100);
-    if (pct >= 100) return { text: 'Target hit!', color: 'var(--color-sage)' };
-    if (pct >= 50) return { text: `${pct}% of ${weeklyTarget} mi`, color: 'var(--color-text-secondary)' };
-    return { text: `${weeklyMileageActual} / ${weeklyTarget} mi`, color: 'var(--color-text-secondary)' };
+    const pct = Math.round(
+      (weeklyMileageActual / weeklyTarget) * 100
+    );
+    if (pct >= 100) {
+      return { text: 'Target hit!', color: 'var(--color-sage)' };
+    }
+    if (pct >= 50) {
+      return {
+        text: `${pct}% of ${weeklyTarget} mi`,
+        color: 'var(--color-text-secondary)',
+      };
+    }
+    return {
+      text: `${weeklyMileageActual} / ${weeklyTarget} mi`,
+      color: 'var(--color-text-secondary)',
+    };
   };
+
+  // Goal pace in sec/mile for PaceTrendChart
+  const goalPacePerMile = useMemo(() => {
+    const target = computeTargetPace();
+    if (!target) return null;
+    return target * 1.60934;
+  }, [activeGoal]);
 
   const tooltipStyle = {
     borderRadius: '8px',
@@ -364,11 +453,25 @@ const Dashboard = () => {
     fontSize: '0.8125rem',
   };
 
+  // Training load = weekly runs count
+  const weeklyRunCount = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return activities.filter(
+      (a) => new Date(a.start_time) >= startOfWeek
+    ).length;
+  }, [activities]);
+
   return (
     <>
       {/* Sync bar */}
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
+        <h2
+          className="text-lg font-semibold text-text-primary"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
           Dashboard
         </h2>
         <div className="flex items-center gap-3">
@@ -378,7 +481,11 @@ const Dashboard = () => {
               {syncSuccess}
             </span>
           )}
-          {syncError && <span className="text-xs font-medium text-error">{syncError}</span>}
+          {syncError && (
+            <span className="text-xs font-medium text-error">
+              {syncError}
+            </span>
+          )}
           <div className="relative">
             <button
               onClick={() => setIsSyncMenuOpen(!isSyncMenuOpen)}
@@ -386,7 +493,8 @@ const Dashboard = () => {
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy-light transition-colors cursor-pointer border-none disabled:opacity-60"
             >
               <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
               {isSyncing ? 'Syncing...' : 'Sync Activities'}
@@ -395,7 +503,10 @@ const Dashboard = () => {
 
             {isSyncMenuOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsSyncMenuOpen(false)}></div>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsSyncMenuOpen(false)}
+                />
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border z-20 py-1 overflow-hidden">
                   <button
                     onClick={() => handleSyncActivities('strava')}
@@ -425,105 +536,195 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Row 1: Active Goal Banner */}
-      <ActiveGoalBanner goal={activeGoal} loading={loadingGoal} trainingProgress={trainingProgress} />
+      {/* Race Header */}
+      <RaceHeader
+        activeGoal={activeGoal}
+        lastSynced={lastSynced}
+        onSync={() => handleSyncActivities('strava')}
+        syncLoading={isSyncing}
+      />
 
-      {/* Row 2: Calendar Strip */}
-      <section className="mt-6 card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>This Week</h3>
-          <Link to="/calendar" className="text-xs font-medium text-navy hover:text-navy-light transition-colors no-underline">
-            Full Calendar
-          </Link>
-        </div>
-        <WeekCalendar compact={true} />
-      </section>
-
-      {/* Row 3: 4 Metric Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-        <MetricCard label="Readiness">
-          <ReadinessGauge value={readinessScore} size={76} />
-        </MetricCard>
-        <MetricCard
-          label="Weekly Mileage"
-          value={weeklyMileageActual}
-          decimals={1}
-          suffix=" mi"
-          subtext={mileageStatus().text}
-          subtextColor={mileageStatus().color}
-          icon={<MileageIcon />}
-        />
-        <MetricCard
-          label="Avg Pace"
-          subtext={paceStatus().text}
-          subtextColor={paceStatus().color}
-          icon={<PaceIcon />}
-        >
-          <div className="text-3xl font-bold text-text-primary" style={{ fontFamily: 'var(--font-mono)' }}>
-            {currentPaceRaw ? formatPace(currentPaceRaw) : '--:--'}
-          </div>
-          <span className="text-xs text-text-muted">/mi</span>
-        </MetricCard>
-        <MetricCard
-          label="Consistency"
-          value={consistency}
-          suffix="%"
-          subtext={consistency >= 75 ? 'Strong habit' : consistency >= 50 ? 'Building' : 'Needs work'}
-          subtextColor={consistency >= 75 ? 'var(--color-sage)' : consistency >= 50 ? 'var(--color-amber)' : 'var(--color-coral)'}
-          icon={<ConsistencyIcon />}
-        />
-      </section>
-
-      {/* Row 4: Run Type Breakdown + Consistency Tracker */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <RunTypeBreakdown activities={activities} targetPaceSecondsPerKm={computeTargetPace()} />
-        <ConsistencyTracker activities={activities} />
-      </section>
-
-      {/* Row 5: Pace Engineer + Physiology Zones */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
-        <div className="lg:col-span-2">
-          <PaceEngineer activeGoal={activeGoal} />
-        </div>
-        <div className="lg:col-span-3">
-          <PhysiologyZones currentPace={currentPaceRaw} activeGoal={activeGoal} />
-        </div>
-      </section>
-
-      {/* Row 6: Volume Trend + Recent Activities */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
-        <div className="lg:col-span-3 card p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
-            Weekly Volume
-          </h3>
-          <div className="h-[240px]">
-            {weeklyChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} dy={8} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
-                  <Tooltip cursor={{ fill: 'var(--color-bg-elevated)' }} contentStyle={tooltipStyle} />
-                  <Bar dataKey="miles" fill="var(--color-navy)" radius={[4, 4, 0, 0]} barSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-text-muted">
-                No data yet — sync your activities
+      {/* Main content: 2/3 + 1/3 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Main column (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 3 Metric Cards */}
+          <section className="grid grid-cols-3 gap-4">
+            <MetricCard
+              label="Weekly Miles"
+              value={weeklyMileageActual}
+              decimals={1}
+              suffix=" mi"
+              subtext={mileageStatus().text}
+              subtextColor={mileageStatus().color}
+              icon={<MileageIcon />}
+            />
+            <MetricCard
+              label="Avg Pace"
+              subtext={paceStatus().text}
+              subtextColor={paceStatus().color}
+              icon={<PaceIcon />}
+            >
+              <div
+                className="text-3xl font-bold text-text-primary"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                {currentPaceRaw ? formatPace(currentPaceRaw) : '--:--'}
               </div>
-            )}
-          </div>
-        </div>
-        <div className="lg:col-span-2">
-          <RecentActivitiesCard
+              <span className="text-xs text-text-muted">/mi</span>
+            </MetricCard>
+            <MetricCard
+              label="Training Load"
+              value={weeklyRunCount}
+              suffix=" runs"
+              subtext={
+                weeklyRunCount >= 5
+                  ? 'High volume'
+                  : weeklyRunCount >= 3
+                    ? 'On track'
+                    : 'Light week'
+              }
+              subtextColor={
+                weeklyRunCount >= 5
+                  ? 'var(--color-sage)'
+                  : weeklyRunCount >= 3
+                    ? 'var(--color-text-secondary)'
+                    : 'var(--color-amber)'
+              }
+              icon={<LoadIcon />}
+            />
+          </section>
+
+          {/* 7-Day Calendar Strip */}
+          <section className="card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3
+                className="text-sm font-semibold text-text-primary"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                This Week
+              </h3>
+              <Link
+                to="/calendar"
+                className="text-xs font-medium text-navy hover:text-navy-light transition-colors no-underline"
+              >
+                Full Calendar
+              </Link>
+            </div>
+            <WeekCalendar compact={true} />
+          </section>
+
+          {/* Weekly Mileage Chart */}
+          <section className="card p-5">
+            <h3
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-4"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Weekly Volume
+            </h3>
+            <div className="h-[240px]">
+              {weeklyChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyChartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="var(--color-border-light)"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="week"
+                      tick={{
+                        fontSize: 11,
+                        fill: 'var(--color-text-muted)',
+                      }}
+                      tickLine={false}
+                      axisLine={false}
+                      dy={8}
+                    />
+                    <YAxis
+                      tick={{
+                        fontSize: 11,
+                        fill: 'var(--color-text-muted)',
+                      }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'var(--color-bg-elevated)' }}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Bar
+                      dataKey="miles"
+                      fill="var(--color-navy)"
+                      radius={[4, 4, 0, 0]}
+                      barSize={28}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-text-muted">
+                  No data yet — sync your activities
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Pace Trend Chart */}
+          <PaceTrendChart
             activities={activities}
-            formatPace={formatPace}
-            metersToMiles={metersToMiles}
-            formatDate={formatDate}
+            goalPace={goalPacePerMile}
+          />
+
+          {/* Recent Runs Table */}
+          <section>
+            <h3
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Recent Runs
+            </h3>
+            <RecentRunsTable activities={activities} />
+          </section>
+        </div>
+
+        {/* Sidebar (1/3) */}
+        <div className="space-y-6">
+          {/* Readiness Gauge */}
+          <div className="card p-5 flex flex-col items-center">
+            <ReadinessGauge value={readinessScore} size={120} />
+            <div className="w-full mt-4">
+              <ReadinessBreakdown
+                scores={readinessFactors}
+                expanded={readinessExpanded}
+                onToggle={() => setReadinessExpanded((v) => !v)}
+              />
+            </div>
+          </div>
+
+          {/* AI Insight */}
+          <div className="card p-5">
+            <h3
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Coach Insight
+            </h3>
+            <CoachInsightBar
+              message={
+                coachInsight ||
+                'Connect your training data to get personalized insights.'
+              }
+              className="!rounded-lg !border-0 !px-0 !py-0 !bg-transparent"
+            />
+          </div>
+
+          {/* Today's Plan */}
+          <TodaysPlanCard
+            entry={todayEntry}
+            onMarkComplete={handleMarkComplete}
           />
         </div>
-      </section>
-
+      </div>
     </>
   );
 };

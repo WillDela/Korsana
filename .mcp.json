@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@upstash/context7-mcp"]
+    },
+    "exa": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "exa-mcp-server"],
+      "env": {
+        "EXA_API_KEY": "5c8ee7fe-dda3-4eea-bee7-2ee6d5270536"
+      }
+    }
+  }
+}

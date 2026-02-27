@@ -7,6 +7,12 @@ export const calendarAPI = {
     return response.data;
   },
 
+  // Get calendar entries for an arbitrary date range
+  getRange: async (startDate, endDate) => {
+    const response = await api.get(`/calendar/range?start=${startDate}&end=${endDate}`);
+    return response.data;
+  },
+
   // Create or update a calendar entry (upsert by date)
   upsertEntry: async (entry) => {
     const response = await api.put('/calendar/entry', entry);

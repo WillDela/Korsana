@@ -117,6 +117,7 @@ func main() {
 				goals.GET("/active", goalsHandler.GetActiveGoal)
 				goals.GET("/:id", goalsHandler.GetGoal)
 				goals.PUT("/:id", goalsHandler.UpdateGoal)
+				goals.PUT("/:id/active", goalsHandler.SetActive)
 				goals.DELETE("/:id", goalsHandler.DeleteGoal)
 			}
 
@@ -141,6 +142,7 @@ func main() {
 			calendar := protected.Group("/calendar")
 			{
 				calendar.GET("/week", calendarHandler.GetWeek)
+				calendar.GET("/range", calendarHandler.GetRange)
 				calendar.PUT("/entry", calendarHandler.UpsertEntry)
 				calendar.DELETE("/entry/:id", calendarHandler.DeleteEntry)
 				calendar.PATCH("/entry/:id/status", calendarHandler.UpdateStatus)

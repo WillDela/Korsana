@@ -31,6 +31,12 @@ export const goalsAPI = {
     return response.data;
   },
 
+  // Set a goal as the active goal
+  setActive: async (goalId) => {
+    const response = await api.put(`/goals/${goalId}/active`);
+    return response.data;
+  },
+
   // Delete a goal
   deleteGoal: async (goalId) => {
     const response = await api.delete(`/goals/${goalId}`);
