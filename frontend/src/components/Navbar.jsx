@@ -99,7 +99,7 @@ const Navbar = ({ variant = 'landing' }) => {
   const initial  = user?.email?.charAt(0)?.toUpperCase() || 'U';
 
   const handleLogout = () => {
-    logout();
+    localStorage.removeItem('token');
     window.location.replace('/');
   };
 
