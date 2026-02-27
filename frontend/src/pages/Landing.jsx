@@ -637,9 +637,20 @@ const Landing = () => {
             <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
               Connect Strava and tell us your race. We'll handle the rest — a plan built around your life, not someone else's template.
             </p>
-            <p className="mt-10 text-xs font-mono text-white/30 tracking-wide uppercase">
-              &copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.
-            </p>
+            <div className="mt-10 flex flex-col items-center gap-3">
+              <div className="flex items-center gap-6">
+                <Link to="/terms" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">
+                  Terms of Service
+                </Link>
+                <span className="text-white/20 text-xs">·</span>
+                <Link to="/privacy" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">
+                  Privacy Policy
+                </Link>
+              </div>
+              <p className="text-xs font-mono text-white/25 tracking-wide uppercase">
+                &copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.
+              </p>
+            </div>
           </motion.div>
         </div>
       </footer>

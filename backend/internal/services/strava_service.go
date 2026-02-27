@@ -69,6 +69,110 @@ func (s *StravaService) ValidateOAuthState(ctx context.Context, state string) (u
 	return userID, nil
 }
 
+// GenerateLoginOAuthState creates a state for the unauthenticated Strava login flow.
+func (s *StravaService) GenerateLoginOAuthState(ctx context.Context) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	state := hex.EncodeToString(b)
+
+	key := fmt.Sprintf("strava_login_state:%s", state)
+	err := s.redis.Set(ctx, key, "login", 10*time.Minute).Err()
+	if err != nil {
+		return "", err
+	}
+
+	return state, nil
+}
+
+// ValidateLoginOAuthState confirms the state belongs to the login flow and deletes it.
+func (s *StravaService) ValidateLoginOAuthState(ctx context.Context, state string) error {
+	key := fmt.Sprintf("strava_login_state:%s", state)
+	val, err := s.redis.Get(ctx, key).Result()
+	if err != nil || val != "login" {
+		return errors.New("invalid or expired login state")
+	}
+	s.redis.Del(ctx, key)
+	return nil
+}
+
+// GetLoginURL returns the Strava OAuth URL for the unauthenticated login flow.
+func (s *StravaService) GetLoginURL(ctx context.Context) (string, error) {
+	state, err := s.GenerateLoginOAuthState(ctx)
+	if err != nil {
+		return "", err
+	}
+	return s.stravaClient.GetAuthorizationURL(state), nil
+}
+
+// LoginWithStrava exchanges the OAuth code and finds or creates a user.
+// Returns the user and whether they are newly created.
+func (s *StravaService) LoginWithStrava(ctx context.Context, code string) (*models.User, bool, error) {
+	tokenResp, err := s.stravaClient.ExchangeToken(code)
+	if err != nil {
+		return nil, false, err
+	}
+
+	athleteID := tokenResp.Athlete.ID
+
+	// Check if this Strava account is already connected to a user.
+	var conn models.StravaConnection
+	err = s.db.GetContext(ctx, &conn,
+		"SELECT * FROM strava_connections WHERE strava_athlete_id = $1", athleteID)
+	if err == nil {
+		// Existing user — update tokens and return.
+		updateQuery := `
+			UPDATE strava_connections
+			SET access_token = $1, refresh_token = $2, token_expires_at = $3, updated_at = NOW()
+			WHERE strava_athlete_id = $4
+		`
+		expiresAt := time.Unix(tokenResp.ExpiresAt, 0)
+		if _, execErr := s.db.ExecContext(ctx, updateQuery,
+			tokenResp.AccessToken, tokenResp.RefreshToken, expiresAt, athleteID); execErr != nil {
+			return nil, false, execErr
+		}
+
+		var user models.User
+		if userErr := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", conn.UserID); userErr != nil {
+			return nil, false, userErr
+		}
+		return &user, false, nil
+	}
+
+	// New Strava user — create an account.
+	syntheticEmail := fmt.Sprintf("strava_%d@strava.korsana", athleteID)
+
+	newUser := &models.User{
+		ID:           uuid.New(),
+		Email:        syntheticEmail,
+		PasswordHash: "strava_oauth", // sentinel; cannot be used for password login
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	insertUser := `
+		INSERT INTO users (id, email, password_hash, created_at, updated_at)
+		VALUES (:id, :email, :password_hash, :created_at, :updated_at)
+	`
+	if _, insertErr := s.db.NamedExecContext(ctx, insertUser, newUser); insertErr != nil {
+		return nil, false, insertErr
+	}
+
+	expiresAt := time.Unix(tokenResp.ExpiresAt, 0)
+	insertConn := `
+		INSERT INTO strava_connections (
+			user_id, strava_athlete_id, access_token, refresh_token, token_expires_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, NOW())
+	`
+	if _, connErr := s.db.ExecContext(ctx, insertConn,
+		newUser.ID, athleteID, tokenResp.AccessToken, tokenResp.RefreshToken, expiresAt); connErr != nil {
+		return nil, false, connErr
+	}
+
+	return newUser, true, nil
+}
+
 // GetAuthURL returns the Strava OAuth URL with state parameter
 func (s *StravaService) GetAuthURL(ctx context.Context, userID uuid.UUID) (string, error) {
 	state, err := s.GenerateOAuthState(ctx, userID)

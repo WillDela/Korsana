@@ -125,6 +125,11 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, curr
 	return err
 }
 
+// GenerateToken creates a JWT token (exported for use by other services/handlers).
+func (s *AuthService) GenerateToken(userID uuid.UUID, email string) (string, error) {
+	return s.generateToken(userID, email)
+}
+
 // generateToken creates a JWT token
 func (s *AuthService) generateToken(userID uuid.UUID, email string) (string, error) {
 	claims := jwt.MapClaims{

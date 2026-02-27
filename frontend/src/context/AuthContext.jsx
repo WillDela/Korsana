@@ -53,8 +53,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const setUserFromToken = (userObj) => {
+    setUser(userObj);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, loading, setUserFromToken }}>
       {!loading && children}
     </AuthContext.Provider>
   );

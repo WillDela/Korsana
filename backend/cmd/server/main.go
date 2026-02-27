@@ -50,7 +50,7 @@ func main() {
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	stravaHandler := handlers.NewStravaHandler(stravaService)
+	stravaHandler := handlers.NewStravaHandler(stravaService, authService)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
@@ -93,7 +93,8 @@ func main() {
 			auth.POST("/logout", middleware.AuthMiddleware(cfg), authHandler.Logout)
 		}
 
-		// Public Strava OAuth Callback (no auth required - validated via state parameter)
+		// Public Strava routes (no auth required)
+		api.GET("/auth/strava/login", stravaHandler.LoginRedirect)
 		api.GET("/strava/callback", stravaHandler.Callback)
 
 		// Protected Routes

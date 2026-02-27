@@ -12,6 +12,9 @@ import Onboarding from './pages/Onboarding';
 import Coach from './pages/Coach';
 import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
+import StravaCallback from './pages/StravaCallback';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -28,6 +31,9 @@ const AppRoutes = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/auth/strava/callback" element={<StravaCallback />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
       {/* Authenticated routes with shared AppLayout (navbar + content area) */}

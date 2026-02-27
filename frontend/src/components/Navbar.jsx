@@ -100,7 +100,7 @@ const Navbar = ({ variant = 'landing' }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    window.location.replace('/');
   };
 
   const scrollTo = (id) => {

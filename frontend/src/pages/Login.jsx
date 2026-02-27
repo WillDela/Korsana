@@ -1,41 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { SiStrava } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
-import AnimatedInput from '../components/AnimatedInput';
 import AnimatedButton from '../components/AnimatedButton';
-import { StaggerContainer, StaggerItem } from '../components/StaggerContainer';
-import BrandIcon from '../components/BrandIcon';
-
-const AnimatedCounter = ({ end, suffix = '', duration = 2000 }) => {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let start = 0;
-    const step = end / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [end, duration]);
-  return <span>{count.toLocaleString()}{suffix}</span>;
-};
 
 const Login = () => {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const email = watch('email');
-  const password = watch('password');
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -51,195 +28,140 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex relative">
-      {/* Brand Side */}
-      <div
-        className="hidden lg:flex flex-1 bg-navy text-white p-12 flex-col justify-between relative overflow-hidden"
-        style={{ clipPath: 'polygon(0 0, 100% 0, 92% 100%, 0 100%)' }}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-bg-app px-4">
+      {/* Logo */}
+      <motion.div
+        className="flex items-center gap-2 mb-8"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
       >
-        {/* Background texture */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-10 w-64 h-64 border border-white/20 rounded-full" />
-          <div className="absolute bottom-32 right-20 w-48 h-48 border border-white/10 rounded-full" />
+        <div className="w-9 h-9 bg-navy rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-base">K</span>
+        </div>
+        <span className="text-navy text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>
+          Korsana
+        </span>
+      </motion.div>
+
+      {/* Card */}
+      <motion.div
+        className="w-full max-w-[400px] bg-white rounded-2xl shadow-sm border border-border-light p-8"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <h1
+          className="text-2xl font-bold text-navy mb-6"
+          style={{ fontFamily: 'var(--font-serif)' }}
+        >
+          Return to Your Training
+        </h1>
+
+        {serverError && (
+          <div className="bg-coral-light text-error text-sm rounded-lg px-4 py-3 mb-5 border border-error/20">
+            {serverError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="Email address"
+              className={`w-full px-3.5 py-2.5 rounded-lg border text-sm text-text-primary placeholder-text-muted outline-none transition-colors
+                ${errors.email ? 'border-error' : 'border-border focus:border-navy'}`}
+              {...register('email', { required: 'Email is required' })}
+            />
+            {errors.email && (
+              <p className="text-error text-xs mt-1">{errors.email.message}</p>
+            )}
+          </div>
+
+          {/* Password */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-text-primary">Password</label>
+              <button
+                type="button"
+                className="text-xs text-navy font-semibold hover:text-navy-light transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className={`w-full px-3.5 py-2.5 pr-10 rounded-lg border text-sm text-text-primary placeholder-text-muted outline-none transition-colors
+                  ${errors.password ? 'border-error' : 'border-border focus:border-navy'}`}
+                {...register('password', { required: 'Password is required' })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors cursor-pointer bg-transparent border-none p-0"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-error text-xs mt-1">{errors.password.message}</p>
+            )}
+          </div>
+
+          {/* Submit */}
+          <AnimatedButton
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting}
+            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9375rem' }}
+          >
+            {isSubmitting ? 'Logging in...' : 'Log In →'}
+          </AnimatedButton>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-text-muted uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
-        <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-3 no-underline mb-16">
-            <div className="w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">K</span>
-            </div>
-            <span className="text-white text-2xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
-          </Link>
-
-          {/* Editorial tagline */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="w-16 h-px bg-white/40 mb-8" />
-            <h2
-              className="text-4xl xl:text-5xl leading-tight mb-6 max-w-md"
-              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 400 }}
-            >
-              Your plan,<br />our goal.
-            </h2>
-            <div className="w-16 h-px bg-white/40 mt-8" />
-          </motion.div>
-        </div>
-
-        {/* Bottom stats + detail */}
-        <motion.div
-          className="relative z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
+        {/* Strava */}
+        <button
+          type="button"
+          onClick={() => { window.location.href = '/api/auth/strava/login'; }}
+          className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90 cursor-pointer border-none"
+          style={{ backgroundColor: '#FC4C02' }}
         >
-          <p
-            className="text-white/30 text-xs tracking-[0.3em] uppercase mb-8"
-            style={{ fontFamily: 'var(--font-mono)' }}
-          >
-            Est. 2026
-          </p>
-          <div className="flex gap-10">
-            <div>
-              <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
-                <AnimatedCounter end={10000} suffix="+" />
-              </p>
-              <p className="text-white/50 text-xs uppercase tracking-wider">Miles tracked</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
-                <AnimatedCounter end={2500} suffix="+" duration={1800} />
-              </p>
-              <p className="text-white/50 text-xs uppercase tracking-wider">Athletes</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
-                <AnimatedCounter end={98} suffix="%" duration={1500} />
-              </p>
-              <p className="text-white/50 text-xs uppercase tracking-wider">PR rate</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+          <SiStrava size={18} color="white" />
+          Sign in with Strava
+        </button>
+      </motion.div>
 
-      {/* Form Side */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-bg-app lg:pl-0">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full max-w-[420px]"
-        >
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-navy rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
-            </div>
-            <span className="text-navy text-xl font-bold" style={{ fontFamily: 'var(--font-heading)' }}>Korsana</span>
-          </div>
-
-          {/* Form card with accent bar */}
-          <div className="bg-white rounded-xl shadow-sm border border-border-light p-8 relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-navy" />
-
-            <div className="mb-8">
-              <h1
-                className="text-2xl text-text-primary mb-2"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
-              >
-                Welcome back
-              </h1>
-              <p className="text-sm text-text-secondary">Log in to continue your training</p>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)}>
-              {serverError && (
-                <div className="bg-coral-light text-error text-sm rounded-lg px-4 py-3 mb-6 border border-error/20">
-                  {serverError}
-                </div>
-              )}
-
-              <StaggerContainer className="flex flex-col gap-5">
-                <StaggerItem>
-                  <AnimatedInput
-                    label="Email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    error={errors.email?.message}
-                    {...register('email', { required: 'Email is required' })}
-                  />
-                </StaggerItem>
-                <StaggerItem>
-                  <AnimatedInput
-                    label="Password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    error={errors.password?.message}
-                    {...register('password', { required: 'Password is required' })}
-                  />
-                </StaggerItem>
-                <StaggerItem>
-                  <AnimatedButton
-                    type="submit"
-                    variant="primary"
-                    disabled={isSubmitting}
-                    style={{ width: '100%', padding: '0.75rem', fontSize: '0.9375rem' }}
-                  >
-                    {isSubmitting ? 'Logging in...' : 'Log in'}
-                  </AnimatedButton>
-                </StaggerItem>
-              </StaggerContainer>
-            </form>
-
-            {/* Separator */}
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-text-muted uppercase tracking-wider">or continue with</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
-            {/* Brand connect buttons */}
-            <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-border text-text-secondary text-sm font-medium hover:bg-bg-app transition-colors cursor-pointer bg-white"
-              >
-                <BrandIcon brand="strava" size={24} />
-                Connect with Strava
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-border text-text-secondary text-sm font-medium cursor-not-allowed bg-white opacity-60"
-              >
-                <BrandIcon brand="garmin" size={24} />
-                Connect with Garmin (Soon)
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-border text-text-secondary text-sm font-medium cursor-not-allowed bg-white opacity-60"
-              >
-                <BrandIcon brand="coros" size={28} />
-                Connect with Coros (Soon)
-              </button>
-            </div>
-          </div>
-
-          <p className="text-center mt-6 text-sm text-text-secondary">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-navy font-semibold no-underline hover:text-navy-light transition-colors">
-              Sign up
-            </Link>
-          </p>
-        </motion.div>
-      </div>
+      {/* Footer link */}
+      <p className="text-center mt-6 text-sm text-text-secondary">
+        Don't have an account?{' '}
+        <Link to="/signup" className="text-navy font-semibold no-underline hover:text-navy-light transition-colors">
+          Create Account
+        </Link>
+      </p>
     </div>
   );
 };
