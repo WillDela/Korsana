@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { goalsAPI } from '../api/goals';
 import { stravaAPI } from '../api/strava';
+import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
 import WeekCalendar from '../components/WeekCalendar';
@@ -19,6 +20,8 @@ import PaceTrendChart from '../components/dashboard/PaceTrendChart';
 import RecentRunsTable from '../components/dashboard/RecentRunsTable';
 import TodaysPlanCard from '../components/dashboard/TodaysPlanCard';
 import CoachInsightBar from '../components/CoachInsightBar';
+import ManualActivityModal from '../components/ManualActivityModal';
+import { DISTANCE_BASED_TYPES } from '../constants/activityTypes';
 
 const MileageIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,6 +56,7 @@ const Dashboard = () => {
   const [todayEntry, setTodayEntry] = useState(null);
   const [readinessExpanded, setReadinessExpanded] = useState(false);
   const [coachInsight, setCoachInsight] = useState(null);
+  const [showLogModal, setShowLogModal] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -96,11 +100,11 @@ const Dashboard = () => {
   const fetchActivitiesAndAutoSync = async () => {
     try {
       setLoadingActivities(true);
-      const response = await stravaAPI.getActivities();
+      const response = await activitiesAPI.getActivities();
       if (!response.activities || response.activities.length === 0) {
         try {
           await stravaAPI.syncActivities();
-          const syncedResponse = await stravaAPI.getActivities();
+          const syncedResponse = await activitiesAPI.getActivities();
           setActivities(syncedResponse.activities || []);
           setLastSynced(new Date().toISOString());
         } catch {
@@ -131,7 +135,7 @@ const Dashboard = () => {
   const fetchActivities = async () => {
     try {
       setLoadingActivities(true);
-      const response = await stravaAPI.getActivities();
+      const response = await activitiesAPI.getActivities();
       setActivities(response.activities || []);
     } catch {
       // Failed to fetch
@@ -204,7 +208,7 @@ const Dashboard = () => {
 
   const computeCurrentPace = () => {
     const recentRuns = activities.filter(
-      (a) => a.average_pace_seconds_per_km
+      (a) => a.activity_type === 'run' && a.average_pace_seconds_per_km
     );
     if (recentRuns.length === 0) return null;
     return (
@@ -304,7 +308,7 @@ const Dashboard = () => {
       const threeWeeksAgo = new Date();
       threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
       const recentRuns = activities.filter(
-        (a) => new Date(a.start_time) >= threeWeeksAgo
+        (a) => a.activity_type === 'run' && new Date(a.start_time) >= threeWeeksAgo
       );
       const longestRun = Math.max(
         0, ...recentRuns.map((a) => a.distance_meters || 0)
@@ -347,12 +351,23 @@ const Dashboard = () => {
       }
     }
 
+    // Cross-training score: count distinct days with non-run activities in last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const crossTrainDays = new Set(
+      activities
+        .filter((a) => a.activity_type !== 'run' && new Date(a.start_time) >= sevenDaysAgo)
+        .map((a) => new Date(a.start_time).toISOString().slice(0, 10))
+    ).size;
+    const crossTrainingScore = Math.min(100, crossTrainDays * 34);
+
     const composite = Math.round(
-      volumeScore * 0.25 +
-      paceScore * 0.25 +
-      consistencyScore * 0.20 +
+      volumeScore * 0.22 +
+      paceScore * 0.22 +
+      consistencyScore * 0.18 +
       longRunScore * 0.15 +
-      trendScore * 0.15
+      trendScore * 0.13 +
+      crossTrainingScore * 0.10
     );
 
     return {
@@ -361,6 +376,7 @@ const Dashboard = () => {
       consistency: Math.round(consistencyScore),
       longRun: Math.round(longRunScore),
       trend: Math.round(trendScore),
+      crossTraining: Math.round(crossTrainingScore),
       composite: Math.min(100, Math.max(0, composite)),
     };
   }, [
@@ -388,15 +404,17 @@ const Dashboard = () => {
         miles: 0,
       };
     }
-    activities.forEach((a) => {
-      const d = new Date(a.start_time);
-      const weekStart = new Date(d);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      const key = weekStart.toISOString().slice(0, 10);
-      if (weeks[key]) {
-        weeks[key].miles += (a.distance_meters || 0) * 0.000621371;
-      }
-    });
+    activities
+      .filter((a) => DISTANCE_BASED_TYPES.has(a.activity_type))
+      .forEach((a) => {
+        const d = new Date(a.start_time);
+        const weekStart = new Date(d);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const key = weekStart.toISOString().slice(0, 10);
+        if (weeks[key]) {
+          weeks[key].miles += (a.distance_meters || 0) * 0.000621371;
+        }
+      });
     return Object.values(weeks).map((w) => ({
       ...w,
       miles: parseFloat(w.miles.toFixed(1)),
@@ -475,6 +493,12 @@ const Dashboard = () => {
           Dashboard
         </h2>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowLogModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-navy text-navy text-sm font-medium hover:bg-navy/5 transition-colors cursor-pointer bg-white"
+          >
+            + Log Activity
+          </button>
           {syncSuccess && (
             <span className="text-xs font-medium text-sage flex items-center gap-1">
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -681,7 +705,7 @@ const Dashboard = () => {
               className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Recent Runs
+              Recent Activities
             </h3>
             <RecentRunsTable activities={activities} />
           </section>
@@ -725,6 +749,12 @@ const Dashboard = () => {
           />
         </div>
       </div>
+
+      <ManualActivityModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+        onSuccess={() => fetchActivities()}
+      />
     </>
   );
 };

@@ -10,6 +10,62 @@ import (
 	"github.com/korsana/backend/internal/models"
 )
 
+// AutoMatchActivity finds a planned calendar entry on the activity's date
+// and marks it completed if the activity type is compatible.
+func (s *CalendarService) AutoMatchActivity(
+	ctx context.Context,
+	userID uuid.UUID,
+	activity *models.Activity,
+) error {
+	date := activity.StartTime.UTC().Truncate(24 * time.Hour)
+
+	var entry models.CalendarEntry
+	err := s.db.GetContext(ctx, &entry, `
+		SELECT * FROM training_calendar
+		WHERE user_id = $1 AND date = $2 AND status = 'planned'
+		LIMIT 1
+	`, userID, date)
+	if err != nil {
+		return nil
+	}
+
+	if !isActivityCompatibleWithWorkout(activity.ActivityType, entry.WorkoutType) {
+		return nil
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE training_calendar
+		SET status = 'completed', completed_activity_id = $1, updated_at = NOW()
+		WHERE id = $2 AND user_id = $3 AND status = 'planned'
+	`, activity.ID, entry.ID, userID)
+	return err
+}
+
+// isActivityCompatibleWithWorkout checks if an activity type matches a
+// calendar workout type.
+func isActivityCompatibleWithWorkout(activityType, workoutType string) bool {
+	switch workoutType {
+	case "easy", "tempo", "interval", "long", "race":
+		return activityType == models.ActivityTypeRun
+	case "cross_train":
+		crossTrainTypes := map[string]bool{
+			models.ActivityTypeCycling:       true,
+			models.ActivityTypeSwimming:      true,
+			models.ActivityTypeRowing:        true,
+			models.ActivityTypeWalking:       true,
+			models.ActivityTypeHiking:        true,
+			models.ActivityTypeElliptical:    true,
+			models.ActivityTypeStairMaster:   true,
+			models.ActivityTypeWeightLifting: true,
+		}
+		return crossTrainTypes[activityType]
+	case "recovery":
+		return activityType == models.ActivityTypeRecovery
+	default:
+		return false
+	}
+}
+
 // CalendarService handles training calendar business logic
 type CalendarService struct {
 	db *database.DB

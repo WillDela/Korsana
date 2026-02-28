@@ -136,7 +136,7 @@ func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, userMe
 	})
 
 	// System prompt
-	systemPrompt := fmt.Sprintf(`You are Korsana, an experienced running coach with expertise in marathon and distance running training. You provide evidence-based, personalized advice to runners.
+	systemPrompt := fmt.Sprintf(`You are Korsana, an experienced endurance and strength training coach with expertise in marathon training, cross-training, and periodized fitness programs. You provide evidence-based, personalized advice to runners.
 
 Your coaching philosophy:
 - Hybrid approach: Combine established training principles (periodization, 80/20 rule, progressive overload) with personalized recommendations based on individual data
@@ -330,7 +330,7 @@ Target Time: %s`,
 		))
 	}
 
-	// Get recent activities (last 14 days)
+	// Get recent activities (last 14 days), grouped by type
 	var activities []models.Activity
 	query := `
 		SELECT * FROM activities
@@ -342,30 +342,51 @@ Target Time: %s`,
 		activities = []models.Activity{}
 	}
 
-	// Calculate stats
-	totalDistance := 0.0
-	totalDuration := 0
-	runCount := len(activities)
-
-	for _, act := range activities {
-		totalDistance += act.DistanceMeters
-		totalDuration += act.DurationSeconds
-	}
-
-	if runCount > 0 {
-		distanceKm := totalDistance / 1000.0
-		avgPace := 0.0
-		if totalDistance > 0 {
-			avgPace = float64(totalDuration) / distanceKm
+	if len(activities) > 0 {
+		type typeSummary struct {
+			count    int
+			distance float64
+			duration int
 		}
-		parts = append(parts, fmt.Sprintf(`Recent Training (last 14 days):
-- Total runs: %d
-- Total distance: %.1f km
-- Average pace: %.0f seconds/km`,
-			runCount,
-			distanceKm,
-			avgPace,
-		))
+		byType := map[string]*typeSummary{}
+		for _, act := range activities {
+			ts, ok := byType[act.ActivityType]
+			if !ok {
+				ts = &typeSummary{}
+				byType[act.ActivityType] = ts
+			}
+			ts.count++
+			ts.distance += act.DistanceMeters
+			ts.duration += act.DurationSeconds
+		}
+
+		activityLines := "Recent Activities (last 14 days):"
+		for actType, ts := range byType {
+			if models.DistanceBasedTypes[actType] {
+				distKm := ts.distance / 1000.0
+				var paceStr string
+				if ts.distance > 0 {
+					paceSeconds := float64(ts.duration) / distKm
+					paceMin := int(paceSeconds) / 60
+					paceSec := int(paceSeconds) % 60
+					paceStr = fmt.Sprintf(", avg pace %d:%02d/km", paceMin, paceSec)
+				}
+				activityLines += fmt.Sprintf(
+					"\n- %d %s (%.1f km%s)",
+					ts.count, actType, distKm, paceStr,
+				)
+			} else {
+				avgMinutes := 0
+				if ts.count > 0 {
+					avgMinutes = (ts.duration / ts.count) / 60
+				}
+				activityLines += fmt.Sprintf(
+					"\n- %d %s (%d min avg)",
+					ts.count, actType, avgMinutes,
+				)
+			}
+		}
+		parts = append(parts, activityLines)
 	} else {
 		parts = append(parts, "Recent Training: No activities recorded in the last 14 days.")
 	}

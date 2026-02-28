@@ -57,8 +57,9 @@ type Activity struct {
 	MaxHeartRate            *int      `json:"max_heart_rate" db:"max_heart_rate"`
 	ElevationGainMeters     *float64  `json:"elevation_gain_meters" db:"elevation_gain_meters"`
 	AverageCadence          *float64  `json:"average_cadence" db:"average_cadence"`
-	SufferScore             *int      `json:"suffer_score" db:"suffer_score"`
-	SyncedAt                time.Time `json:"synced_at" db:"synced_at"`
+	SufferScore             *int           `json:"suffer_score" db:"suffer_score"`
+	SyncedAt                time.Time      `json:"synced_at" db:"synced_at"`
+	CustomFields            map[string]any `json:"custom_fields,omitempty" db:"-"`
 }
 
 // ConnectedIntegration tracks a user's OAuth connection to an external data source.
@@ -117,6 +118,42 @@ type CalendarEntry struct {
 	Source                 string     `json:"source" db:"source"`
 	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// CrossTrainingGoal represents a user's weekly cross-training target
+type CrossTrainingGoal struct {
+	ID              uuid.UUID `json:"id" db:"id"`
+	UserID          uuid.UUID `json:"user_id" db:"user_id"`
+	ActivityType    string    `json:"activity_type" db:"activity_type"`
+	SessionsPerWeek int       `json:"sessions_per_week" db:"sessions_per_week"`
+	IsActive        bool      `json:"is_active" db:"is_active"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// Activity type constants
+const (
+	ActivityTypeRun           = "run"
+	ActivityTypeCycling       = "cycling"
+	ActivityTypeSwimming      = "swimming"
+	ActivityTypeWalking       = "walking"
+	ActivityTypeHiking        = "hiking"
+	ActivityTypeRowing        = "rowing"
+	ActivityTypeElliptical    = "elliptical"
+	ActivityTypeStairMaster   = "stair_master"
+	ActivityTypeWeightLifting = "weight_lifting"
+	ActivityTypeWorkout       = "workout"
+	ActivityTypeRecovery      = "recovery"
+)
+
+// DistanceBasedTypes identifies activity types measured by distance
+var DistanceBasedTypes = map[string]bool{
+	ActivityTypeRun:      true,
+	ActivityTypeCycling:  true,
+	ActivityTypeSwimming: true,
+	ActivityTypeWalking:  true,
+	ActivityTypeHiking:   true,
+	ActivityTypeRowing:   true,
 }
 
 // Common race distances in meters

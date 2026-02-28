@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LABELS = ['Volume', 'Pace', 'Consistency', 'Long Run', 'Trend'];
-const KEYS = ['volume', 'pace', 'consistency', 'longRun', 'trend'];
+const LABELS = ['Volume', 'Pace', 'Consistency', 'Long Run', 'Trend', 'Cross-Training'];
+const KEYS = ['volume', 'pace', 'consistency', 'longRun', 'trend', 'crossTraining'];
 
 const getBarColor = (value) => {
   if (value >= 70) return 'var(--color-sage)';

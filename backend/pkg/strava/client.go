@@ -98,6 +98,7 @@ type Activity struct {
 	ElapsedTime        int     `json:"elapsed_time"`       // seconds
 	TotalElevationGain float64 `json:"total_elevation_gain"` // meters
 	Type               string  `json:"type"`               // "Run", "Ride", etc.
+	SportType          string  `json:"sport_type"`
 	StartDate          string  `json:"start_date"`         // ISO 8601 format
 	AverageHeartrate   float64 `json:"average_heartrate"`
 	MaxHeartrate       float64 `json:"max_heartrate"`

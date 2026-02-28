@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
 import SessionDetailsModal, { WORKOUT_TYPES } from './SessionDetailsModal';
+import ManualActivityModal from './ManualActivityModal';
 
 const getMonday = (date = new Date()) => {
   const d = new Date(date);
@@ -37,6 +38,7 @@ const TrainingBlock = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [logModalDate, setLogModalDate] = useState(null);
 
   const fetchBlock = useCallback(async () => {
     try {
@@ -170,8 +172,17 @@ const TrainingBlock = () => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-1">
             <span className="text-xl text-gray-200">+</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLogModalDate(dateKey);
+              }}
+              className="text-[10px] text-text-muted hover:text-navy cursor-pointer bg-transparent border-none px-2 py-0.5 rounded hover:bg-bg-app"
+            >
+              Log
+            </button>
           </div>
         )}
       </motion.div>
@@ -249,6 +260,16 @@ const TrainingBlock = () => {
         onDelete={handleDelete}
         entry={selectedEntry}
         selectedDate={selectedDate}
+      />
+
+      <ManualActivityModal
+        isOpen={!!logModalDate}
+        onClose={() => setLogModalDate(null)}
+        onSuccess={() => {
+          setLogModalDate(null);
+          fetchBlock();
+        }}
+        defaultDate={logModalDate}
       />
     </div>
   );

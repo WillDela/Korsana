@@ -313,7 +313,7 @@ const Landing = () => {
               A dashboard designed for clarity.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              Visualize your progress with metric-focused precision that cuts through the noise of traditional trackers.
+              Visualize your progress with metric-focused data that cuts through the noise of traditional trackers for multiple activities.
             </p>
           </div>
 
@@ -486,8 +486,8 @@ const Landing = () => {
                 Connect Strava and go.
               </h2>
               <p className="text-lg text-text-secondary leading-relaxed mb-8">
-                Link your Strava account and Korsana pulls your full activity history — runs, paces, heart rate, elevation —
-                to immediately understand where you are in your fitness. No manual entry.
+                Link your Strava account and Korsana pulls your full activity history — runs, paces, heart rate, elevation, and more —
+                to immediately understand where you are in your fitness.
               </p>
 
               <div className="space-y-4">

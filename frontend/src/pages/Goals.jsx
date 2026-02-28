@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
+import { crossTrainingGoalsAPI } from '../api/crossTrainingGoals';
+import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
 
 const METERS_PER_MILE = 1609.34;
 
@@ -65,9 +67,48 @@ const Goals = () => {
   const [settingActiveId, setSettingActiveId] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [ctGoals, setCtGoals] = useState([]);
+  const [ctProgress, setCtProgress] = useState({});
+  const [ctLoading, setCtLoading] = useState(false);
+  const [showAddCT, setShowAddCT] = useState(false);
+  const [newCTType, setNewCTType] = useState('cycling');
+  const [newCTSessions, setNewCTSessions] = useState(2);
+
+  const fetchCTGoals = async () => {
+    try {
+      setCtLoading(true);
+      const data = await crossTrainingGoalsAPI.getGoals();
+      setCtGoals(data.goals || []);
+      setCtProgress(data.weekly_progress || {});
+    } catch (err) {
+      console.error('Failed to fetch CT goals:', err);
+    } finally {
+      setCtLoading(false);
+    }
+  };
+
+  const handleAddCTGoal = async () => {
+    try {
+      await crossTrainingGoalsAPI.upsertGoal(newCTType, newCTSessions);
+      setShowAddCT(false);
+      await fetchCTGoals();
+    } catch (err) {
+      console.error('Failed to add CT goal:', err);
+    }
+  };
+
+  const handleDeleteCTGoal = async (id) => {
+    try {
+      await crossTrainingGoalsAPI.deleteGoal(id);
+      await fetchCTGoals();
+    } catch (err) {
+      console.error('Failed to delete CT goal:', err);
+    }
+  };
 
   useEffect(() => {
     fetchGoals();
+    fetchCTGoals();
   }, []);
 
   const fetchGoals = async () => {
@@ -458,6 +499,118 @@ const Goals = () => {
           </AnimatePresence>
         </section>
       )}
+
+      {/* Weekly Cross-Training Targets */}
+      <section className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wider text-text-muted"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Weekly Cross-Training Targets
+          </h3>
+          <button
+            onClick={() => setShowAddCT((v) => !v)}
+            className="text-xs font-medium text-navy hover:text-navy-light cursor-pointer bg-transparent border-none"
+          >
+            + Add Target
+          </button>
+        </div>
+
+        {showAddCT && (
+          <div className="card p-4 mb-4 flex flex-wrap items-end gap-3">
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Activity</label>
+              <select
+                value={newCTType}
+                onChange={(e) => setNewCTType(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-border text-sm bg-white text-text-primary focus:outline-none focus:border-navy"
+              >
+                {Object.entries(ACTIVITY_CONFIGS)
+                  .filter(([type]) => type !== 'run')
+                  .map(([type, cfg]) => (
+                    <option key={type} value={type}>
+                      {cfg.icon} {cfg.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Sessions/week</label>
+              <input
+                type="number"
+                value={newCTSessions}
+                onChange={(e) => setNewCTSessions(Number(e.target.value))}
+                min="1"
+                max="7"
+                className="w-20 px-3 py-1.5 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddCTGoal}
+                className="px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-medium cursor-pointer border-none hover:bg-navy-light"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowAddCT(false)}
+                className="px-4 py-1.5 rounded-lg border border-border text-sm text-text-secondary cursor-pointer bg-transparent hover:bg-bg-app"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {ctLoading ? (
+          <p className="text-sm text-text-muted">Loading...</p>
+        ) : ctGoals.length === 0 ? (
+          <div className="card p-6 text-center text-sm text-text-muted">
+            No cross-training targets yet. Add one above!
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {ctGoals.map((goal) => {
+              const cfg = ACTIVITY_CONFIGS[goal.activity_type] || ACTIVITY_CONFIGS.workout;
+              const done = ctProgress[goal.activity_type] || 0;
+              const pct = Math.min(100, Math.round((done / goal.sessions_per_week) * 100));
+              return (
+                <div key={goal.id} className="card p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{cfg.icon}</span>
+                      <span className="text-sm font-semibold text-text-primary">
+                        {cfg.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-mono text-text-secondary">
+                        {done}/{goal.sessions_per_week} this week
+                      </span>
+                      <button
+                        onClick={() => handleDeleteCTGoal(goal.id)}
+                        className="text-text-muted hover:text-error cursor-pointer bg-transparent border-none text-xs"
+                      >
+                        x
+                      </button>
+                    </div>
+                  </div>
+                  <div className="w-full h-1.5 bg-bg-app rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${pct}%`,
+                        background: pct >= 100 ? 'var(--color-sage)' : cfg.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

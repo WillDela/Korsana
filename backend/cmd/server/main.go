@@ -43,18 +43,22 @@ func main() {
 
 	// 5. Initialize Services
 	authService := services.NewAuthService(db, cfg)
-	stravaService := services.NewStravaService(db, stravaClient, redisClient)
-	goalsService := services.NewGoalsService(db)
 	calendarService := services.NewCalendarService(db)
+	stravaService := services.NewStravaService(db, stravaClient, redisClient, calendarService)
+	goalsService := services.NewGoalsService(db)
+	activityService := services.NewActivityService(db)
+	crossTrainingGoalsService := services.NewCrossTrainingGoalsService(db)
 	coachService := services.NewCoachService(db, cfg, goalsService, calendarService)
 
-	// 5. Initialize Handlers
+	// 6. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	stravaHandler := handlers.NewStravaHandler(stravaService, authService)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService)
+	activitiesHandler := handlers.NewActivitiesHandler(activityService)
+	crossTrainingGoalsHandler := handlers.NewCrossTrainingGoalsHandler(crossTrainingGoalsService)
 
 	// 6. Setup Router
 	if cfg.Environment == "production" {
@@ -146,6 +150,18 @@ func main() {
 				calendar.PUT("/entry", calendarHandler.UpsertEntry)
 				calendar.DELETE("/entry/:id", calendarHandler.DeleteEntry)
 				calendar.PATCH("/entry/:id/status", calendarHandler.UpdateStatus)
+			}
+
+			// Activities
+			protected.POST("/activities", activitiesHandler.CreateActivity)
+			protected.GET("/activities", activitiesHandler.GetActivities)
+
+			// Cross-training goals
+			ctg := protected.Group("/cross-training-goals")
+			{
+				ctg.GET("", crossTrainingGoalsHandler.GetGoals)
+				ctg.PUT("", crossTrainingGoalsHandler.UpsertGoal)
+				ctg.DELETE("/:id", crossTrainingGoalsHandler.DeleteGoal)
 			}
 		}
 	}

@@ -20,14 +20,16 @@ type StravaService struct {
 	db           *database.DB
 	stravaClient *strava.Client
 	redis        *redis.Client
+	calendarSvc  *CalendarService
 }
 
 // NewStravaService creates a new Strava service
-func NewStravaService(db *database.DB, client *strava.Client, redisClient *redis.Client) *StravaService {
+func NewStravaService(db *database.DB, client *strava.Client, redisClient *redis.Client, calendarService *CalendarService) *StravaService {
 	return &StravaService{
 		db:           db,
 		stravaClient: client,
 		redis:        redisClient,
+		calendarSvc:  calendarService,
 	}
 }
 
@@ -260,6 +262,38 @@ func (s *StravaService) RefreshAccessToken(ctx context.Context, conn *models.Str
 	return conn, nil
 }
 
+// mapStravaType converts Strava activity types to internal types
+func mapStravaType(stravaType, sportType string) string {
+	t := sportType
+	if t == "" {
+		t = stravaType
+	}
+	switch t {
+	case "Run", "VirtualRun":
+		return models.ActivityTypeRun
+	case "Ride", "VirtualRide", "EBikeRide":
+		return models.ActivityTypeCycling
+	case "Swim":
+		return models.ActivityTypeSwimming
+	case "Walk":
+		return models.ActivityTypeWalking
+	case "Hike":
+		return models.ActivityTypeHiking
+	case "Rowing", "Canoeing":
+		return models.ActivityTypeRowing
+	case "Elliptical":
+		return models.ActivityTypeElliptical
+	case "StairStepper":
+		return models.ActivityTypeStairMaster
+	case "WeightTraining":
+		return models.ActivityTypeWeightLifting
+	case "Yoga", "Stretching":
+		return models.ActivityTypeRecovery
+	default:
+		return models.ActivityTypeWorkout
+	}
+}
+
 // SyncActivities fetches and stores recent activities from Strava
 func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (int, error) {
 	// Get connection
@@ -282,52 +316,42 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 
 	syncedCount := 0
 
-	// Store each activity (only runs)
 	for _, act := range activities {
-		if act.Type != "Run" {
-			continue // Skip non-running activities
-		}
-
-		// Parse start time
 		startTime, err := time.Parse(time.RFC3339, act.StartDate)
 		if err != nil {
 			continue
 		}
 
-		// Calculate pace (seconds per km)
+		internalType := mapStravaType(act.Type, act.SportType)
+
 		var avgPace float64
-		if act.Distance > 0 {
+		if models.DistanceBasedTypes[internalType] && act.Distance > 0 {
 			distanceKm := act.Distance / 1000.0
 			avgPace = float64(act.MovingTime) / distanceKm
 		}
 
-		// Convert heart rate to int pointer
 		var avgHR *int
 		if act.AverageHeartrate > 0 {
 			hr := int(act.AverageHeartrate)
 			avgHR = &hr
 		}
 
-		// Convert elevation gain to float pointer
 		var elevGain *float64
 		if act.TotalElevationGain > 0 {
 			elevGain = &act.TotalElevationGain
 		}
 
-		// Convert max heart rate
 		var maxHR *int
 		if act.MaxHeartrate > 0 {
 			mhr := int(act.MaxHeartrate)
 			maxHR = &mhr
 		}
 
-		// Convert cadence
 		var cadence *float64
 		if act.AverageCadence > 0 {
 			cadence = &act.AverageCadence
 		}
 
-		// Convert suffer score
 		var sufferScore *int
 		if act.SufferScore > 0 {
 			ss := act.SufferScore
@@ -339,7 +363,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			UserID:                  userID,
 			Source:                  "strava",
 			SourceActivityID:        fmt.Sprintf("%d", act.ID),
-			ActivityType:            "run",
+			ActivityType:            internalType,
 			Name:                    act.Name,
 			DistanceMeters:          act.Distance,
 			DurationSeconds:         act.MovingTime,
@@ -365,8 +389,9 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 				:average_heart_rate, :max_heart_rate, :elevation_gain_meters,
 				:average_cadence, :suffer_score, :synced_at
 			)
-			ON CONFLICT (source, source_activity_id) DO UPDATE SET
+			ON CONFLICT (user_id, source, source_activity_id) DO UPDATE SET
 				name = EXCLUDED.name,
+				activity_type = EXCLUDED.activity_type,
 				distance_meters = EXCLUDED.distance_meters,
 				duration_seconds = EXCLUDED.duration_seconds,
 				average_pace_seconds_per_km = EXCLUDED.average_pace_seconds_per_km,
@@ -381,6 +406,10 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		_, err = s.db.NamedExecContext(ctx, query, activity)
 		if err != nil {
 			continue
+		}
+
+		if s.calendarSvc != nil {
+			_ = s.calendarSvc.AutoMatchActivity(ctx, userID, activity)
 		}
 
 		syncedCount++
