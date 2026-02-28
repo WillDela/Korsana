@@ -24,6 +24,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_one_primary_per_user
 -- Fix activities unique index to be scoped per user.
 -- The existing (source, source_activity_id) constraint is too broad —
 -- two users could have the same source_activity_id from the same platform.
-DROP INDEX IF EXISTS activities_source_source_activity_id_key;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_source_source_activity_id_key;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_user_source_id
     ON activities(user_id, source, source_activity_id);
