@@ -6,7 +6,7 @@ const PaceEngineer = ({ activeGoal }) => {
   const [targetMinutes, setTargetMinutes] = useState(Math.floor((defaultSeconds % 3600) / 60) || '');
 
   const raceDistanceMiles = activeGoal
-    ? (activeGoal.distance_meters || 42195) * 0.000621371
+    ? (activeGoal.race_distance_meters || 42195) * 0.000621371
     : 26.2;
 
   const splits = useMemo(() => {

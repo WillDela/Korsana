@@ -11,8 +11,8 @@ const PhysiologyZones = ({ currentPace, activeGoal }) => {
   const zones = useMemo(() => {
     // Derive target pace in seconds per mile
     let targetPacePerMile;
-    if (activeGoal?.target_time_seconds && activeGoal?.distance_meters) {
-      const targetPacePerKm = activeGoal.target_time_seconds / (activeGoal.distance_meters / 1000);
+    if (activeGoal?.target_time_seconds && activeGoal?.race_distance_meters) {
+      const targetPacePerKm = activeGoal.target_time_seconds / (activeGoal.race_distance_meters / 1000);
       targetPacePerMile = targetPacePerKm * 1.60934;
     } else if (currentPace) {
       targetPacePerMile = currentPace * 1.60934;

@@ -40,7 +40,7 @@ const ActiveGoalBanner = ({ goal, loading, trainingProgress = 0 }) => {
   const weeks = Math.floor(totalDays / 7);
   const days = totalDays % 7;
 
-  const distanceMiles = goal.distance_meters ? (goal.distance_meters * 0.000621371).toFixed(1) : null;
+  const distanceMiles = goal.race_distance_meters ? (goal.race_distance_meters * 0.000621371).toFixed(1) : null;
   const formatTargetTime = () => {
     if (!goal.target_time_seconds) return null;
     const h = Math.floor(goal.target_time_seconds / 3600);

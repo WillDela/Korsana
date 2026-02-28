@@ -222,12 +222,12 @@ const Dashboard = () => {
     if (
       !activeGoal ||
       !activeGoal.target_time_seconds ||
-      !activeGoal.distance_meters
+      !activeGoal.race_distance_meters
     ) {
       return null;
     }
     return activeGoal.target_time_seconds /
-      (activeGoal.distance_meters / 1000);
+      (activeGoal.race_distance_meters / 1000);
   };
 
   const computeTrainingProgress = () => {
@@ -258,7 +258,7 @@ const Dashboard = () => {
   const getWeeklyMileageTarget = () => {
     if (!activeGoal) return 30;
     const raceDistMiles =
-      (activeGoal.distance_meters || 42195) * 0.000621371;
+      (activeGoal.race_distance_meters || 42195) * 0.000621371;
     const peakMileage = Math.min(raceDistMiles * 3, 60);
     const rampFactor = Math.min(1, trainingProgress / 80);
     return Math.round(
@@ -313,7 +313,7 @@ const Dashboard = () => {
       const longestRun = Math.max(
         0, ...recentRuns.map((a) => a.distance_meters || 0)
       );
-      const raceDistance = activeGoal.distance_meters || 42195;
+      const raceDistance = activeGoal.race_distance_meters || 42195;
       const targetLong = raceDistance * 0.6;
       longRunScore = targetLong > 0
         ? Math.min(100, (longestRun / targetLong) * 100)

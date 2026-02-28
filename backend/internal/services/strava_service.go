@@ -389,7 +389,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 				:average_heart_rate, :max_heart_rate, :elevation_gain_meters,
 				:average_cadence, :suffer_score, :synced_at
 			)
-			ON CONFLICT (user_id, source, source_activity_id) DO UPDATE SET
+			ON CONFLICT (source, source_activity_id) DO UPDATE SET
 				name = EXCLUDED.name,
 				activity_type = EXCLUDED.activity_type,
 				distance_meters = EXCLUDED.distance_meters,
