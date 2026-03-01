@@ -1,0 +1,20 @@
+Found 6 indexes on activities table:
+
+NAME: activities_pkey
+DEF: CREATE UNIQUE INDEX activities_pkey ON public.activities USING btree (id)
+
+NAME: idx_activities_user_id
+DEF: CREATE INDEX idx_activities_user_id ON public.activities USING btree (user_id)
+
+NAME: idx_activities_start_time
+DEF: CREATE INDEX idx_activities_start_time ON public.activities USING btree (start_time)
+
+NAME: idx_activities_custom_fields
+DEF: CREATE INDEX idx_activities_custom_fields ON public.activities USING gin (custom_fields) WHERE (custom_fields IS NOT NULL)
+
+NAME: idx_activities_user_type
+DEF: CREATE INDEX idx_activities_user_type ON public.activities USING btree (user_id, activity_type)
+
+NAME: idx_activities_user_source_id
+DEF: CREATE UNIQUE INDEX idx_activities_user_source_id ON public.activities USING btree (user_id, source, source_activity_id)
+
