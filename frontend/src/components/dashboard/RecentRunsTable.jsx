@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { ACTIVITY_CONFIGS, DISTANCE_BASED_TYPES } from '../../constants/activityTypes';
+import { activitiesAPI } from '../../api/activities';
 
 const METERS_PER_MILE = 1609.34;
 
@@ -26,13 +28,37 @@ const formatDate = (dateStr) =>
     day: 'numeric',
   });
 
-const RecentRunsTable = ({ activities = [] }) => {
-  const recent = activities.slice(0, 7);
+const TrashIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
+const RecentRunsTable = ({ activities = [], onActivityDeleted }) => {
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this activity?")) return;
+    try {
+      setDeletingId(id);
+      await activitiesAPI.deleteActivity(id);
+      if (onActivityDeleted) onActivityDeleted();
+    } catch (err) {
+      console.error('Failed to delete activity:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const recent = activities
+    .filter((a) => a.activity_type === 'run')
+    .slice(0, 7);
 
   if (recent.length === 0) {
     return (
       <div className="card p-6 text-center text-sm text-text-muted">
-        No recent activities
+        No recent runs
       </div>
     );
   }
@@ -47,6 +73,7 @@ const RecentRunsTable = ({ activities = [] }) => {
             <th className="table-header text-right">Distance</th>
             <th className="table-header text-right">Pace / Duration</th>
             <th className="table-header text-right">HR</th>
+            <th className="table-header text-right w-10"></th>
           </tr>
         </thead>
         <tbody>
@@ -59,7 +86,7 @@ const RecentRunsTable = ({ activities = [] }) => {
             const hr = a.average_heart_rate;
 
             return (
-              <tr key={i} className="table-row">
+              <tr key={i} className={`table-row ${deletingId === a.id ? 'opacity-50' : ''}`}>
                 <td className="table-cell text-text-secondary">
                   {formatDate(a.start_time)}
                 </td>
@@ -86,6 +113,16 @@ const RecentRunsTable = ({ activities = [] }) => {
                 </td>
                 <td className="table-cell text-right font-mono">
                   {hr ? hr : '\u2014'}
+                </td>
+                <td className="table-cell text-right w-10">
+                  <button
+                    onClick={() => handleDelete(a.id)}
+                    disabled={deletingId === a.id}
+                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-md transition-colors disabled:opacity-50 cursor-pointer border-none bg-transparent"
+                    title="Delete Activity"
+                  >
+                    <TrashIcon />
+                  </button>
                 </td>
               </tr>
             );

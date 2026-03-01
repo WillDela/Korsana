@@ -26,7 +26,7 @@ const PaceTrendChart = ({ activities = [], goalPace }) => {
     }
 
     activities.forEach((a) => {
-      if (!a.distance_meters || !a.duration_seconds) return;
+      if (a.activity_type !== 'run' || !a.distance_meters || !a.duration_seconds) return;
       const paceSecPerMile = a.duration_seconds / (a.distance_meters / 1609.34);
       const d = new Date(a.start_time);
       const weekStart = new Date(d);

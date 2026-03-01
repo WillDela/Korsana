@@ -85,3 +85,32 @@ func (h *ActivitiesHandler) GetActivities(c *gin.Context) {
 		"per_page":   perPage,
 	})
 }
+
+// DeleteActivity handles DELETE /api/activities/:id
+func (h *ActivitiesHandler) DeleteActivity(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	activityIDStr := c.Param("id")
+	activityID, err := uuid.Parse(activityIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id format"})
+		return
+	}
+
+	err = h.activityService.DeleteActivity(c.Request.Context(), userID, activityID)
+	if err != nil {
+		if err.Error() == "activity not found or unauthorized" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete activity"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "activity deleted successfully"})
+}

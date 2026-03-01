@@ -24,18 +24,18 @@ func NewActivityService(db *database.DB) *ActivityService {
 
 // CreateActivityRequest holds input for creating a manual activity
 type CreateActivityRequest struct {
-	ActivityType    string    `json:"activity_type"`
-	Name            string    `json:"name"`
-	StartTime       time.Time `json:"start_time"`
-	DurationSeconds int       `json:"duration_seconds"`
-	DistanceMeters  float64   `json:"distance_meters"`
-	AverageHeartRate *int     `json:"average_heart_rate"`
-	Notes           string    `json:"notes"`
-	RPE             *int      `json:"rpe"`
-	MuscleGroup     string    `json:"muscle_group"`
-	Floors          *int      `json:"floors"`
-	ResistanceLevel *int      `json:"resistance_level"`
-	Calories        *int      `json:"calories"`
+	ActivityType     string    `json:"activity_type"`
+	Name             string    `json:"name"`
+	StartTime        time.Time `json:"start_time"`
+	DurationSeconds  int       `json:"duration_seconds"`
+	DistanceMeters   float64   `json:"distance_meters"`
+	AverageHeartRate *int      `json:"average_heart_rate"`
+	Notes            string    `json:"notes"`
+	RPE              *int      `json:"rpe"`
+	MuscleGroup      string    `json:"muscle_group"`
+	Floors           *int      `json:"floors"`
+	ResistanceLevel  *int      `json:"resistance_level"`
+	Calories         *int      `json:"calories"`
 }
 
 // CreateManualActivity creates a manually logged activity
@@ -229,4 +229,23 @@ func (s *ActivityService) GetUserActivities(
 	}
 
 	return activities, total, nil
+}
+
+// DeleteActivity deletes an activity if it belongs to the user
+func (s *ActivityService) DeleteActivity(ctx context.Context, userID uuid.UUID, activityID uuid.UUID) error {
+	result, err := s.db.ExecContext(ctx, "DELETE FROM activities WHERE id = $1 AND user_id = $2", activityID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete activity: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("activity not found or unauthorized")
+	}
+
+	return nil
 }

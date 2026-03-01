@@ -155,6 +155,7 @@ func main() {
 			// Activities
 			protected.POST("/activities", activitiesHandler.CreateActivity)
 			protected.GET("/activities", activitiesHandler.GetActivities)
+			protected.DELETE("/activities/:id", activitiesHandler.DeleteActivity)
 
 			// Cross-training goals
 			ctg := protected.Group("/cross-training-goals")

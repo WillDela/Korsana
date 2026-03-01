@@ -19,6 +19,7 @@ import ReadinessBreakdown from '../components/dashboard/ReadinessBreakdown';
 import PaceTrendChart from '../components/dashboard/PaceTrendChart';
 import RecentRunsTable from '../components/dashboard/RecentRunsTable';
 import TodaysPlanCard from '../components/dashboard/TodaysPlanCard';
+import CrossTrainingCard from '../components/dashboard/CrossTrainingCard';
 import CoachInsightBar from '../components/CoachInsightBar';
 import ManualActivityModal from '../components/ManualActivityModal';
 import { DISTANCE_BASED_TYPES } from '../constants/activityTypes';
@@ -198,7 +199,7 @@ const Dashboard = () => {
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
     const weekActs = activities.filter(
-      (a) => new Date(a.start_time) >= startOfWeek
+      (a) => a.activity_type === 'run' && new Date(a.start_time) >= startOfWeek
     );
     const totalMeters = weekActs.reduce(
       (sum, a) => sum + (a.distance_meters || 0), 0
@@ -280,7 +281,7 @@ const Dashboard = () => {
       end.setDate(end.getDate() + 7);
       const weekRuns = activities.filter((a) => {
         const d = new Date(a.start_time);
-        return d >= start && d < end;
+        return a.activity_type === 'run' && d >= start && d < end;
       }).length;
       if (weekRuns >= 3) consistentWeeks++;
     }
@@ -333,7 +334,7 @@ const Dashboard = () => {
         const weekMiles = activities
           .filter((a) => {
             const d = new Date(a.start_time);
-            return d >= start && d < end;
+            return a.activity_type === 'run' && d >= start && d < end;
           })
           .reduce(
             (sum, a) => sum + (a.distance_meters || 0) * 0.000621371, 0
@@ -405,7 +406,7 @@ const Dashboard = () => {
       };
     }
     activities
-      .filter((a) => DISTANCE_BASED_TYPES.has(a.activity_type))
+      .filter((a) => a.activity_type === 'run')
       .forEach((a) => {
         const d = new Date(a.start_time);
         const weekStart = new Date(d);
@@ -471,14 +472,13 @@ const Dashboard = () => {
     fontSize: '0.8125rem',
   };
 
-  // Training load = weekly runs count
   const weeklyRunCount = useMemo(() => {
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
     return activities.filter(
-      (a) => new Date(a.start_time) >= startOfWeek
+      (a) => a.activity_type === 'run' && new Date(a.start_time) >= startOfWeek
     ).length;
   }, [activities]);
 
@@ -705,9 +705,9 @@ const Dashboard = () => {
               className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Recent Activities
+              Recent Runs
             </h3>
-            <RecentRunsTable activities={activities} />
+            <RecentRunsTable activities={activities} onActivityDeleted={fetchActivities} />
           </section>
         </div>
 
@@ -747,6 +747,9 @@ const Dashboard = () => {
             entry={todayEntry}
             onMarkComplete={handleMarkComplete}
           />
+
+          {/* Cross Training Weekly Rollup */}
+          <CrossTrainingCard activities={activities} onActivityDeleted={fetchActivities} />
         </div>
       </div>
 
