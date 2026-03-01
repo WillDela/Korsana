@@ -29,7 +29,18 @@ const Coach = () => {
       try {
         setIsFetchingHistory(true);
         const data = await coachAPI.getHistory();
-        setMessages(data.messages || []);
+
+        // Ensure data.messages is an array and filter out any malformed objects
+        // to protect the React Markdown renderer from crashing on null content
+        let safeMessages = [];
+        if (data && Array.isArray(data.messages)) {
+          safeMessages = data.messages.map(msg => ({
+            ...msg,
+            content: msg.content || ''
+          }));
+        }
+
+        setMessages(safeMessages);
       } catch (error) {
         console.error('Failed to fetch history:', error);
       } finally {
@@ -190,7 +201,7 @@ const Coach = () => {
                   className={`coach-msg-avatar rounded-full text-white flex items-center justify-center text-sm font-semibold shrink-0 ${message.role === 'user' ? 'bg-navy' : 'bg-sage'
                     }`}
                 >
-                  {message.role === 'user' ? user?.email?.[0].toUpperCase() : 'K'}
+                  {message.role === 'user' ? (user?.email?.[0] || 'U').toUpperCase() : 'K'}
                 </div>
 
                 {/* Message bubble */}
@@ -202,28 +213,22 @@ const Coach = () => {
                 >
                   {message.role === 'user' ? (
                     <p className="leading-relaxed text-[0.9375rem] whitespace-pre-wrap m-0">
-                      {message.content}
+                      {String(message.content || '')}
                     </p>
                   ) : (
-                    <ReactMarkdown
-                      className="leading-relaxed text-[0.9375rem] space-y-3"
-                      components={{
-                        p: ({ node, ...props }) => <p className="m-0 whitespace-pre-wrap" {...props} />,
-                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 m-0 space-y-1" {...props} />,
-                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 m-0 space-y-1" {...props} />,
-                        li: ({ node, ...props }) => <li className="pl-1" {...props} />,
-                        strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                        h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2" {...props} />,
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
+                    <div className="leading-relaxed text-[0.9375rem] space-y-3">
+                      <ReactMarkdown>
+                        {String(message.content || '')}
+                      </ReactMarkdown>
+                    </div>
                   )}
                   <div
                     className={`text-xs mt-2 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'
                       }`}
                   >
-                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.created_at && !isNaN(new Date(message.created_at).getTime())
+                      ? new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : ''}
                   </div>
                 </div>
               </motion.div>

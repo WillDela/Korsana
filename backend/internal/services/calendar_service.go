@@ -25,20 +25,68 @@ func (s *CalendarService) AutoMatchActivity(
 		WHERE user_id = $1 AND date = $2 AND status = 'planned'
 		LIMIT 1
 	`, userID, date)
-	if err != nil {
-		return nil
+
+	// If we found a compatible planned entry, mark it completed.
+	if err == nil && isActivityCompatibleWithWorkout(activity.ActivityType, entry.WorkoutType) {
+		_, err = s.db.ExecContext(ctx, `
+			UPDATE training_calendar
+			SET status = 'completed', completed_activity_id = $1, updated_at = NOW()
+			WHERE id = $2 AND user_id = $3 AND status = 'planned'
+		`, activity.ID, entry.ID, userID)
+		return err
 	}
 
-	if !isActivityCompatibleWithWorkout(activity.ActivityType, entry.WorkoutType) {
-		return nil
+	// Otherwise, there was no planned entry (or it was incompatible).
+	// We should create a new ad-hoc completed entry so this activity appears on the calendar.
+	workoutType := mapActivityToWorkoutType(activity.ActivityType)
+
+	newEntry := models.CalendarEntry{
+		ID:                  uuid.New(),
+		UserID:              userID,
+		Date:                date,
+		WorkoutType:         workoutType,
+		Title:               activity.Name,
+		Status:              "completed",
+		CompletedActivityID: &activity.ID,
+		Source:              "strava",
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
 	}
 
-	_, err = s.db.ExecContext(ctx, `
-		UPDATE training_calendar
-		SET status = 'completed', completed_activity_id = $1, updated_at = NOW()
-		WHERE id = $2 AND user_id = $3 AND status = 'planned'
-	`, activity.ID, entry.ID, userID)
+	// For runs, set distance
+	if workoutType == "easy" || workoutType == "long" || workoutType == "race" || workoutType == "interval" || workoutType == "tempo" {
+		distInt := int(activity.DistanceMeters)
+		newEntry.PlannedDistanceMeters = &distInt
+	} else {
+		// For cross training, primarily track time
+		durMins := int(activity.DurationSeconds / 60)
+		newEntry.PlannedDurationMinutes = &durMins
+	}
+
+	query := `
+		INSERT INTO training_calendar (
+			id, user_id, date, workout_type, title,
+			planned_distance_meters, planned_duration_minutes,
+			status, completed_activity_id, source, created_at, updated_at
+		) VALUES (
+			:id, :user_id, :date, :workout_type, :title,
+			:planned_distance_meters, :planned_duration_minutes,
+			:status, :completed_activity_id, :source, :created_at, :updated_at
+		)
+	`
+	_, err = s.db.NamedExecContext(ctx, query, newEntry)
 	return err
+}
+
+func mapActivityToWorkoutType(activityType string) string {
+	if activityType == models.ActivityTypeRun {
+		return "easy" // Default unmatched runs to 'easy'
+	}
+	if activityType == models.ActivityTypeRecovery {
+		return "recovery"
+	}
+	// Everything else is cross training
+	return "cross_train"
 }
 
 // isActivityCompatibleWithWorkout checks if an activity type matches a
