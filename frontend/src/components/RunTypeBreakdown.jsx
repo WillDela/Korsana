@@ -66,7 +66,7 @@ const RunTypeBreakdown = ({ activities = [], targetPaceSecondsPerKm }) => {
       </h3>
       <div className="flex items-center gap-4">
         <div className="w-[140px] h-[140px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <PieChart>
               <Pie
                 data={breakdown}

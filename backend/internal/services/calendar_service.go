@@ -53,14 +53,13 @@ func (s *CalendarService) AutoMatchActivity(
 		UpdatedAt:           time.Now(),
 	}
 
-	// For runs, set distance
+	// For runs, set distance explicitly. For all activities, set duration.
+	durMins := int(activity.DurationSeconds / 60)
+	newEntry.PlannedDurationMinutes = &durMins
+
 	if workoutType == "easy" || workoutType == "long" || workoutType == "race" || workoutType == "interval" || workoutType == "tempo" {
 		distInt := int(activity.DistanceMeters)
 		newEntry.PlannedDistanceMeters = &distInt
-	} else {
-		// For cross training, primarily track time
-		durMins := int(activity.DurationSeconds / 60)
-		newEntry.PlannedDurationMinutes = &durMins
 	}
 
 	query := `
@@ -73,6 +72,7 @@ func (s *CalendarService) AutoMatchActivity(
 			:planned_distance_meters, :planned_duration_minutes,
 			:status, :completed_activity_id, :source, :created_at, :updated_at
 		)
+		ON CONFLICT (user_id, date) DO NOTHING
 	`
 	_, err = s.db.NamedExecContext(ctx, query, newEntry)
 	return err

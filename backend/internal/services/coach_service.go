@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -681,18 +682,19 @@ func (s *CoachService) WritePlanToCalendar(ctx context.Context, userID uuid.UUID
 
 // stripCodeFences removes markdown code fences from AI responses
 func stripCodeFences(s string) string {
+	result := strings.TrimSpace(s)
 	// Remove ```json ... ``` or ``` ... ```
-	result := s
 	for _, prefix := range []string{"```json\n", "```json", "```\n", "```"} {
 		if len(result) > len(prefix) && result[:len(prefix)] == prefix {
 			result = result[len(prefix):]
 			break
 		}
 	}
-	if len(result) > 3 && result[len(result)-3:] == "```" {
+	result = strings.TrimSpace(result)
+	if len(result) >= 3 && result[len(result)-3:] == "```" {
 		result = result[:len(result)-3]
 	}
-	return result
+	return strings.TrimSpace(result)
 }
 
 // GetConversationHistory retrieves the conversation history for a user

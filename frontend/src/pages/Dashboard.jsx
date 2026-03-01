@@ -648,7 +648,7 @@ const Dashboard = () => {
             </h3>
             <div className="h-[240px]">
               {weeklyChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <BarChart data={weeklyChartData}>
                     <CartesianGrid
                       strokeDasharray="3 3"
