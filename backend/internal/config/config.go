@@ -46,7 +46,7 @@ func Load() *Config {
 		StravaRedirectURI:  getEnv("STRAVA_REDIRECT_URI", "http://localhost:8080/api/strava/callback"),
 		ClaudeAPIKey:       getEnv("CLAUDE_API_KEY", ""),
 		GeminiAPIKey:       getEnv("GEMINI_API_KEY", ""),
-		AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "http://localhost:5173"),
+		AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "http://localhost:5174"),
 		Environment:        getEnv("ENVIRONMENT", "development"),
 	}
 }
