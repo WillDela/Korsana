@@ -19,21 +19,25 @@ func (s *CalendarService) AutoMatchActivity(
 ) error {
 	date := activity.StartTime.UTC().Truncate(24 * time.Hour)
 
-	var entry models.CalendarEntry
-	err := s.db.GetContext(ctx, &entry, `
+	// Find all planned entries on this date and match the first compatible one.
+	var planned []models.CalendarEntry
+	err := s.db.SelectContext(ctx, &planned, `
 		SELECT * FROM training_calendar
 		WHERE user_id = $1 AND date = $2 AND status = 'planned'
-		LIMIT 1
+		ORDER BY created_at ASC
 	`, userID, date)
 
-	// If we found a compatible planned entry, mark it completed.
-	if err == nil && isActivityCompatibleWithWorkout(activity.ActivityType, entry.WorkoutType) {
-		_, err = s.db.ExecContext(ctx, `
-			UPDATE training_calendar
-			SET status = 'completed', completed_activity_id = $1, updated_at = NOW()
-			WHERE id = $2 AND user_id = $3 AND status = 'planned'
-		`, activity.ID, entry.ID, userID)
-		return err
+	if err == nil {
+		for _, entry := range planned {
+			if isActivityCompatibleWithWorkout(activity.ActivityType, entry.WorkoutType) {
+				_, err = s.db.ExecContext(ctx, `
+					UPDATE training_calendar
+					SET status = 'completed', completed_activity_id = $1, updated_at = NOW()
+					WHERE id = $2 AND user_id = $3 AND status = 'planned'
+				`, activity.ID, entry.ID, userID)
+				return err
+			}
+		}
 	}
 
 	// Otherwise, there was no planned entry (or it was incompatible).
@@ -53,11 +57,10 @@ func (s *CalendarService) AutoMatchActivity(
 		UpdatedAt:           time.Now(),
 	}
 
-	// For runs, set distance explicitly. For all activities, set duration.
 	durMins := int(activity.DurationSeconds / 60)
 	newEntry.PlannedDurationMinutes = &durMins
 
-	if workoutType == "easy" || workoutType == "long" || workoutType == "race" || workoutType == "interval" || workoutType == "tempo" {
+	if activity.DistanceMeters > 0 {
 		distInt := int(activity.DistanceMeters)
 		newEntry.PlannedDistanceMeters = &distInt
 	}
