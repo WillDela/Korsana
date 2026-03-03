@@ -672,7 +672,7 @@ func (s *CoachService) WritePlanToCalendar(ctx context.Context, userID uuid.UUID
 			Source:                "ai_coach",
 		}
 
-		if _, err := s.calendarService.UpsertEntry(ctx, userID, calEntry); err != nil {
+		if _, err := s.calendarService.CreateEntry(ctx, userID, calEntry); err != nil {
 			log.Printf("[Coach] Failed to write calendar entry for %s: %v", entry.Date, err)
 		}
 	}

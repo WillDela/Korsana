@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
-import CalendarEntryModal, { WORKOUT_TYPES } from './CalendarEntryModal';
+import SessionDetailsModal, { WORKOUT_TYPES } from './SessionDetailsModal';
 
 // Get Monday of the current week
 const getMonday = (date = new Date()) => {
@@ -62,7 +62,11 @@ const WeekCalendar = ({ compact = false }) => {
   };
 
   const handleSave = async (data) => {
-    await calendarAPI.upsertEntry(data);
+    if (selectedEntry?.id) {
+      await calendarAPI.updateEntry(selectedEntry.id, data);
+    } else {
+      await calendarAPI.createEntry(data);
+    }
     await fetchWeek();
   };
 
@@ -343,7 +347,7 @@ const WeekCalendar = ({ compact = false }) => {
       )}
 
       {/* Modal */}
-      <CalendarEntryModal
+      <SessionDetailsModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}

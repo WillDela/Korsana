@@ -80,7 +80,11 @@ const TrainingBlock = () => {
   };
 
   const handleSave = async (data) => {
-    await calendarAPI.upsertEntry(data);
+    if (selectedEntry?.id) {
+      await calendarAPI.updateEntry(selectedEntry.id, data);
+    } else {
+      await calendarAPI.createEntry(data);
+    }
     await fetchBlock();
   };
 

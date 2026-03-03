@@ -13,9 +13,15 @@ export const calendarAPI = {
     return response.data;
   },
 
-  // Create or update a calendar entry (upsert by date)
-  upsertEntry: async (entry) => {
-    const response = await api.put('/calendar/entry', entry);
+  // Create a new calendar entry
+  createEntry: async (entry) => {
+    const response = await api.post('/calendar/entry', entry);
+    return response.data;
+  },
+
+  // Update an existing calendar entry
+  updateEntry: async (entryId, entry) => {
+    const response = await api.put(`/calendar/entry/${entryId}`, entry);
     return response.data;
   },
 

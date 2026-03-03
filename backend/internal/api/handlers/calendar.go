@@ -107,7 +107,7 @@ func (h *CalendarHandler) GetRange(c *gin.Context) {
 	})
 }
 
-type upsertEntryRequest struct {
+type calendarEntryRequest struct {
 	Date                   string  `json:"date" binding:"required"`
 	WorkoutType            string  `json:"workout_type" binding:"required"`
 	Title                  string  `json:"title" binding:"required"`
@@ -119,29 +119,26 @@ type upsertEntryRequest struct {
 	Source                 string  `json:"source"`
 }
 
-// UpsertEntry creates or updates a calendar entry
-// PUT /api/calendar/entry
-func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
+func (h *CalendarHandler) parseEntryRequest(c *gin.Context) (uuid.UUID, *models.CalendarEntry, bool) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+		return uuid.Nil, nil, false
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	var req upsertEntryRequest
+	var req calendarEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return uuid.Nil, nil, false
 	}
 
 	entryDate, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid date format, use YYYY-MM-DD"})
-		return
+		return uuid.Nil, nil, false
 	}
 
-	// Validate workout type
 	validTypes := map[string]bool{
 		"easy": true, "tempo": true, "interval": true,
 		"long": true, "recovery": true, "rest": true, "race": true,
@@ -149,17 +146,17 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 	}
 	if !validTypes[req.WorkoutType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid workout_type"})
-		return
+		return uuid.Nil, nil, false
 	}
 
 	if req.Title == "" || len(req.Title) > 255 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "title is required (max 255 chars)"})
-		return
+		return uuid.Nil, nil, false
 	}
 
 	if req.PlannedDistanceMeters != nil && *req.PlannedDistanceMeters < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "planned distance cannot be negative"})
-		return
+		return uuid.Nil, nil, false
 	}
 
 	status := req.Status
@@ -184,15 +181,51 @@ func (h *CalendarHandler) UpsertEntry(c *gin.Context) {
 		Source:                 source,
 	}
 
-	result, err := h.calendarService.UpsertEntry(c.Request.Context(), userID, entry)
+	return userID, entry, true
+}
+
+// CreateEntry creates a new calendar entry
+// POST /api/calendar/entry
+func (h *CalendarHandler) CreateEntry(c *gin.Context) {
+	userID, entry, ok := h.parseEntryRequest(c)
+	if !ok {
+		return
+	}
+
+	result, err := h.calendarService.CreateEntry(
+		c.Request.Context(), userID, entry,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"entry": result,
-	})
+	c.JSON(http.StatusCreated, gin.H{"entry": result})
+}
+
+// UpdateEntry updates an existing calendar entry
+// PUT /api/calendar/entry/:id
+func (h *CalendarHandler) UpdateEntry(c *gin.Context) {
+	userID, entry, ok := h.parseEntryRequest(c)
+	if !ok {
+		return
+	}
+
+	entryID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid entry ID"})
+		return
+	}
+
+	result, err := h.calendarService.UpdateEntry(
+		c.Request.Context(), userID, entryID, entry,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"entry": result})
 }
 
 // DeleteEntry deletes a calendar entry

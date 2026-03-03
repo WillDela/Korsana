@@ -62,6 +62,19 @@ func (s *CalendarService) AutoMatchActivity(
 		newEntry.PlannedDistanceMeters = &distInt
 	}
 
+	// Check if this activity is already on the calendar
+	var exists bool
+	err = s.db.GetContext(ctx, &exists,
+		`SELECT EXISTS(SELECT 1 FROM training_calendar
+		 WHERE user_id = $1 AND completed_activity_id = $2)`,
+		userID, activity.ID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
 	query := `
 		INSERT INTO training_calendar (
 			id, user_id, date, workout_type, title,
@@ -72,7 +85,6 @@ func (s *CalendarService) AutoMatchActivity(
 			:planned_distance_meters, :planned_duration_minutes,
 			:status, :completed_activity_id, :source, :created_at, :updated_at
 		)
-		ON CONFLICT (user_id, date) DO NOTHING
 	`
 	_, err = s.db.NamedExecContext(ctx, query, newEntry)
 	return err
@@ -158,15 +170,12 @@ func (s *CalendarService) GetRangeEntries(ctx context.Context, userID uuid.UUID,
 	return entries, nil
 }
 
-// UpsertEntry creates or updates a calendar entry (upsert on user_id + date)
-func (s *CalendarService) UpsertEntry(ctx context.Context, userID uuid.UUID, entry *models.CalendarEntry) (*models.CalendarEntry, error) {
+// CreateEntry inserts a new calendar entry and returns it.
+func (s *CalendarService) CreateEntry(ctx context.Context, userID uuid.UUID, entry *models.CalendarEntry) (*models.CalendarEntry, error) {
+	entry.ID = uuid.New()
 	entry.UserID = userID
+	entry.CreatedAt = time.Now()
 	entry.UpdatedAt = time.Now()
-
-	if entry.ID == uuid.Nil {
-		entry.ID = uuid.New()
-		entry.CreatedAt = time.Now()
-	}
 
 	if entry.Source == "" {
 		entry.Source = "manual"
@@ -182,30 +191,53 @@ func (s *CalendarService) UpsertEntry(ctx context.Context, userID uuid.UUID, ent
 			:planned_distance_meters, :planned_duration_minutes, :planned_pace_per_km,
 			:status, :completed_activity_id, :source, :created_at, :updated_at
 		)
-		ON CONFLICT (user_id, date) DO UPDATE SET
-			workout_type = EXCLUDED.workout_type,
-			title = EXCLUDED.title,
-			description = EXCLUDED.description,
-			planned_distance_meters = EXCLUDED.planned_distance_meters,
-			planned_duration_minutes = EXCLUDED.planned_duration_minutes,
-			planned_pace_per_km = EXCLUDED.planned_pace_per_km,
-			status = EXCLUDED.status,
-			completed_activity_id = EXCLUDED.completed_activity_id,
-			source = EXCLUDED.source,
-			updated_at = EXCLUDED.updated_at
 	`
 	_, err := s.db.NamedExecContext(ctx, query, entry)
 	if err != nil {
 		return nil, err
 	}
 
-	// Fetch the upserted entry to return it with correct ID (in case of conflict)
 	var result models.CalendarEntry
-	err = s.db.GetContext(ctx, &result, "SELECT * FROM training_calendar WHERE user_id = $1 AND date = $2", userID, entry.Date)
+	err = s.db.GetContext(ctx, &result,
+		"SELECT * FROM training_calendar WHERE id = $1", entry.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &result, nil
+}
+
+// UpdateEntry updates an existing calendar entry by ID and returns it.
+func (s *CalendarService) UpdateEntry(ctx context.Context, userID uuid.UUID, entryID uuid.UUID, entry *models.CalendarEntry) (*models.CalendarEntry, error) {
+	query := `
+		UPDATE training_calendar SET
+			date = $1, workout_type = $2, title = $3, description = $4,
+			planned_distance_meters = $5, planned_duration_minutes = $6,
+			planned_pace_per_km = $7, status = $8, updated_at = $9
+		WHERE id = $10 AND user_id = $11
+	`
+	result, err := s.db.ExecContext(ctx, query,
+		entry.Date, entry.WorkoutType, entry.Title, entry.Description,
+		entry.PlannedDistanceMeters, entry.PlannedDurationMinutes,
+		entry.PlannedPacePerKm, entry.Status, time.Now(),
+		entryID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return nil, errors.New("entry not found")
+	}
+
+	var updated models.CalendarEntry
+	err = s.db.GetContext(ctx, &updated,
+		"SELECT * FROM training_calendar WHERE id = $1 AND user_id = $2",
+		entryID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
 
 // DeleteEntry deletes a calendar entry

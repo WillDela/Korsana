@@ -147,7 +147,8 @@ func main() {
 			{
 				calendar.GET("/week", calendarHandler.GetWeek)
 				calendar.GET("/range", calendarHandler.GetRange)
-				calendar.PUT("/entry", calendarHandler.UpsertEntry)
+				calendar.POST("/entry", calendarHandler.CreateEntry)
+				calendar.PUT("/entry/:id", calendarHandler.UpdateEntry)
 				calendar.DELETE("/entry/:id", calendarHandler.DeleteEntry)
 				calendar.PATCH("/entry/:id/status", calendarHandler.UpdateStatus)
 			}
