@@ -61,174 +61,31 @@ const getBadgeClasses = (type) => {
   return `${t.badgeBg} ${t.badgeText}`;
 };
 
-const SourceBadge = ({ source }) => {
-  if (source === 'strava') {
-    return (
-      <span className="px-1 py-0.5 rounded text-[7px] font-bold bg-orange-100 text-orange-600 leading-none">
-        S
-      </span>
-    );
-  }
-  if (source === 'ai_coach') {
-    return (
-      <div className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-sage/10 text-sage">
-        <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-        </svg>
-        <span className="text-[7.5px] font-bold leading-none tracking-wide">AI</span>
-      </div>
-    );
-  }
-  return null;
-};
-
-const ActivityIcon = ({ type }) => {
-  const t = type?.toLowerCase() || '';
-  if (t.includes('run')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5C12.5523 5 13 4.55228 13 4C13 3.44772 12.5523 3 12 3C11.4477 3 11 3.44772 11 4C11 4.55228 11.4477 5 12 5Z" />
-        <path d="M12 5L10 10L12 15L15 22" />
-        <path d="M10 10L6 11" />
-        <path d="M12 15L9 21" />
-        <path d="M20 14L15 12L13 7" />
-      </svg>
-    );
-  }
-  if (t.includes('bike') || t.includes('cycl')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="5.5" cy="17.5" r="3.5" />
-        <circle cx="18.5" cy="17.5" r="3.5" />
-        <path d="M15 6a1 1 0 100-2 1 1 0 000 2zm-3 11.5V14l-3-3 4-3 2 3h2" />
-      </svg>
-    );
-  }
-  if (t.includes('swim')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2.5 15.5L4 14l2 1.5L8 14l2 1.5L12 14l2 1.5L16 14l2 1.5L20 14l1.5 1.5" />
-        <path d="M2.5 19.5L4 18l2 1.5L8 18l2 1.5L12 18l2 1.5L16 18l2 1.5L20 18l1.5 1.5" />
-        <circle cx="12" cy="7" r="2" />
-        <path d="M18 10l-4-3-3 3-2.5-1.5" />
-      </svg>
-    );
-  }
-  if (t.includes('strength') || t.includes('lift')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 5v14M18 5v14M4 8h16M4 16h16M2 12h20" />
-      </svg>
-    );
-  }
-  if (t.includes('yoga') || t.includes('flex')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="5" r="2" />
-        <path d="M12 7l-4 6h8l-4-6" />
-        <path d="M8 13l-4 6M16 13l4 6" />
-      </svg>
-    );
-  }
-  if (t.includes('walk')) {
-    return (
-      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="5" r="2" />
-        <path d="M12 7v7" />
-        <path d="M12 14l-4 6" />
-        <path d="M12 14l2 6" />
-        <path d="M8 10h8" />
-      </svg>
-    );
-  }
-  // Default activity dot
-  return (
-    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="6" />
-    </svg>
-  );
-};
 
 const MiniCard = ({ entry }) => {
-  const isCompleted = entry.status === 'completed';
   const isMissed = entry.status === 'missed';
+  const typeInfo = WORKOUT_TYPES.find((w) => w.value === entry.workout_type);
+  const accentColor = typeInfo?.color || '#6B7280';
 
-  // Distances in km
-  const distKm = entry.planned_distance_meters
+  const distKm = entry.planned_distance_meters > 0
     ? (entry.planned_distance_meters / 1000).toFixed(1)
     : null;
 
-  let paceStr = null;
-  if (entry.planned_pace_per_km) {
-    const m = Math.floor(entry.planned_pace_per_km / 60);
-    const s = Math.round(entry.planned_pace_per_km % 60);
-    paceStr = `${m}:${s.toString().padStart(2, '0')}/km`;
-  }
-
-  const bgs = {
-    completed: 'bg-[#82A895]/10 border border-[#82A895]/20',
-    missed: 'bg-gray-100/80 border border-gray-200',
-    planned: 'bg-navy/[0.04] border border-navy/10'
-  };
-
-  const textColors = {
-    completed: 'text-text-primary',
-    missed: 'text-gray-400',
-    planned: 'text-text-primary'
-  };
-
-  const iconColors = {
-    completed: 'text-sage',
-    missed: 'text-gray-400',
-    planned: 'text-navy'
-  };
-
-  const statusKey = isCompleted ? 'completed' : isMissed ? 'missed' : 'planned';
-
   return (
-    <div className={`flex flex-col rounded-md min-w-0 p-2 group/card ${bgs[statusKey]}`}>
-      {/* Top row: Icon + Mute + Source */}
-      <div className="flex items-start justify-between mb-1">
-        <div className={`flex items-center gap-1.5 ${iconColors[statusKey]}`}>
-          <ActivityIcon type={entry.workout_type} />
-        </div>
-        <SourceBadge source={entry.source} />
-      </div>
-
-      {/* Title */}
-      <div className={`text-[11px] font-bold truncate leading-tight mb-0.5 ${textColors[statusKey]}`}>
-        {entry.title}
-      </div>
-
-      {/* Stats Line */}
-      <div className={`text-[9px] font-mono leading-tight truncate ${isMissed ? 'text-gray-400' : 'text-text-secondary'}`}>
-        {distKm && paceStr ? (
-          <span>{distKm}km @ {paceStr}</span>
-        ) : distKm ? (
-          <span>{distKm}km</span>
-        ) : entry.planned_duration_minutes ? (
-          <span>{entry.planned_duration_minutes} min {entry.workout_type === 'strength' && '• Strength'}</span>
-        ) : (
-          <span>{entry.workout_type.toUpperCase()}</span>
-        )}
-      </div>
-
-      {/* Strava Footer */}
-      {entry.source === 'strava' && isCompleted && (
-        <div className="mt-1.5 flex items-center gap-1 text-[8px] font-semibold text-orange-600/70 uppercase tracking-widest">
-          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-          </svg>
-          Strava Matched
-        </div>
+    <div
+      className={`flex items-center gap-1 rounded px-1 py-0.5 min-w-0 ${isMissed ? 'opacity-50' : ''}`}
+      style={{ borderLeft: `2.5px solid ${accentColor}`, background: `${accentColor}12` }}
+    >
+      {entry.source === 'strava' && (
+        <span className="text-[7px] font-bold text-orange-500 flex-shrink-0 leading-none">S</span>
       )}
-
-      {/* Missed BADGE */}
-      {isMissed && (
-        <div className="mt-1.5 flex">
-          <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Missed</span>
-        </div>
+      <span className={`text-[10px] font-semibold truncate flex-1 leading-tight ${isMissed ? 'text-gray-400 line-through' : 'text-text-primary'}`}>
+        {entry.title}
+      </span>
+      {distKm && (
+        <span className="text-[8px] font-mono text-text-muted flex-shrink-0 leading-none">
+          {distKm}k
+        </span>
       )}
     </div>
   );
@@ -581,10 +438,7 @@ const Calendar = () => {
       {/* 1. Page-Level Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">
-            Training › Calendar
-          </div>
-          <h1 className="text-3xl font-bold text-navy" style={{ fontFamily: 'var(--font-heading)' }}>
+<h1 className="text-3xl font-bold text-navy" style={{ fontFamily: 'var(--font-heading)' }}>
             Training Calendar
           </h1>
           <div className="text-xs font-semibold text-text-secondary mt-1 flex items-center gap-1.5">
@@ -749,11 +603,11 @@ const Calendar = () => {
                   const dateKey = formatDateKey(date);
                   const isToday = dateKey === today;
                   const isOutside = date.getMonth() !== currentMonthNum;
-                  const isWeekend = di >= 5;
                   const dayEntries = entriesByDate[dateKey] || [];
                   const isRestDay = dayEntries.length === 1 && (dayEntries[0].workout_type === 'rest' || dayEntries[0].title?.toLowerCase() === 'rest');
-                  const visibleEntries = isRestDay ? [] : dayEntries;
-                  const moreCount = 0;
+                  const MAX_VISIBLE = 3;
+                  const visibleEntries = isRestDay ? [] : dayEntries.slice(0, MAX_VISIBLE);
+                  const moreCount = isRestDay ? 0 : Math.max(0, dayEntries.length - MAX_VISIBLE);
                   const hasEntries = dayEntries.length > 0;
 
                   return (

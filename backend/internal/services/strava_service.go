@@ -408,6 +408,17 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			continue
 		}
 
+		// ON CONFLICT DO UPDATE keeps the original row ID, so fetch the actual
+		// stored ID before passing to AutoMatchActivity. Using the new UUID
+		// would cause the duplicate check to miss existing calendar entries.
+		var storedID uuid.UUID
+		if idErr := s.db.GetContext(ctx, &storedID,
+			`SELECT id FROM activities WHERE user_id = $1 AND source = $2 AND source_activity_id = $3`,
+			userID, "strava", activity.SourceActivityID,
+		); idErr == nil {
+			activity.ID = storedID
+		}
+
 		if s.calendarSvc != nil {
 			_ = s.calendarSvc.AutoMatchActivity(ctx, userID, activity)
 		}

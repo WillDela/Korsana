@@ -75,10 +75,9 @@ const TrainingBlock = () => {
     setBlockStart(newStart);
   };
 
-  const handleDayClick = (dateKey) => {
-    const existing = entries.find((e) => formatDateKey(e.date) === dateKey);
+  const handleDayClick = (dateKey, entry = null) => {
     setSelectedDate(dateKey);
-    setSelectedEntry(existing || null);
+    setSelectedEntry(entry || null);
     setModalOpen(true);
   };
 
@@ -101,9 +100,9 @@ const TrainingBlock = () => {
     const date = new Date(blockStart);
     date.setDate(date.getDate() + i);
     const dateKey = formatDateKey(date);
-    const entry = entries.find((e) => formatDateKey(e.date) === dateKey);
+    const dayEntries = entries.filter((e) => formatDateKey(e.date) === dateKey);
     const isToday = formatDateKey(new Date()) === dateKey;
-    return { date, dateKey, entry, isToday };
+    return { date, dateKey, dayEntries, isToday };
   });
 
   const week1 = days.slice(0, 7);
@@ -120,14 +119,15 @@ const TrainingBlock = () => {
   blockEnd.setDate(blockEnd.getDate() + 13);
   const rangeLabel = `${blockStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${blockEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
-  const renderDayCard = ({ date, dateKey, entry, isToday }) => {
-    const typeInfo = entry ? WORKOUT_TYPES.find(t => t.value === entry.workout_type) : null;
+  const renderDayCard = ({ date, dateKey, dayEntries, isToday }) => {
+    const hasEntries = dayEntries.length > 0;
+    const allCompleted = hasEntries && dayEntries.every(e => e.status === 'completed');
 
     return (
       <motion.div
         key={dateKey}
         whileHover={{ scale: 1.02, y: -2 }}
-        onClick={() => handleDayClick(dateKey)}
+        onClick={() => !hasEntries && handleDayClick(dateKey)}
         className={`bg-white rounded-lg p-3 min-h-[110px] cursor-pointer flex flex-col transition-shadow hover:shadow-md ${
           isToday ? 'border-2 border-navy' : 'border border-border'
         }`}
@@ -137,46 +137,57 @@ const TrainingBlock = () => {
           <span className={`text-lg font-bold font-mono ${isToday ? 'text-navy' : 'text-text-primary'}`}>
             {date.getDate()}
           </span>
-          {entry?.status === 'completed' && (
+          {allCompleted && (
             <span className="w-5 h-5 rounded-full bg-green-500 text-white text-[10px] flex items-center justify-center font-bold">
               ✓
             </span>
           )}
         </div>
 
-        {entry ? (
-          <div className="flex-1 flex flex-col gap-1.5">
-            {/* Type badge */}
-            <span className={`inline-block self-start px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}>
-              {getBadgeLabel(entry.workout_type)}
-            </span>
-
-            {/* Title + source */}
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-medium text-text-primary truncate">
-                {entry.title}
-              </span>
-              {entry.source === 'ai_coach' && (
-                <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sage/20 text-sage leading-none">AI</span>
-              )}
-            </div>
-
-            {/* Distance + pace */}
-            <div className="mt-auto flex items-center gap-2 text-[11px] text-text-muted font-mono">
-              {entry.planned_distance_meters && (
-                <span>{(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi</span>
-              )}
-              {entry.planned_pace_per_km && (
-                <span>
-                  {(() => {
-                    const p = entry.planned_pace_per_km * 1.60934;
-                    const m = Math.floor(p / 60);
-                    const s = Math.round(p % 60);
-                    return `${m}:${s.toString().padStart(2, '0')}/mi`;
-                  })()}
+        {hasEntries ? (
+          <div className="flex-1 flex flex-col gap-2">
+            {dayEntries.map((entry) => (
+              <div
+                key={entry.id}
+                onClick={(e) => { e.stopPropagation(); handleDayClick(dateKey, entry); }}
+                className="flex flex-col gap-1"
+              >
+                {/* Type badge */}
+                <span className={`inline-block self-start px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}>
+                  {getBadgeLabel(entry.workout_type)}
                 </span>
-              )}
-            </div>
+
+                {/* Title + source */}
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium text-text-primary truncate">
+                    {entry.title}
+                  </span>
+                  {entry.source === 'strava' && (
+                    <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-orange-100 text-orange-600 leading-none">S</span>
+                  )}
+                  {entry.source === 'ai_coach' && (
+                    <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sage/20 text-sage leading-none">AI</span>
+                  )}
+                </div>
+
+                {/* Distance + pace */}
+                <div className="flex items-center gap-2 text-[11px] text-text-muted font-mono">
+                  {entry.planned_distance_meters > 0 && (
+                    <span>{(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi</span>
+                  )}
+                  {entry.planned_pace_per_km && (
+                    <span>
+                      {(() => {
+                        const p = entry.planned_pace_per_km * 1.60934;
+                        const m = Math.floor(p / 60);
+                        const s = Math.round(p % 60);
+                        return `${m}:${s.toString().padStart(2, '0')}/mi`;
+                      })()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-1">

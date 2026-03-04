@@ -54,13 +54,10 @@ const WeekCalendar = ({ compact = false }) => {
     setWeekStart(newStart);
   };
 
-  const handleDayClick = (dateKey) => {
+  const handleDayClick = (dateKey, entry = null) => {
     if (compact) return; // no editing in compact mode
-    const existing = entries.find(
-      (e) => formatDateKey(e.date) === dateKey
-    );
     setSelectedDate(dateKey);
-    setSelectedEntry(existing || null);
+    setSelectedEntry(entry || null);
     setModalOpen(true);
   };
 
@@ -94,9 +91,9 @@ const WeekCalendar = ({ compact = false }) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + i);
     const dateKey = formatDateKey(date);
-    const entry = entries.find((e) => formatDateKey(e.date) === dateKey);
+    const dayEntries = entries.filter((e) => formatDateKey(e.date) === dateKey);
     const isToday = formatDateKey(new Date()) === dateKey;
-    return { date, dateKey, entry, isToday, dayLabel: DAY_LABELS[i] };
+    return { date, dateKey, dayEntries, isToday, dayLabel: DAY_LABELS[i] };
   });
 
   // Week label
@@ -165,140 +162,147 @@ const WeekCalendar = ({ compact = false }) => {
           gap: compact ? '0.25rem' : '0.5rem',
         }}
       >
-        {days.map(({ date, dateKey, entry, isToday, dayLabel }) => {
-          const typeInfo = entry ? WORKOUT_TYPES.find((t) => t.value === entry.workout_type) : null;
-
-          return (
-            <motion.div
-              key={dateKey}
-              whileHover={!compact ? { scale: 1.02, y: -2 } : {}}
-              onClick={() => handleDayClick(dateKey)}
-              style={{
-                background: isToday ? '#F0F4FF' : '#fff',
-                border: isToday ? '2px solid #242E7B' : '1px solid #E5E7EB',
-                borderRadius: compact ? '6px' : '8px',
-                padding: compact ? '0.375rem' : '0.625rem',
-                minHeight: compact ? '60px' : '90px',
-                cursor: compact ? 'default' : 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'box-shadow 0.15s',
-                position: 'relative',
-              }}
-            >
-              {/* Day header */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: compact ? '0.25rem' : '0.375rem',
+        {days.map(({ date, dateKey, dayEntries, isToday, dayLabel }) => (
+          <motion.div
+            key={dateKey}
+            whileHover={!compact ? { scale: 1.02, y: -2 } : {}}
+            onClick={() => dayEntries.length === 0 && handleDayClick(dateKey)}
+            style={{
+              background: isToday ? '#F0F4FF' : '#fff',
+              border: isToday ? '2px solid #242E7B' : '1px solid #E5E7EB',
+              borderRadius: compact ? '6px' : '8px',
+              padding: compact ? '0.375rem' : '0.625rem',
+              minHeight: compact ? '60px' : '90px',
+              cursor: compact ? 'default' : 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'box-shadow 0.15s',
+              position: 'relative',
+            }}
+          >
+            {/* Day header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: compact ? '0.25rem' : '0.375rem',
+            }}>
+              <span style={{
+                fontSize: compact ? '0.625rem' : '0.6875rem',
+                fontWeight: 600,
+                color: isToday ? '#242E7B' : '#6B7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               }}>
-                <span style={{
-                  fontSize: compact ? '0.625rem' : '0.6875rem',
-                  fontWeight: 600,
-                  color: isToday ? '#242E7B' : '#6B7280',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}>
-                  {dayLabel}
-                </span>
-                <span className="font-mono" style={{
-                  fontSize: compact ? '0.625rem' : '0.75rem',
-                  color: isToday ? '#242E7B' : '#9CA3AF',
-                  fontWeight: isToday ? 600 : 400,
-                }}>
-                  {date.getDate()}
-                </span>
+                {dayLabel}
+              </span>
+              <span className="font-mono" style={{
+                fontSize: compact ? '0.625rem' : '0.75rem',
+                color: isToday ? '#242E7B' : '#9CA3AF',
+                fontWeight: isToday ? 600 : 400,
+              }}>
+                {date.getDate()}
+              </span>
+            </div>
+
+            {/* Entry list */}
+            {dayEntries.length > 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                {dayEntries.map((entry) => {
+                  const typeInfo = WORKOUT_TYPES.find((t) => t.value === entry.workout_type);
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={!compact ? (e) => { e.stopPropagation(); handleDayClick(dateKey, entry); } : undefined}
+                      style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {!compact && (
+                          <button
+                            onClick={(e) => handleStatusToggle(e, entry)}
+                            style={{
+                              width: '14px',
+                              height: '14px',
+                              borderRadius: '50%',
+                              border: entry.status === 'completed' ? 'none' : `2px solid ${typeInfo?.color || '#D1D5DB'}`,
+                              background: entry.status === 'completed' ? '#10B981' : 'transparent',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.5rem',
+                              color: '#fff',
+                              flexShrink: 0,
+                              padding: 0,
+                            }}
+                            title={entry.status === 'completed' ? 'Mark as planned' : 'Mark as done'}
+                          >
+                            {entry.status === 'completed' && '✓'}
+                          </button>
+                        )}
+                        {compact && entry.status === 'completed' && (
+                          <span style={{ fontSize: '0.5rem', color: '#10B981' }}>✓</span>
+                        )}
+                        <span style={{
+                          fontSize: compact ? '0.5625rem' : '0.6875rem',
+                          fontWeight: 600,
+                          color: typeInfo?.color || '#374151',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {entry.title}
+                        </span>
+                        {entry.source === 'strava' && (
+                          <span style={{
+                            fontSize: '0.5rem',
+                            fontWeight: 700,
+                            background: 'rgba(249,115,22,0.15)',
+                            color: '#ea580c',
+                            padding: '1px 3px',
+                            borderRadius: '3px',
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}>S</span>
+                        )}
+                        {entry.source === 'ai_coach' && (
+                          <span style={{
+                            fontSize: '0.5rem',
+                            fontWeight: 700,
+                            background: 'rgba(91,140,62,0.15)',
+                            color: '#5B8C3E',
+                            padding: '1px 3px',
+                            borderRadius: '3px',
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}>AI</span>
+                        )}
+                      </div>
+                      {entry.planned_distance_meters > 0 && (
+                        <span className="font-mono" style={{
+                          fontSize: compact ? '0.5625rem' : '0.6875rem',
+                          color: '#6B7280',
+                        }}>
+                          {(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi
+                        </span>
+                      )}
+                      {entry.status === 'missed' && (
+                        <span style={{ fontSize: '0.5625rem', color: '#DC2626', fontWeight: 500 }}>
+                          Missed
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* Entry content */}
-              {entry ? (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                  {/* Status + type indicator */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    {!compact && (
-                      <button
-                        onClick={(e) => handleStatusToggle(e, entry)}
-                        style={{
-                          width: '14px',
-                          height: '14px',
-                          borderRadius: '50%',
-                          border: entry.status === 'completed' ? 'none' : `2px solid ${typeInfo?.color || '#D1D5DB'}`,
-                          background: entry.status === 'completed' ? '#10B981' : 'transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.5rem',
-                          color: '#fff',
-                          flexShrink: 0,
-                          padding: 0,
-                        }}
-                        title={entry.status === 'completed' ? 'Mark as planned' : 'Mark as done'}
-                      >
-                        {entry.status === 'completed' && '✓'}
-                      </button>
-                    )}
-                    {compact && entry.status === 'completed' && (
-                      <span style={{ fontSize: '0.5rem', color: '#10B981' }}>✓</span>
-                    )}
-                    <span style={{
-                      fontSize: compact ? '0.5625rem' : '0.6875rem',
-                      fontWeight: 600,
-                      color: typeInfo?.color || '#374151',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {entry.title}
-                    </span>
-                    {entry.source === 'ai_coach' && (
-                      <span style={{
-                        fontSize: '0.5rem',
-                        fontWeight: 700,
-                        background: 'rgba(91,140,62,0.15)',
-                        color: '#5B8C3E',
-                        padding: '1px 3px',
-                        borderRadius: '3px',
-                        lineHeight: 1,
-                        flexShrink: 0,
-                      }}>AI</span>
-                    )}
-                  </div>
-
-                  {/* Distance */}
-                  {entry.planned_distance_meters && (
-                    <span className="font-mono" style={{
-                      fontSize: compact ? '0.5625rem' : '0.6875rem',
-                      color: '#6B7280',
-                    }}>
-                      {(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi
-                    </span>
-                  )}
-
-                  {/* Missed indicator */}
-                  {entry.status === 'missed' && (
-                    <span style={{ fontSize: '0.5625rem', color: '#DC2626', fontWeight: 500 }}>
-                      Missed
-                    </span>
-                  )}
-                </div>
-              ) : (
-                /* Empty day */
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  {!compact && (
-                    <span style={{ fontSize: '1rem', color: '#D1D5DB' }}>+</span>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          );
-        })}
+            ) : (
+              /* Empty day */
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {!compact && <span style={{ fontSize: '1rem', color: '#D1D5DB' }}>+</span>}
+              </div>
+            )}
+          </motion.div>
+        ))}
       </div>
 
       {/* Weekly summary bar (full mode only) */}

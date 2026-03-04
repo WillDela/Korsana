@@ -21,6 +21,7 @@ func main() {
 	migrations := []string{
 		"005_connected_integrations.sql",
 		"006_multi_activity.sql",
+		"007_drop_calendar_unique.sql",
 	}
 
 	for _, migrationFile := range migrations {
