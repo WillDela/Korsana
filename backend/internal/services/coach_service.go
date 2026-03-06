@@ -20,15 +20,16 @@ import (
 
 // CoachService handles AI coaching logic
 type CoachService struct {
-	db              *database.DB
-	config          *config.Config
-	httpClient      *http.Client
-	goalsService    *GoalsService
-	calendarService *CalendarService
+	db                 *database.DB
+	config             *config.Config
+	httpClient         *http.Client
+	goalsService       *GoalsService
+	calendarService    *CalendarService
+	userProfileService *UserProfileService
 }
 
 // NewCoachService creates a new coach service
-func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService) *CoachService {
+func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService, userProfileService *UserProfileService) *CoachService {
 	if cfg.GeminiAPIKey != "" {
 		log.Printf("[Coach] Gemini API key configured (length: %d)", len(cfg.GeminiAPIKey))
 	} else if cfg.ClaudeAPIKey != "" {
@@ -38,11 +39,12 @@ func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsSer
 	}
 
 	return &CoachService{
-		db:              db,
-		config:          cfg,
-		httpClient:      &http.Client{Timeout: 60 * time.Second},
-		goalsService:    goalsService,
-		calendarService: calendarService,
+		db:                 db,
+		config:             cfg,
+		httpClient:         &http.Client{Timeout: 60 * time.Second},
+		goalsService:       goalsService,
+		calendarService:    calendarService,
+		userProfileService: userProfileService,
 	}
 }
 
@@ -313,6 +315,42 @@ func (s *CoachService) callGeminiAPI(messages []ChatMessage, systemPrompt string
 // buildTrainingContext builds a context string from user's training data
 func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUID) (string, error) {
 	var parts []string
+
+	profileStr := ""
+	if s.userProfileService != nil {
+		if p, err := s.userProfileService.GetOrCreateProfile(ctx, userID); err == nil && p.DisplayName != nil {
+			profileStr += fmt.Sprintf("Runner Name: %s\n", *p.DisplayName)
+		}
+
+		if prs, err := s.userProfileService.GetPersonalRecords(ctx, userID); err == nil && len(prs) > 0 {
+			profileStr += "Personal Records:\n"
+			for _, pr := range prs {
+				profileStr += fmt.Sprintf("- %s: %s\n", pr.Label, formatTime(&pr.TimeSeconds))
+			}
+		}
+
+		if zones, err := s.userProfileService.GetTrainingZones(ctx, userID, "hr"); err == nil && len(zones) > 0 {
+			profileStr += "Current HR Training Zones:\n"
+			for _, z := range zones {
+				minV := 0
+				if z.MinValue != nil {
+					minV = *z.MinValue
+				}
+				maxV := "Max"
+				if z.MaxValue != nil {
+					maxV = fmt.Sprintf("%d", *z.MaxValue)
+				}
+				lbl := ""
+				if z.Label != nil {
+					lbl = " (" + *z.Label + ")"
+				}
+				profileStr += fmt.Sprintf("- Z%d%s: %d - %s bpm\n", z.ZoneNumber, lbl, minV, maxV)
+			}
+		}
+	}
+	if profileStr != "" {
+		parts = append(parts, profileStr)
+	}
 
 	// Get active goal (optional — coach still works without one)
 	goal, err := s.goalsService.GetActiveGoal(ctx, userID)

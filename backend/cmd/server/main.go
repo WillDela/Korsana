@@ -48,7 +48,8 @@ func main() {
 	goalsService := services.NewGoalsService(db)
 	activityService := services.NewActivityService(db)
 	crossTrainingGoalsService := services.NewCrossTrainingGoalsService(db)
-	coachService := services.NewCoachService(db, cfg, goalsService, calendarService)
+	userProfileService := services.NewUserProfileService(db)
+	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
 
 	// 6. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -56,7 +57,7 @@ func main() {
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
-	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService)
+	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService, userProfileService)
 	activitiesHandler := handlers.NewActivitiesHandler(activityService)
 	crossTrainingGoalsHandler := handlers.NewCrossTrainingGoalsHandler(crossTrainingGoalsService)
 
@@ -75,6 +76,9 @@ func main() {
 	corsConfig.AllowOrigins = origins
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(corsConfig))
+
+	// Static Assets
+	r.Static("/uploads", "./uploads")
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -139,7 +143,17 @@ func main() {
 			profile := protected.Group("/profile")
 			{
 				profile.GET("", profileHandler.GetProfile)
+				profile.PUT("", profileHandler.UpdateProfile)
+				profile.POST("/avatar", profileHandler.UploadAvatar)
 				profile.PUT("/password", profileHandler.ChangePassword)
+
+				profile.GET("/prs", profileHandler.GetPersonalRecords)
+				profile.PUT("/prs/:label", profileHandler.UpsertPersonalRecord)
+				profile.DELETE("/prs/:label", profileHandler.DeletePersonalRecord)
+				profile.POST("/prs/detect", profileHandler.DetectPRsFromStrava)
+
+				profile.GET("/zones", profileHandler.GetTrainingZones)
+				profile.PUT("/zones", profileHandler.UpdateTrainingZones)
 			}
 
 			// Training Calendar
