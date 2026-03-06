@@ -280,3 +280,81 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "password updated successfully"})
 }
+
+type changeEmailRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required,min=6"`
+	NewEmail        string `json:"new_email" binding:"required,email"`
+}
+
+// ChangeEmail updates the user's email address
+func (h *ProfileHandler) ChangeEmail(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req changeEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.authService.ChangeEmail(c.Request.Context(), userID, req.CurrentPassword, req.NewEmail)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "email updated successfully"})
+}
+
+// DeleteAccount deletes the user account
+func (h *ProfileHandler) DeleteAccount(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	err := h.authService.DeleteUser(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "account deleted successfully"})
+}
+
+// ExportData exports all user data as JSON
+func (h *ProfileHandler) ExportData(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	user, _ := h.authService.GetUserByID(c.Request.Context(), userID)
+	profile, _ := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
+	prs, _ := h.userProfileService.GetPersonalRecords(c.Request.Context(), userID)
+	zonesHR, _ := h.userProfileService.GetTrainingZones(c.Request.Context(), userID, "hr")
+	zonesPace, _ := h.userProfileService.GetTrainingZones(c.Request.Context(), userID, "pace")
+	goals, _ := h.goalsService.GetActiveGoal(c.Request.Context(), userID)
+
+	exportData := gin.H{
+		"user":             user,
+		"profile":          profile,
+		"personal_records": prs,
+		"training_zones": gin.H{
+			"hr":   zonesHR,
+			"pace": zonesPace,
+		},
+		"active_goal": goals,
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=\"korsana-data.json\"")
+	c.JSON(http.StatusOK, exportData)
+}

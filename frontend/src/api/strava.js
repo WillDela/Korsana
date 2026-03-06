@@ -18,4 +18,10 @@ export const stravaAPI = {
     const response = await api.get(`/strava/activities?page=${page}&per_page=${perPage}`);
     return response.data;
   },
+
+  // Disconnect Strava account
+  disconnect: async () => {
+    const response = await api.delete('/strava');
+    return response.data;
+  },
 };

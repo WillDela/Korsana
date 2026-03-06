@@ -125,6 +125,38 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, curr
 	return err
 }
 
+// ChangeEmail verifies the current password and updates the user's email address
+func (s *AuthService) ChangeEmail(ctx context.Context, userID uuid.UUID, currentPassword, newEmail string) error {
+	var user models.User
+	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword))
+	if err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	var count int
+	err = s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE email = $1 AND id != $2", newEmail, userID)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("email is already taken")
+	}
+
+	_, err = s.db.ExecContext(ctx, "UPDATE users SET email = $1, updated_at = $2 WHERE id = $3", newEmail, time.Now(), userID)
+	return err
+}
+
+// DeleteUser deletes an account and all its cascaded row dependencies
+func (s *AuthService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
+	return err
+}
+
 // GenerateToken creates a JWT token (exported for use by other services/handlers).
 func (s *AuthService) GenerateToken(userID uuid.UUID, email string) (string, error) {
 	return s.generateToken(userID, email)

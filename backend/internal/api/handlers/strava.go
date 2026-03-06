@@ -158,3 +158,21 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 		"per_page":   perPage,
 	})
 }
+
+// Disconnect removes the Strava connection
+func (h *StravaHandler) Disconnect(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	err := h.stravaService.DisconnectStrava(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to disconnect Strava"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Strava disconnected successfully"})
+}

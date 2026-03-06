@@ -5,7 +5,6 @@ import { userProfileAPI } from '../api/userProfile';
 import { stravaAPI } from '../api/strava';
 import { getErrorMessage } from '../api/client';
 
-// We will build these next
 import ProfileBanner from '../components/profile/ProfileBanner';
 import PersonalRecords from '../components/profile/PersonalRecords';
 import WeeklySummaryCard from '../components/profile/WeeklySummaryCard';
@@ -13,11 +12,18 @@ import TrainingZonesCard from '../components/profile/TrainingZonesCard';
 import ConnectedServicesCard from '../components/profile/ConnectedServicesCard';
 import ChangePasswordForm from '../components/profile/ChangePasswordForm';
 
+// New components
+import UnitsPreferenceCard from '../components/profile/UnitsPreferenceCard';
+import NotificationsCard from '../components/profile/NotificationsCard';
+import DataExportCard from '../components/profile/DataExportCard';
+import DeleteAccountCard from '../components/profile/DeleteAccountCard';
+import ChangeEmailForm from '../components/profile/ChangeEmailForm';
+
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'account'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'integrations' | 'notifications' | 'account'
   const [generalError, setGeneralError] = useState('');
   const [stravaMessage, setStravaMessage] = useState({ type: '', text: '' });
 
@@ -26,6 +32,7 @@ const Settings = () => {
 
     if (searchParams.get('strava_connected') === 'true') {
       setStravaMessage({ type: 'success', text: 'Strava connected successfully!' });
+      setActiveTab('integrations');
       fetchProfile();
       setSearchParams({});
     } else if (searchParams.get('strava_error')) {
@@ -37,6 +44,7 @@ const Settings = () => {
         connection_failed: 'Failed to connect to Strava',
       };
       setStravaMessage({ type: 'error', text: errorMessages[error] || 'Failed to connect Strava' });
+      setActiveTab('integrations');
       setSearchParams({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,7 +70,7 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="max-w-[800px] mx-auto flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <div className="h-40 bg-border-light rounded-xl animate-pulse" />
         <div className="h-10 w-48 bg-border-light rounded-lg animate-pulse" />
         <div className="h-64 bg-border-light rounded-xl animate-pulse" />
@@ -71,7 +79,7 @@ const Settings = () => {
   }
 
   return (
-    <div className="max-w-[800px] mx-auto pb-12">
+    <div className="pb-12">
       {generalError && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -86,40 +94,29 @@ const Settings = () => {
       <ProfileBanner profileData={profileData} onUpdate={handleProfileUpdate} />
 
       {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-border my-8">
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`pb-3 text-[0.9375rem] font-semibold transition-colors relative ${activeTab === 'profile' ? 'text-navy' : 'text-text-muted hover:text-text-secondary'
-            }`}
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          Profile
-          {activeTab === 'profile' && (
-            <motion.div
-              layoutId="settingsTabIndicator"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy"
-            />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('account')}
-          className={`pb-3 text-[0.9375rem] font-semibold transition-colors relative ${activeTab === 'account' ? 'text-navy' : 'text-text-muted hover:text-text-secondary'
-            }`}
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          Account
-          {activeTab === 'account' && (
-            <motion.div
-              layoutId="settingsTabIndicator"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy"
-            />
-          )}
-        </button>
+      <div className="flex flex-wrap items-center gap-6 border-b border-border my-8">
+        {['profile', 'integrations', 'notifications', 'account'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 text-[0.9375rem] font-semibold transition-colors relative capitalize ${activeTab === tab ? 'text-navy' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            {tab}
+            {activeTab === tab && (
+              <motion.div
+                layoutId="settingsTabIndicator"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy"
+              />
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
-        {activeTab === 'profile' ? (
+        {activeTab === 'profile' && (
           <motion.div
             key="profile"
             initial={{ opacity: 0, y: 10 }}
@@ -138,7 +135,18 @@ const Settings = () => {
                 <TrainingZonesCard profileData={profileData} onUpdate={handleProfileUpdate} />
               </div>
             </div>
+          </motion.div>
+        )}
 
+        {activeTab === 'integrations' && (
+          <motion.div
+            key="integrations"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col gap-8"
+          >
             <ConnectedServicesCard
               stravaConnected={profileData?.strava?.connected}
               stravaAthleteId={profileData?.strava?.athlete_id}
@@ -151,9 +159,26 @@ const Settings = () => {
                   setStravaMessage({ type: 'error', text: getErrorMessage(error) });
                 }
               }}
+              onDisconnect={handleProfileUpdate}
+              onUpdate={handleProfileUpdate}
             />
           </motion.div>
-        ) : (
+        )}
+
+        {activeTab === 'notifications' && (
+          <motion.div
+            key="notifications"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col gap-8"
+          >
+            <NotificationsCard profileData={profileData} onUpdate={handleProfileUpdate} />
+          </motion.div>
+        )}
+
+        {activeTab === 'account' && (
           <motion.div
             key="account"
             initial={{ opacity: 0, y: 10 }}
@@ -191,7 +216,11 @@ const Settings = () => {
               </div>
             </div>
 
+            <ChangeEmailForm />
+            <UnitsPreferenceCard profileData={profileData} onUpdate={handleProfileUpdate} />
             <ChangePasswordForm />
+            <DataExportCard />
+            <DeleteAccountCard />
           </motion.div>
         )}
       </AnimatePresence>

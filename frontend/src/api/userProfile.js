@@ -51,4 +51,19 @@ export const userProfileAPI = {
     const response = await api.put(`/profile/zones?type=${type}`, zones);
     return response.data;
   },
+
+  changeEmail: async (currentPassword, newEmail) => {
+    const response = await api.put('/profile/email', { current_password: currentPassword, new_email: newEmail });
+    return response.data;
+  },
+
+  deleteAccount: async () => {
+    const response = await api.delete('/profile');
+    return response.data;
+  },
+
+  exportData: async () => {
+    const response = await api.get('/profile/export', { responseType: 'blob' });
+    return response.data;
+  },
 };

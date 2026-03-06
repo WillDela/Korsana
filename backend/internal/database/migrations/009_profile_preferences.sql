@@ -1,0 +1,5 @@
+ALTER TABLE user_profiles
+  ADD COLUMN IF NOT EXISTS units_preference VARCHAR(10) NOT NULL DEFAULT 'metric',
+  ADD COLUMN IF NOT EXISTS notify_weekly_summary BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS notify_goal_reminders BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS notify_sync_failures BOOLEAN NOT NULL DEFAULT true;

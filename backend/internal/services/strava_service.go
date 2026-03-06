@@ -493,3 +493,9 @@ func (s *StravaService) GetUserActivities(ctx context.Context, userID uuid.UUID,
 
 	return activities, total, nil
 }
+
+// DisconnectStrava removes the user's Strava connection
+func (s *StravaService) DisconnectStrava(ctx context.Context, userID uuid.UUID) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM strava_connections WHERE user_id = $1", userID)
+	return err
+}

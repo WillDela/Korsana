@@ -140,6 +140,10 @@ type UserProfile struct {
 	MaxHeartRate             *int      `json:"max_heart_rate" db:"max_heart_rate"`
 	RestingHeartRate         *int      `json:"resting_heart_rate" db:"resting_heart_rate"`
 	WeeklyDistanceGoalMeters *int      `json:"weekly_distance_goal_meters" db:"weekly_distance_goal_meters"`
+	UnitsPreference          string    `json:"units_preference" db:"units_preference"`
+	NotifyWeeklySummary      bool      `json:"notify_weekly_summary" db:"notify_weekly_summary"`
+	NotifyGoalReminders      bool      `json:"notify_goal_reminders" db:"notify_goal_reminders"`
+	NotifySyncFailures       bool      `json:"notify_sync_failures" db:"notify_sync_failures"`
 	CreatedAt                time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt                time.Time `json:"updated_at" db:"updated_at"`
 }

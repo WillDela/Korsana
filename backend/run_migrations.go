@@ -22,6 +22,8 @@ func main() {
 		"005_connected_integrations.sql",
 		"006_multi_activity.sql",
 		"007_drop_calendar_unique.sql",
+		"008_user_profiles.sql",
+		"009_profile_preferences.sql",
 	}
 
 	for _, migrationFile := range migrations {

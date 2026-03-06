@@ -115,6 +115,7 @@ func main() {
 				strava.GET("/auth", stravaHandler.AuthURL)
 				strava.POST("/sync", stravaHandler.SyncActivities)
 				strava.GET("/activities", stravaHandler.GetActivities)
+				strava.DELETE("", stravaHandler.Disconnect)
 			}
 
 			// Race Goals
@@ -144,8 +145,11 @@ func main() {
 			{
 				profile.GET("", profileHandler.GetProfile)
 				profile.PUT("", profileHandler.UpdateProfile)
+				profile.DELETE("", profileHandler.DeleteAccount)
+				profile.GET("/export", profileHandler.ExportData)
 				profile.POST("/avatar", profileHandler.UploadAvatar)
 				profile.PUT("/password", profileHandler.ChangePassword)
+				profile.PUT("/email", profileHandler.ChangeEmail)
 
 				profile.GET("/prs", profileHandler.GetPersonalRecords)
 				profile.PUT("/prs/:label", profileHandler.UpsertPersonalRecord)
