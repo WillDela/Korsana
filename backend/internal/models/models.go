@@ -43,20 +43,20 @@ type RaceGoal struct {
 
 // Activity represents a running activity synced from external sources
 type Activity struct {
-	ID                      uuid.UUID `json:"id" db:"id"`
-	UserID                  uuid.UUID `json:"user_id" db:"user_id"`
-	Source                  string    `json:"source" db:"source"` // "strava", "garmin", "manual"
-	SourceActivityID        string    `json:"source_activity_id" db:"source_activity_id"`
-	ActivityType            string    `json:"activity_type" db:"activity_type"` // "run", "long_run", "workout", "race"
-	Name                    string    `json:"name" db:"name"`
-	DistanceMeters          float64   `json:"distance_meters" db:"distance_meters"`
-	DurationSeconds         int       `json:"duration_seconds" db:"duration_seconds"`
-	StartTime               time.Time `json:"start_time" db:"start_time"`
-	AveragePaceSecondsPerKm float64   `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
-	AverageHeartRate        *int      `json:"average_heart_rate" db:"average_heart_rate"`
-	MaxHeartRate            *int      `json:"max_heart_rate" db:"max_heart_rate"`
-	ElevationGainMeters     *float64  `json:"elevation_gain_meters" db:"elevation_gain_meters"`
-	AverageCadence          *float64  `json:"average_cadence" db:"average_cadence"`
+	ID                      uuid.UUID      `json:"id" db:"id"`
+	UserID                  uuid.UUID      `json:"user_id" db:"user_id"`
+	Source                  string         `json:"source" db:"source"` // "strava", "garmin", "manual"
+	SourceActivityID        string         `json:"source_activity_id" db:"source_activity_id"`
+	ActivityType            string         `json:"activity_type" db:"activity_type"` // "run", "long_run", "workout", "race"
+	Name                    string         `json:"name" db:"name"`
+	DistanceMeters          float64        `json:"distance_meters" db:"distance_meters"`
+	DurationSeconds         int            `json:"duration_seconds" db:"duration_seconds"`
+	StartTime               time.Time      `json:"start_time" db:"start_time"`
+	AveragePaceSecondsPerKm float64        `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
+	AverageHeartRate        *int           `json:"average_heart_rate" db:"average_heart_rate"`
+	MaxHeartRate            *int           `json:"max_heart_rate" db:"max_heart_rate"`
+	ElevationGainMeters     *float64       `json:"elevation_gain_meters" db:"elevation_gain_meters"`
+	AverageCadence          *float64       `json:"average_cadence" db:"average_cadence"`
 	SufferScore             *int           `json:"suffer_score" db:"suffer_score"`
 	SyncedAt                time.Time      `json:"synced_at" db:"synced_at"`
 	CustomFields            map[string]any `json:"custom_fields,omitempty" db:"-"`
@@ -129,6 +129,49 @@ type CrossTrainingGoal struct {
 	IsActive        bool      `json:"is_active" db:"is_active"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// UserProfile represents a user's extended profile setting
+type UserProfile struct {
+	ID                       uuid.UUID `json:"id" db:"id"`
+	UserID                   uuid.UUID `json:"user_id" db:"user_id"`
+	DisplayName              *string   `json:"display_name" db:"display_name"`
+	ProfilePictureURL        *string   `json:"profile_picture_url" db:"profile_picture_url"`
+	MaxHeartRate             *int      `json:"max_heart_rate" db:"max_heart_rate"`
+	RestingHeartRate         *int      `json:"resting_heart_rate" db:"resting_heart_rate"`
+	WeeklyDistanceGoalMeters *int      `json:"weekly_distance_goal_meters" db:"weekly_distance_goal_meters"`
+	CreatedAt                time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt                time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// PersonalRecord represents an athlete's best time for a given distance
+type PersonalRecord struct {
+	ID             uuid.UUID  `json:"id" db:"id"`
+	UserID         uuid.UUID  `json:"user_id" db:"user_id"`
+	Label          string     `json:"label" db:"label"`
+	DistanceMeters *int       `json:"distance_meters" db:"distance_meters"`
+	TimeSeconds    int        `json:"time_seconds" db:"time_seconds"`
+	Source         string     `json:"source" db:"source"`
+	ActivityID     *uuid.UUID `json:"activity_id" db:"activity_id"`
+	RecordedAt     *time.Time `json:"recorded_at" db:"recorded_at"`
+	Notes          *string    `json:"notes" db:"notes"`
+	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// TrainingZone represents HR or Pace zones (Z1-Z5)
+type TrainingZone struct {
+	ID               uuid.UUID `json:"id" db:"id"`
+	UserID           uuid.UUID `json:"user_id" db:"user_id"`
+	ZoneType         string    `json:"zone_type" db:"zone_type"`
+	ZoneNumber       int       `json:"zone_number" db:"zone_number"`
+	Label            *string   `json:"label" db:"label"`
+	Description      *string   `json:"description" db:"description"`
+	MinValue         *int      `json:"min_value" db:"min_value"`
+	MaxValue         *int      `json:"max_value" db:"max_value"`
+	IsAutoCalculated bool      `json:"is_auto_calculated" db:"is_auto_calculated"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Activity type constants
