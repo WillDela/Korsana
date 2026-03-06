@@ -38,6 +38,7 @@ const PersonalRecords = ({ profileData, onUpdate }) => {
   const [detectionMessage, setDetectionMessage] = useState('');
   const [editingLabel, setEditingLabel] = useState(null);
   const [editTime, setEditTime] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   const prs = profileData?.personal_records || [];
   const stravaConnected = profileData?.strava?.connected;
@@ -67,7 +68,7 @@ const PersonalRecords = ({ profileData, onUpdate }) => {
         await onUpdate();
       }
     } catch (err) {
-      alert('Failed to save PR');
+      setSaveError(getErrorMessage(err));
     }
     setEditingLabel(null);
   };
@@ -112,6 +113,10 @@ const PersonalRecords = ({ profileData, onUpdate }) => {
           </div>
         )}
       </div>
+
+      {saveError && (
+        <p className="text-sm text-coral mb-4">{saveError}</p>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {currentRecords.map((r, i) => (

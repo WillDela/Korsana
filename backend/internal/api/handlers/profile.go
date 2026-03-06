@@ -71,6 +71,8 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 
 	prs, _ := h.userProfileService.GetPersonalRecords(c.Request.Context(), userID)
 
+	weeklySummary, _ := h.userProfileService.GetCurrentWeekSummary(c.Request.Context(), userID)
+
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"id":         user.ID,
@@ -84,6 +86,7 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 		"active_goal":      goalInfo,
 		"profile":          profile,
 		"personal_records": prs,
+		"weekly_summary":   weeklySummary,
 	})
 }
 
@@ -126,9 +129,14 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 	}
 
 	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
-	if err == nil {
-		profile.ProfilePictureURL = &urlPath
-		h.userProfileService.UpdateProfile(c.Request.Context(), profile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile for update"})
+		return
+	}
+	profile.ProfilePictureURL = &urlPath
+	if _, err := h.userProfileService.UpdateProfile(c.Request.Context(), profile); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save avatar URL"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"url": urlPath})

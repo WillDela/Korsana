@@ -30,8 +30,9 @@ const ProfileBanner = ({ profileData, onUpdate }) => {
   };
 
   // Determine avatar source
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   const avatarUrl = profileData?.profile?.profile_picture_url
-    ? `http://localhost:8080${profileData.profile.profile_picture_url}` // Use full URL if relative
+    ? `${apiBase}${profileData.profile.profile_picture_url}`
     : null;
 
   const displayName = profileData?.profile?.display_name || 'Athlete Profile';

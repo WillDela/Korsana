@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { profileAPI } from '../../api/profile';
 import { getErrorMessage } from '../../api/client';

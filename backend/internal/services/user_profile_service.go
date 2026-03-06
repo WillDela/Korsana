@@ -210,6 +210,20 @@ func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uui
 	return detectedCount, nil
 }
 
+// GetCurrentWeekSummary returns the current week's summary, or nil if none exists yet.
+func (s *UserProfileService) GetCurrentWeekSummary(ctx context.Context, userID uuid.UUID) (*models.WeeklySummary, error) {
+	var summary models.WeeklySummary
+	query := `SELECT * FROM weekly_summaries WHERE user_id = $1 AND week_start = date_trunc('week', NOW())::date LIMIT 1`
+	err := s.db.GetContext(ctx, &summary, query, userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &summary, nil
+}
+
 // GetTrainingZones fetches training zones, auto-calculating if none exist yet.
 func (s *UserProfileService) GetTrainingZones(ctx context.Context, userID uuid.UUID, zoneType string) ([]models.TrainingZone, error) {
 	var zones []models.TrainingZone

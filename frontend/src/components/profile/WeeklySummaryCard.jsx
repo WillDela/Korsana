@@ -4,9 +4,11 @@ const WeeklySummaryCard = ({ profileData }) => {
   const goalMeters = profileData?.profile?.weekly_distance_goal_meters || 0;
   const goalKm = goalMeters / 1000;
 
-  // Hardcoded or pulled from dashboard if available. 
-  // For the profile settings view, focusing on the goal setting itself is primary.
-  const currentKm = 0;
+  const weeklyMeters = profileData?.weekly_summary?.total_distance_meters || 0;
+  const currentKm = weeklyMeters / 1000;
+  const weeklySeconds = profileData?.weekly_summary?.total_duration_seconds || 0;
+  const durationHours = Math.floor(weeklySeconds / 3600);
+  const durationMins = Math.floor((weeklySeconds % 3600) / 60);
 
   const percentage = goalKm > 0 ? Math.min((currentKm / goalKm) * 100, 100) : 0;
 
@@ -25,8 +27,13 @@ const WeeklySummaryCard = ({ profileData }) => {
 
         <div className="flex items-end gap-1 mb-2">
           <span className="text-4xl font-bold tracking-tight text-navy">{goalKm.toFixed(1)}</span>
-          <span className="text-base font-semibold text-text-muted mb-1">km</span>
+          <span className="text-base font-semibold text-text-muted mb-1">km goal</span>
         </div>
+        {weeklySeconds > 0 && (
+          <p className="text-sm text-text-secondary">
+            {durationHours > 0 ? `${durationHours}h ` : ''}{durationMins}m this week
+          </p>
+        )}
       </div>
 
       <div className="mt-6">

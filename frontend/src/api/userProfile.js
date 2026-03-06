@@ -1,4 +1,4 @@
-import api from './axios';
+import api from './client';
 
 export const userProfileAPI = {
   getFullProfile: async () => {
