@@ -90,7 +90,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
         description: notes.trim() || null,
         planned_distance_meters: distanceMeters,
         planned_pace_per_km: pacePerKm,
-        status: isCompleted ? 'completed' : (entry?.status || 'planned'),
+        status: isCompleted ? 'completed' : (entry?.status === 'completed' ? 'planned' : (entry?.status || 'planned')),
       };
 
       await onSave(data);

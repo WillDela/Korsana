@@ -89,7 +89,7 @@ const Dashboard = () => {
 
   const handleMarkComplete = async (entryId) => {
     try {
-      await calendarAPI.updateStatus(entryId, 'completed');
+      await calendarAPI.updateStatus(entryId, 'completed', todayEntry?.completed_activity_id);
       setTodayEntry((prev) =>
         prev ? { ...prev, status: 'completed' } : prev
       );

@@ -79,7 +79,7 @@ const WeekCalendar = ({ compact = false }) => {
     e.stopPropagation();
     const nextStatus = entry.status === 'completed' ? 'planned' : 'completed';
     try {
-      await calendarAPI.updateStatus(entry.id, nextStatus);
+      await calendarAPI.updateStatus(entry.id, nextStatus, entry.completed_activity_id);
       await fetchWeek();
     } catch (err) {
       console.error('Failed to update status:', err);

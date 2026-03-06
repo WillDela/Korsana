@@ -438,12 +438,9 @@ const Calendar = () => {
       {/* 1. Page-Level Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
         <div>
-<h1 className="text-3xl font-bold text-navy" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h1 className="text-3xl font-bold text-navy" style={{ fontFamily: 'var(--font-heading)' }}>
             Training Calendar
           </h1>
-          <div className="text-xs font-semibold text-text-secondary mt-1 flex items-center gap-1.5">
-            Full Month View <span className="text-border">—</span> <span className="text-sage tracking-widest uppercase text-[10px]">Athletic Precision</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -453,7 +450,7 @@ const Calendar = () => {
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-4 py-1.5 text-xs font-bold capitalize rounded-md transition-colors ${view === v
+                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-colors ${view === v
                   ? 'bg-navy text-white shadow-sm'
                   : 'text-text-secondary hover:text-navy hover:bg-bg-app'
                   }`}
@@ -464,7 +461,7 @@ const Calendar = () => {
           </div>
 
           <button
-            onClick={handleAddWorkout}
+            onClick={handleQuickAdd}
             className="px-4 py-2 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2"
           >
             <span className="text-lg leading-none mb-[2px]">+</span> Log Workout
@@ -570,13 +567,113 @@ const Calendar = () => {
             onDayClick={handleDayClick}
           />
         ) : view === 'day' ? (
-          <div className="rounded-2xl border border-border shadow-sm p-16 text-center bg-white">
-            <div className="w-12 h-12 bg-bg-app rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            </div>
-            <h3 className="text-lg font-bold text-navy mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Day View</h3>
-            <p className="text-text-secondary text-sm">Detailed day view is coming soon.</p>
-          </div>
+          (() => {
+            const displayDate = selectedDate || today;
+            const entries = entriesByDate[displayDate] || [];
+            const displayDateObj = new Date(displayDate + 'T12:00:00');
+            const isToday = displayDate === today;
+            const dateTitle = isToday ? "Today's Schedule" : displayDateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            return (
+              <div className="rounded-2xl border border-border overflow-hidden shadow-sm bg-white">
+                <div className="p-6 border-b border-border flex justify-between items-center bg-[#F8FAFF]">
+                  <div>
+                    <h2 className="text-2xl font-bold text-navy flex items-center gap-3" style={{ fontFamily: 'var(--font-heading)' }}>
+                      {dateTitle}
+                      {isToday && <span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-widest font-bold bg-navy text-white">Today</span>}
+                    </h2>
+                    <p className="text-text-secondary text-sm mt-1">Detailed breakdown of your planned activities.</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-navy font-mono leading-none">{entries.length}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted mt-1">Activities</div>
+                  </div>
+                </div>
+
+                <div className="p-0">
+                  {entries.length > 0 ? (
+                    <div className="divide-y divide-border">
+                      {entries.map(entry => {
+                        const typeInfo = WORKOUT_TYPES.find((w) => w.value === entry.workout_type);
+                        const accentColor = typeInfo?.color || '#6B7280';
+                        const distKm = entry.planned_distance_meters > 0
+                          ? (entry.planned_distance_meters / 1000).toFixed(1)
+                          : null;
+
+                        return (
+                          <div
+                            key={entry.id}
+                            className="p-6 flex items-start gap-5 hover:bg-bg-app transition-colors group cursor-pointer"
+                            onClick={() => handleEditEntry(entry)}
+                          >
+                            <div className="mt-1 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
+                              <span className="font-bold text-lg">{typeInfo?.badge?.charAt(0) || 'A'}</span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg font-bold text-text-primary truncate">{entry.title}</h3>
+                                {entry.source === 'strava' && <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded leading-none">S</span>}
+                              </div>
+
+                              <p className="text-sm text-text-secondary mb-3 leading-relaxed max-w-2xl">
+                                {entry.description || 'No description provided.'}
+                              </p>
+
+                              <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-text-muted">
+                                {distKm && (
+                                  <span className="flex items-center gap-1.5">
+                                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
+                                    {distKm} km
+                                  </span>
+                                )}
+                                {entry.planned_duration_minutes > 0 && (
+                                  <span className="flex items-center gap-1.5">
+                                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                    {entry.planned_duration_minutes} min
+                                  </span>
+                                )}
+                                {entry.status && (
+                                  <span className={`px-2 py-0.5 rounded font-bold uppercase tracking-widest text-[9px] ${entry.status === 'completed' ? 'bg-[#82A895]/20 text-[#82A895]' :
+                                    entry.status === 'missed' ? 'bg-gray-100 text-gray-500' : 'bg-navy/10 text-navy'
+                                    }`}>
+                                    {entry.status}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-text-muted flex-shrink-0 mt-2">
+                              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-16 text-center">
+                      <div className="w-16 h-16 bg-bg-app rounded-full flex items-center justify-center mx-auto mb-4 text-border">
+                        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                      </div>
+                      <h3 className="text-lg font-bold text-navy mb-1" style={{ fontFamily: 'var(--font-heading)' }}>No Activities Scheduled</h3>
+                      <p className="text-text-secondary text-sm max-w-sm mx-auto mb-6">
+                        You don't have any training activities scheduled for {isToday ? 'today' : 'this date'}. Take it easy and recover!
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditingEntry(null);
+                          setModalMode('session');
+                        }}
+                        className="px-5 py-2.5 bg-white border border-border shadow-sm rounded-lg text-sm font-bold text-navy hover:bg-bg-app transition-colors cursor-pointer"
+                      >
+                        + Log an Activity
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()
         ) : (
           <div className="rounded-2xl border border-border overflow-hidden shadow-sm relative bg-white">
             {/* Day-of-week headers */}
