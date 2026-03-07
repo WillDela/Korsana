@@ -309,7 +309,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 	}
 
 	// Fetch activities from Strava (last 30 activities)
-	activities, err := s.stravaClient.GetActivities(conn.AccessToken, 1, 30)
+	activities, err := s.stravaClient.GetActivities(conn.AccessToken, 1, 200)
 	if err != nil {
 		return 0, err
 	}

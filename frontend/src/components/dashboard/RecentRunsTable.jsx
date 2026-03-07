@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ACTIVITY_CONFIGS, DISTANCE_BASED_TYPES } from '../../constants/activityTypes';
 import { activitiesAPI } from '../../api/activities';
-
-const METERS_PER_MILE = 1609.34;
+import { useUnits } from '../../context/UnitsContext';
+import { formatDistance, formatPace } from '../../utils/units';
 
 const formatDuration = (seconds) => {
   const h = Math.floor(seconds / 3600);
@@ -11,15 +11,6 @@ const formatDuration = (seconds) => {
   const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-
-const formatPace = (seconds, meters) => {
-  if (!meters || meters <= 0) return '--:--';
-  const miles = meters / METERS_PER_MILE;
-  const paceSeconds = seconds / miles;
-  const min = Math.floor(paceSeconds / 60);
-  const sec = Math.floor(paceSeconds % 60);
-  return `${min}:${String(sec).padStart(2, '0')}`;
 };
 
 const formatDate = (dateStr) =>
@@ -36,6 +27,7 @@ const TrashIcon = () => (
 );
 
 const RecentRunsTable = ({ activities = [], onActivityDeleted }) => {
+  const { unit } = useUnits();
   const [deletingId, setDeletingId] = useState(null);
 
   const handleDelete = async (id) => {
@@ -80,10 +72,13 @@ const RecentRunsTable = ({ activities = [], onActivityDeleted }) => {
           {recent.map((a, i) => {
             const cfg = ACTIVITY_CONFIGS[a.activity_type] || ACTIVITY_CONFIGS.workout;
             const isDistanceBased = DISTANCE_BASED_TYPES.has(a.activity_type);
-            const miles = isDistanceBased
-              ? ((a.distance_meters || 0) / METERS_PER_MILE).toFixed(1)
-              : null;
             const hr = a.average_heart_rate;
+            const distStr = isDistanceBased
+              ? formatDistance(a.distance_meters, unit)
+              : null;
+            const paceSecPerKm = isDistanceBased && a.distance_meters > 0
+              ? (a.duration_seconds / (a.distance_meters / 1000))
+              : 0;
 
             return (
               <tr key={i} className={`table-row ${deletingId === a.id ? 'opacity-50' : ''}`}>
@@ -104,11 +99,11 @@ const RecentRunsTable = ({ activities = [], onActivityDeleted }) => {
                   </span>
                 </td>
                 <td className="table-cell text-right font-mono">
-                  {isDistanceBased ? `${miles} mi` : '\u2014'}
+                  {isDistanceBased ? distStr : '\u2014'}
                 </td>
                 <td className="table-cell text-right font-mono">
                   {isDistanceBased
-                    ? `${formatPace(a.duration_seconds, a.distance_meters)}/mi`
+                    ? formatPace(paceSecPerKm, unit)
                     : formatDuration(a.duration_seconds || 0)}
                 </td>
                 <td className="table-cell text-right font-mono">

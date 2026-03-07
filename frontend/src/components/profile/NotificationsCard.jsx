@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { userProfileAPI } from '../../api/userProfile';
 
-const ToggleSwitch = ({ isOn, onToggle, label, description }) => (
+const ToggleSwitch = ({ isOn, onToggle, label, description, disabled }) => (
   <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0 hover:bg-background-light/50 px-2 rounded-lg transition-colors">
     <div>
       <h3 className="text-sm font-semibold text-text-primary">{label}</h3>
@@ -10,8 +10,8 @@ const ToggleSwitch = ({ isOn, onToggle, label, description }) => (
     </div>
     <button
       onClick={onToggle}
-      className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${isOn ? 'bg-navy' : 'bg-border'
-        }`}
+      disabled={disabled}
+      className={`relative w-11 h-6 shrink-0 rounded-full transition-colors ${isOn ? 'bg-navy' : 'bg-border'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <motion.div
         layout
@@ -32,18 +32,24 @@ const NotificationsCard = ({ profileData, onUpdate }) => {
     notify_goal_reminders: profileData?.profile?.notify_goal_reminders ?? true,
     notify_sync_failures: profileData?.profile?.notify_sync_failures ?? true,
   });
+  const [saving, setSaving] = useState({
+    notify_weekly_summary: false,
+    notify_goal_reminders: false,
+    notify_sync_failures: false,
+  });
 
   const handleToggle = async (field) => {
     const newVal = !prefs[field];
-    const newPrefs = { ...prefs, [field]: newVal };
-    setPrefs(newPrefs);
-
+    setPrefs(prev => ({ ...prev, [field]: newVal }));
+    setSaving(prev => ({ ...prev, [field]: true }));
     try {
       await userProfileAPI.updateProfile({ [field]: newVal });
       if (onUpdate) onUpdate();
     } catch (err) {
       console.error('Failed to update notification pref:', field);
-      setPrefs({ ...prefs, [field]: !newVal }); // revert
+      setPrefs(prev => ({ ...prev, [field]: !newVal }));
+    } finally {
+      setSaving(prev => ({ ...prev, [field]: false }));
     }
   };
 
@@ -63,18 +69,21 @@ const NotificationsCard = ({ profileData, onUpdate }) => {
           onToggle={() => handleToggle('notify_weekly_summary')}
           label="Weekly Training Summary"
           description="Receive a weekly recap of your stats and progress."
+          disabled={saving.notify_weekly_summary}
         />
         <ToggleSwitch
           isOn={prefs.notify_goal_reminders}
           onToggle={() => handleToggle('notify_goal_reminders')}
           label="Race & Goal Reminders"
           description="Alerts when a race deadline or goal target is approaching."
+          disabled={saving.notify_goal_reminders}
         />
         <ToggleSwitch
           isOn={prefs.notify_sync_failures}
           onToggle={() => handleToggle('notify_sync_failures')}
           label="Sync Errors"
           description="Get notified if a Strava or device sync fails."
+          disabled={saving.notify_sync_failures}
         />
       </div>
     </div>

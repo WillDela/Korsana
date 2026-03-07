@@ -48,7 +48,7 @@ const PersonalRecords = ({ profileData, onUpdate }) => {
       setDetecting(true);
       setDetectionMessage('');
       const res = await userProfileAPI.detectPRsFromStrava();
-      setDetectionMessage(`Detected ${res.detected_count} new PRs!`);
+      setDetectionMessage(res.message || `Detected ${res.detected_count} new PRs!`);
       if (res.detected_count > 0) {
         await onUpdate();
       }

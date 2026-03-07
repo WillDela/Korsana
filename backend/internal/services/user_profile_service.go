@@ -6,8 +6,10 @@ import (
 	"errors"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -89,23 +91,52 @@ func (s *UserProfileService) UpdateProfile(ctx context.Context, profile *models.
 
 // SaveAvatar handles the file save for a profile picture in the uploads directory.
 func (s *UserProfileService) SaveAvatar(userID uuid.UUID, file *multipart.FileHeader) (string, error) {
-	err := os.MkdirAll("uploads/avatars", 0755)
-	if err != nil {
-		return "", err
+	const maxSize int64 = 5 * 1024 * 1024
+	if file.Size > maxSize {
+		return "", errors.New("avatar file exceeds 5 MB limit")
 	}
 
-	ext := filepath.Ext(file.Filename)
-	if ext == "" {
-		ext = ".jpg"
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExt := map[string]bool{
+		".jpg": true, ".jpeg": true,
+		".png": true, ".webp": true, ".gif": true,
 	}
-	filename := userID.String() + ext
-	path := filepath.Join("uploads/avatars", filename)
+	if !allowedExt[ext] {
+		return "", errors.New("avatar must be JPG, PNG, WebP, or GIF")
+	}
 
 	src, err := file.Open()
 	if err != nil {
-		return "", err
+		return "", errors.New("failed to open uploaded file")
 	}
 	defer src.Close()
+
+	buf := make([]byte, 512)
+	if _, err := io.ReadFull(src, buf); err != nil && err != io.ErrUnexpectedEOF {
+		return "", errors.New("failed to read file for type check")
+	}
+	mimeType := http.DetectContentType(buf)
+	allowedMime := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/webp": true,
+		"image/gif":  true,
+	}
+	if !allowedMime[mimeType] {
+		return "", errors.New("avatar must be a valid image file")
+	}
+
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return "", errors.New("failed to reset file reader")
+	}
+
+	err = os.MkdirAll("uploads/avatars", 0755)
+	if err != nil {
+		return "", err
+	}
+
+	filename := userID.String() + ext
+	path := filepath.Join("uploads/avatars", filename)
 
 	dst, err := os.Create(path)
 	if err != nil {
@@ -169,10 +200,10 @@ func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uui
 		MaxDist float64
 		DistInt int
 	}{
-		{"5K", 4800, 5200, 5000},
-		{"10K", 9800, 10200, 10000},
-		{"Half Marathon", 21000, 21300, 21097},
-		{"Marathon", 42000, 42400, 42195},
+		{"5K", 4500, 5500, 5000},
+		{"10K", 9500, 10500, 10000},
+		{"Half Marathon", 20500, 22000, 21097},
+		{"Marathon", 41000, 43500, 42195},
 	}
 
 	detectedCount := 0

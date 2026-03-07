@@ -53,7 +53,7 @@ func main() {
 
 	// 6. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	stravaHandler := handlers.NewStravaHandler(stravaService, authService)
+	stravaHandler := handlers.NewStravaHandler(stravaService, authService, cfg.FrontendURL)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)

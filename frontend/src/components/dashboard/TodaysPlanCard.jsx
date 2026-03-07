@@ -1,4 +1,5 @@
-const METERS_PER_MILE = 1609.34;
+import { useUnits } from '../../context/UnitsContext';
+import { formatDistance, formatPace } from '../../utils/units';
 
 const TYPE_COLORS = {
   easy: 'bg-sage text-white',
@@ -26,6 +27,7 @@ const CheckIcon = () => (
 );
 
 const TodaysPlanCard = ({ entry, onMarkComplete }) => {
+  const { unit } = useUnits();
   const noWorkout = !entry;
 
   return (
@@ -66,14 +68,12 @@ const TodaysPlanCard = ({ entry, onMarkComplete }) => {
           <div className="flex items-center gap-4 text-xs text-text-secondary">
             {entry.planned_distance_meters > 0 && (
               <span className="font-mono">
-                {(entry.planned_distance_meters / METERS_PER_MILE).toFixed(1)} mi
+                {formatDistance(entry.planned_distance_meters, unit)}
               </span>
             )}
             {entry.planned_pace_per_km > 0 && (
               <span className="font-mono">
-                {Math.floor(entry.planned_pace_per_km / 60)}:
-                {String(Math.floor(entry.planned_pace_per_km % 60))
-                  .padStart(2, '0')}/km
+                {formatPace(entry.planned_pace_per_km, unit)}
               </span>
             )}
           </div>

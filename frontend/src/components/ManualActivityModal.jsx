@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
 import { activitiesAPI } from '../api/activities';
+import { useUnits } from '../context/UnitsContext';
+import { distanceLabel, toMeters } from '../utils/units';
 
 const MUSCLE_GROUPS = [
   'chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full body',
 ];
 
 const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
+  const { unit } = useUnits();
   const [activityType, setActivityType] = useState('run');
   const [name, setName] = useState('');
   const [date, setDate] = useState(
@@ -44,7 +47,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
         start_time: startTime,
         duration_seconds: durationSeconds,
         distance_meters: isDistanceBased
-          ? parseFloat(distanceMiles || '0') * 1609.34
+          ? toMeters(parseFloat(distanceMiles || '0'), unit)
           : 0,
         average_heart_rate: heartRate ? parseInt(heartRate) : undefined,
         notes,
@@ -190,7 +193,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {isDistanceBased && (
             <div>
               <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
-                Distance (miles)
+                Distance ({distanceLabel(unit)})
               </label>
               <input
                 type="number"

@@ -1,16 +1,18 @@
 import { motion } from 'framer-motion';
+import { useUnits } from '../../context/UnitsContext';
+import { formatDistance } from '../../utils/units';
 
 const WeeklySummaryCard = ({ profileData }) => {
+  const { unit } = useUnits();
   const goalMeters = profileData?.profile?.weekly_distance_goal_meters || 0;
-  const goalKm = goalMeters / 1000;
-
   const weeklyMeters = profileData?.weekly_summary?.total_distance_meters || 0;
-  const currentKm = weeklyMeters / 1000;
   const weeklySeconds = profileData?.weekly_summary?.total_duration_seconds || 0;
   const durationHours = Math.floor(weeklySeconds / 3600);
   const durationMins = Math.floor((weeklySeconds % 3600) / 60);
 
-  const percentage = goalKm > 0 ? Math.min((currentKm / goalKm) * 100, 100) : 0;
+  const percentage = goalMeters > 0 ? Math.min((weeklyMeters / goalMeters) * 100, 100) : 0;
+  const goalDisplay = formatDistance(goalMeters, unit);
+  const currentDisplay = formatDistance(weeklyMeters, unit);
 
   return (
     <div className="card h-full flex flex-col justify-between">
@@ -26,8 +28,8 @@ const WeeklySummaryCard = ({ profileData }) => {
         </div>
 
         <div className="flex items-end gap-1 mb-2">
-          <span className="text-4xl font-bold tracking-tight text-navy">{goalKm.toFixed(1)}</span>
-          <span className="text-base font-semibold text-text-muted mb-1">km goal</span>
+          <span className="text-4xl font-bold tracking-tight text-navy">{goalDisplay}</span>
+          <span className="text-base font-semibold text-text-muted mb-1">goal</span>
         </div>
         {weeklySeconds > 0 && (
           <p className="text-sm text-text-secondary">
@@ -38,7 +40,7 @@ const WeeklySummaryCard = ({ profileData }) => {
 
       <div className="mt-6">
         <div className="flex justify-between text-xs font-semibold text-text-muted mb-2 uppercase tracking-wide">
-          <span>{currentKm.toFixed(1)} km</span>
+          <span>{currentDisplay}</span>
           <span>{percentage.toFixed(0)}%</span>
         </div>
         <div className="h-3 w-full bg-border-light rounded-full overflow-hidden">
@@ -49,7 +51,7 @@ const WeeklySummaryCard = ({ profileData }) => {
             className="h-full bg-navy rounded-full"
           />
         </div>
-        {goalKm === 0 && (
+        {goalMeters === 0 && (
           <p className="text-xs text-text-muted mt-3">
             Set a weekly distance goal in your profile edit menu.
           </p>

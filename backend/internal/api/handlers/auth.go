@@ -21,7 +21,7 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 
 type signupRequest struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=12"`
 }
 
 func (h *AuthHandler) Signup(c *gin.Context) {
@@ -35,8 +35,8 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email format"})
 		return
 	}
-	if len(req.Password) < 6 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 6 characters"})
+	if len(req.Password) < 12 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 12 characters"})
 		return
 	}
 

@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import AnimatedNumber from './AnimatedNumber';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance } from '../utils/units';
 
 const ActiveGoalBanner = ({ goal, loading, trainingProgress = 0 }) => {
+  const { unit } = useUnits();
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-border p-6 animate-shimmer" style={{ borderLeft: '4px solid var(--color-navy)', minHeight: '100px' }}>
@@ -40,7 +43,7 @@ const ActiveGoalBanner = ({ goal, loading, trainingProgress = 0 }) => {
   const weeks = Math.floor(totalDays / 7);
   const days = totalDays % 7;
 
-  const distanceMiles = goal.race_distance_meters ? (goal.race_distance_meters * 0.000621371).toFixed(1) : null;
+  const distanceDisplay = goal.race_distance_meters ? formatDistance(goal.race_distance_meters, unit) : null;
   const formatTargetTime = () => {
     if (!goal.target_time_seconds) return null;
     const h = Math.floor(goal.target_time_seconds / 3600);
@@ -64,7 +67,7 @@ const ActiveGoalBanner = ({ goal, loading, trainingProgress = 0 }) => {
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-secondary">
             <span>{raceDateFormatted}</span>
-            {distanceMiles && <span>{distanceMiles} mi</span>}
+            {distanceDisplay && <span>{distanceDisplay}</span>}
             {formatTargetTime() && <span className="font-mono">{formatTargetTime()}</span>}
           </div>
         </div>

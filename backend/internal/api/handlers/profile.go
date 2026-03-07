@@ -203,7 +203,11 @@ func (h *ProfileHandler) DetectPRsFromStrava(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"detected_count": count})
+	msg := "PR scan complete"
+	if count == 0 {
+		msg = "No new PRs found. Make sure your activities include standard race distances (5K, 10K, half, or full marathon)."
+	}
+	c.JSON(http.StatusOK, gin.H{"detected_count": count, "message": msg})
 }
 
 // GetTrainingZones
@@ -253,8 +257,8 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 }
 
 type changePasswordRequest struct {
-	CurrentPassword string `json:"current_password" binding:"required,min=6"`
-	NewPassword     string `json:"new_password" binding:"required,min=6"`
+	CurrentPassword string `json:"current_password" binding:"required,min=12"`
+	NewPassword     string `json:"new_password" binding:"required,min=12"`
 }
 
 // ChangePassword updates the user's password
@@ -282,7 +286,7 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 }
 
 type changeEmailRequest struct {
-	CurrentPassword string `json:"current_password" binding:"required,min=6"`
+	CurrentPassword string `json:"current_password" binding:"required,min=12"`
 	NewEmail        string `json:"new_email" binding:"required,email"`
 }
 

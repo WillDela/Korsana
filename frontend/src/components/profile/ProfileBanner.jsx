@@ -96,7 +96,7 @@ const ProfileBanner = ({ profileData, onUpdate }) => {
 
         <button
           onClick={() => setIsEditing(!isEditing)}
-          className="btn bg-white/10 hover:bg-white/20 text-white border-none transition-colors"
+          className="btn btn-sm bg-white/10 hover:bg-white/20 text-white border-none transition-colors"
         >
           {isEditing ? 'Cancel Edit' : 'Edit Profile'}
         </button>

@@ -1,20 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { userProfileAPI } from '../../api/userProfile';
+import { useUnits } from '../../context/UnitsContext';
 
 const UnitsPreferenceCard = ({ profileData, onUpdate }) => {
+  const { unit, updateUnit } = useUnits();
   const initialPref = profileData?.profile?.units_preference || 'metric';
   const [pref, setPref] = useState(initialPref);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const serverPref = profileData?.profile?.units_preference;
+    if (serverPref && serverPref !== unit) updateUnit(serverPref);
+  }, [profileData?.profile?.units_preference]);
+
   const handleToggle = async (val) => {
     if (val === pref) return;
     setPref(val);
+    updateUnit(val);
     try {
       setSaving(true);
       await userProfileAPI.updateProfile({ units_preference: val });
       if (onUpdate) onUpdate();
     } catch (err) {
-      setPref(initialPref); // revert on error
+      setPref(initialPref);
+      updateUnit(initialPref);
       console.error('Failed to save preferred units:', err);
     } finally {
       setSaving(false);

@@ -12,12 +12,14 @@ import (
 type StravaHandler struct {
 	stravaService *services.StravaService
 	authService   *services.AuthService
+	frontendURL   string
 }
 
-func NewStravaHandler(stravaService *services.StravaService, authService *services.AuthService) *StravaHandler {
+func NewStravaHandler(stravaService *services.StravaService, authService *services.AuthService, frontendURL string) *StravaHandler {
 	return &StravaHandler{
 		stravaService: stravaService,
 		authService:   authService,
+		frontendURL:   frontendURL,
 	}
 }
 
@@ -57,12 +59,12 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 	state := c.Query("state")
 
 	if code == "" {
-		c.Redirect(http.StatusFound, "http://localhost:5174/login?strava_error=missing_code")
+		c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=missing_code")
 		return
 	}
 
 	if state == "" {
-		c.Redirect(http.StatusFound, "http://localhost:5174/login?strava_error=missing_state")
+		c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=missing_state")
 		return
 	}
 
@@ -70,13 +72,13 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 	if err := h.stravaService.ValidateLoginOAuthState(c.Request.Context(), state); err == nil {
 		user, isNew, loginErr := h.stravaService.LoginWithStrava(c.Request.Context(), code)
 		if loginErr != nil {
-			c.Redirect(http.StatusFound, "http://localhost:5174/login?strava_error=login_failed")
+			c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=login_failed")
 			return
 		}
 
 		token, tokenErr := h.authService.GenerateToken(user.ID, user.Email)
 		if tokenErr != nil {
-			c.Redirect(http.StatusFound, "http://localhost:5174/login?strava_error=token_failed")
+			c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=token_failed")
 			return
 		}
 
@@ -85,23 +87,23 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 			newParam = "true"
 		}
 		c.Redirect(http.StatusFound,
-			"http://localhost:5174/auth/strava/callback?token="+token+"&new="+newParam)
+			h.frontendURL + "/auth/strava/callback?token="+token+"&new="+newParam)
 		return
 	}
 
 	// Fall through to the authenticated connect flow.
 	userID, err := h.stravaService.ValidateOAuthState(c.Request.Context(), state)
 	if err != nil {
-		c.Redirect(http.StatusFound, "http://localhost:5174/settings?strava_error=invalid_state")
+		c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_error=invalid_state")
 		return
 	}
 
 	if err = h.stravaService.HandleCallback(c.Request.Context(), userID, code); err != nil {
-		c.Redirect(http.StatusFound, "http://localhost:5174/settings?strava_error=connection_failed")
+		c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_error=connection_failed")
 		return
 	}
 
-	c.Redirect(http.StatusFound, "http://localhost:5174/settings?strava_connected=true")
+	c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_connected=true")
 }
 
 // SyncActivities syncs activities from Strava

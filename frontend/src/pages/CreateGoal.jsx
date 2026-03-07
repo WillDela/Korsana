@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { goalsAPI } from '../api/goals';
+import { useUnits } from '../context/UnitsContext';
+import { distanceLabel, toMeters } from '../utils/units';
 
 const DISTANCES = [
   { label: '5K', km: 5.0 },
@@ -11,12 +13,18 @@ const DISTANCES = [
   { label: 'Custom', km: null },
 ];
 
-function formatPace(totalSeconds, distanceKm) {
-  const miles = distanceKm / 1.60934;
-  const secsPerMile = totalSeconds / miles;
-  const mins = Math.floor(secsPerMile / 60);
-  const secs = Math.round(secsPerMile % 60);
-  return `${mins}:${String(secs).padStart(2, '0')}/mi`;
+function formatPaceLocal(totalSeconds, distanceKm, unit) {
+  if (unit === 'imperial') {
+    const miles = distanceKm / 1.60934;
+    const secsPerMile = totalSeconds / miles;
+    const mins = Math.floor(secsPerMile / 60);
+    const secs = Math.round(secsPerMile % 60);
+    return `${mins}:${String(secs).padStart(2, '0')}/mi`;
+  }
+  const secsPerKm = totalSeconds / distanceKm;
+  const mins = Math.floor(secsPerKm / 60);
+  const secs = Math.round(secsPerKm % 60);
+  return `${mins}:${String(secs).padStart(2, '0')}/km`;
 }
 
 function weeksUntil(dateStr) {
@@ -34,6 +42,7 @@ function formatTime(h, m, s) {
 
 const CreateGoal = () => {
   const navigate = useNavigate();
+  const { unit } = useUnits();
   const {
     register, handleSubmit, watch, setValue,
     formState: { errors },
@@ -149,9 +158,10 @@ const CreateGoal = () => {
                 />
                 <ConfirmRow
                   label="Implied Pace"
-                  value={formatPace(
+                  value={formatPaceLocal(
                     formSnapshot.target_time_seconds,
                     formSnapshot.race_distance_km,
+                    unit,
                   )}
                 />
               </>
@@ -277,7 +287,7 @@ const CreateGoal = () => {
                 type="number"
                 step="0.1"
                 className={`input ${errors.race_distance_km ? 'input-error' : ''}`}
-                placeholder="Distance in km"
+                placeholder={`Distance in ${distanceLabel(unit)}`}
                 {...register('race_distance_km', {
                   required: 'Distance is required',
                   min: {
