@@ -55,7 +55,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	stravaHandler := handlers.NewStravaHandler(stravaService, authService, cfg.FrontendURL)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
-	coachHandler := handlers.NewCoachHandler(coachService)
+	coachHandler := handlers.NewCoachHandler(coachService, db)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService, userProfileService)
 	activitiesHandler := handlers.NewActivitiesHandler(activityService)
@@ -133,9 +133,10 @@ func main() {
 			// AI Coach
 			coach := protected.Group("/coach")
 			{
-				coachLimiter := middleware.CoachRateLimiter(redisClient)
+				coachLimiter := middleware.CoachRateLimiter(redisClient, db)
 				coach.POST("/message", coachLimiter, coachHandler.SendMessage)
 				coach.GET("/history", coachHandler.GetConversationHistory)
+				coach.GET("/quota", coachHandler.GetQuota)
 				coach.GET("/insight", coachLimiter, coachHandler.GetInsight)
 				coach.POST("/generate-plan", coachLimiter, coachHandler.GeneratePlan)
 			}

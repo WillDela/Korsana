@@ -24,6 +24,7 @@ func main() {
 		"007_drop_calendar_unique.sql",
 		"008_user_profiles.sql",
 		"009_profile_preferences.sql",
+		"010_coach_rate_limits.sql",
 	}
 
 	for _, migrationFile := range migrations {

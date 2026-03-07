@@ -2,19 +2,23 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
-	"github.com/korsana/backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/services"
 )
 
 type CoachHandler struct {
 	coachService *services.CoachService
+	db           *database.DB
 }
 
-func NewCoachHandler(coachService *services.CoachService) *CoachHandler {
+func NewCoachHandler(coachService *services.CoachService, db *database.DB) *CoachHandler {
 	return &CoachHandler{
 		coachService: coachService,
+		db:           db,
 	}
 }
 
@@ -131,5 +135,40 @@ func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"messages": messages,
+	})
+}
+
+// GetQuota returns today's AI coach quota for the authenticated user without
+// consuming any usage. Safe to call on page load for UI display purposes.
+func (h *CoachHandler) GetQuota(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var used, limit int
+	err := h.db.QueryRowContext(
+		c.Request.Context(),
+		`SELECT used, limit_val FROM get_coach_quota($1::uuid, $2::date)`,
+		userID, time.Now().UTC().Format("2006-01-02"),
+	).Scan(&used, &limit)
+	if err != nil {
+		// Default to full quota on DB error — not a hard failure
+		used, limit = 0, 10
+	}
+
+	remaining := limit - used
+	if remaining < 0 {
+		remaining = 0
+	}
+	reset := time.Now().UTC().Truncate(24*time.Hour).Add(24 * time.Hour).Unix()
+
+	c.JSON(http.StatusOK, gin.H{
+		"used":      used,
+		"limit":     limit,
+		"remaining": remaining,
+		"reset_at":  reset,
 	})
 }
