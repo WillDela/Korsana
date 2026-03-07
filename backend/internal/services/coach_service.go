@@ -97,48 +97,97 @@ type GeminiResponse struct {
 	} `json:"candidates"`
 }
 
-// SendMessage sends a message to the AI coach and gets a response
-func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, userMessage string) (string, error) {
+// CreateSession creates a new named coaching session for a user.
+func (s *CoachService) CreateSession(ctx context.Context, userID uuid.UUID) (*models.CoachSession, error) {
+	session := &models.CoachSession{
+		ID:        uuid.New(),
+		UserID:    userID,
+		Title:     "New session",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err := s.db.NamedExecContext(ctx, `
+		INSERT INTO coach_sessions (id, user_id, title, created_at, updated_at)
+		VALUES (:id, :user_id, :title, :created_at, :updated_at)
+	`, session)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
+// GetSessions returns the user's coaching sessions, newest first.
+func (s *CoachService) GetSessions(ctx context.Context, userID uuid.UUID) ([]models.CoachSession, error) {
+	var sessions []models.CoachSession
+	err := s.db.SelectContext(ctx, &sessions, `
+		SELECT * FROM coach_sessions
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT 50
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	return sessions, nil
+}
+
+// GetSessionMessages returns messages belonging to a specific session.
+func (s *CoachService) GetSessionMessages(ctx context.Context, userID, sessionID uuid.UUID) ([]models.CoachConversation, error) {
+	var messages []models.CoachConversation
+	err := s.db.SelectContext(ctx, &messages, `
+		SELECT id, user_id, role, content, created_at, session_id
+		FROM coach_conversations
+		WHERE user_id = $1 AND session_id = $2
+		ORDER BY created_at ASC
+		LIMIT 200
+	`, userID, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
+// SendMessage sends a message to the AI coach and gets a response.
+// sessionID is optional — if provided messages are stored under that session.
+func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage string) (string, error) {
 	// Build context about user's training
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
 		trainingContext = "No training data available yet."
 	}
 
-	// Get recent conversation history (last 10 messages)
+	// Fetch recent messages for context: prefer session messages, fall back to global
 	var recentMessages []models.CoachConversation
-	query := `
-		SELECT * FROM coach_conversations
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-		LIMIT 10
-	`
-	err = s.db.SelectContext(ctx, &recentMessages, query, userID)
+	if sessionID != nil {
+		err = s.db.SelectContext(ctx, &recentMessages, `
+			SELECT id, user_id, role, content, created_at, session_id
+			FROM coach_conversations
+			WHERE user_id = $1 AND session_id = $2
+			ORDER BY created_at DESC LIMIT 10
+		`, userID, *sessionID)
+	} else {
+		err = s.db.SelectContext(ctx, &recentMessages, `
+			SELECT id, user_id, role, content, created_at, session_id
+			FROM coach_conversations
+			WHERE user_id = $1
+			ORDER BY created_at DESC LIMIT 10
+		`, userID)
+	}
 	if err != nil {
 		recentMessages = []models.CoachConversation{}
 	}
 
-	// Reverse to get chronological order
+	// Reverse to chronological order
 	for i, j := 0, len(recentMessages)-1; i < j; i, j = i+1, j-1 {
 		recentMessages[i], recentMessages[j] = recentMessages[j], recentMessages[i]
 	}
 
-	// Build messages for Claude
 	messages := []ChatMessage{}
 	for _, msg := range recentMessages {
-		messages = append(messages, ChatMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
+		messages = append(messages, ChatMessage{Role: msg.Role, Content: msg.Content})
 	}
+	messages = append(messages, ChatMessage{Role: "user", Content: userMessage})
 
-	// Add current user message
-	messages = append(messages, ChatMessage{
-		Role:    "user",
-		Content: userMessage,
-	})
-
-	// System prompt
 	systemPrompt := fmt.Sprintf(`You are Korsana, an experienced endurance and strength training coach with expertise in marathon training, cross-training, and periodized fitness programs. You provide evidence-based, personalized advice to runners.
 
 Your coaching philosophy:
@@ -153,7 +202,6 @@ Current runner's context:
 
 Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.`, trainingContext)
 
-	// Choose API based on what's available (prefer Gemini for free tier)
 	var response string
 	if s.config.GeminiAPIKey != "" {
 		log.Printf("[Coach] Calling Gemini API with %d messages", len(messages))
@@ -162,41 +210,47 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 		log.Printf("[Coach] Calling Claude API with %d messages", len(messages))
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
-		log.Printf("[Coach] ERROR: No AI API key configured")
 		return "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
-
 	if err != nil {
 		log.Printf("[Coach] ERROR from AI API: %v", err)
 		return "", err
 	}
-
 	log.Printf("[Coach] Got response (%d chars)", len(response))
 
-	// Store conversation in database
+	now := time.Now()
 	userMsg := &models.CoachConversation{
-		ID:        uuid.New(),
-		UserID:    userID,
-		Role:      "user",
-		Content:   userMessage,
-		CreatedAt: time.Now(),
+		ID: uuid.New(), UserID: userID, Role: "user",
+		Content: userMessage, CreatedAt: now, SessionID: sessionID,
 	}
-
 	assistantMsg := &models.CoachConversation{
-		ID:        uuid.New(),
-		UserID:    userID,
-		Role:      "assistant",
-		Content:   response,
-		CreatedAt: time.Now(),
+		ID: uuid.New(), UserID: userID, Role: "assistant",
+		Content: response, CreatedAt: now.Add(time.Millisecond), SessionID: sessionID,
 	}
 
 	insertQuery := `
-		INSERT INTO coach_conversations (id, user_id, role, content, created_at)
-		VALUES (:id, :user_id, :role, :content, :created_at)
+		INSERT INTO coach_conversations (id, user_id, role, content, created_at, session_id)
+		VALUES (:id, :user_id, :role, :content, :created_at, :session_id)
 	`
-
 	_, _ = s.db.NamedExecContext(ctx, insertQuery, userMsg)
 	_, _ = s.db.NamedExecContext(ctx, insertQuery, assistantMsg)
+
+	// Auto-title session from first user message
+	if sessionID != nil {
+		var count int
+		if err := s.db.GetContext(ctx, &count, `
+			SELECT COUNT(*) FROM coach_conversations WHERE session_id = $1 AND role = 'user'
+		`, *sessionID); err == nil && count == 1 {
+			title := userMessage
+			if len([]rune(title)) > 45 {
+				runes := []rune(title)
+				title = string(runes[:45]) + "…"
+			}
+			_, _ = s.db.ExecContext(ctx, `
+				UPDATE coach_sessions SET title = $1, updated_at = NOW() WHERE id = $2
+			`, title, *sessionID)
+		}
+	}
 
 	return response, nil
 }
@@ -205,7 +259,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 func (s *CoachService) callClaudeAPI(messages []ChatMessage, systemPrompt string) (string, error) {
 	reqBody := ClaudeRequest{
 		Model:     "claude-sonnet-4-5-20250929",
-		MaxTokens: 1024,
+		MaxTokens: 2048,
 		Messages:  messages,
 		System:    systemPrompt,
 	}
@@ -270,7 +324,7 @@ func (s *CoachService) callGeminiAPI(messages []ChatMessage, systemPrompt string
 			Parts: []GeminiPart{{Text: systemPrompt}},
 		},
 		GenerationConfig: &GeminiGenConfig{
-			MaxOutputTokens: 1024,
+			MaxOutputTokens: 2048,
 		},
 	}
 

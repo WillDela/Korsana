@@ -79,13 +79,23 @@ type ConnectedIntegration struct {
 	LastSyncedAt   *time.Time `json:"last_synced_at" db:"last_synced_at"`
 }
 
-// CoachConversation represents a message in the AI coach conversation
-type CoachConversation struct {
+// CoachSession groups a set of coach messages into a named conversation.
+type CoachSession struct {
 	ID        uuid.UUID `json:"id" db:"id"`
 	UserID    uuid.UUID `json:"user_id" db:"user_id"`
-	Role      string    `json:"role" db:"role"` // "user", "assistant"
-	Content   string    `json:"content" db:"content"`
+	Title     string    `json:"title" db:"title"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// CoachConversation represents a message in the AI coach conversation
+type CoachConversation struct {
+	ID        uuid.UUID  `json:"id" db:"id"`
+	UserID    uuid.UUID  `json:"user_id" db:"user_id"`
+	Role      string     `json:"role" db:"role"` // "user", "assistant"
+	Content   string     `json:"content" db:"content"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	SessionID *uuid.UUID `json:"session_id,omitempty" db:"session_id"`
 }
 
 // WeeklySummary represents aggregated weekly training data

@@ -139,6 +139,10 @@ func main() {
 				coach.GET("/quota", coachHandler.GetQuota)
 				coach.GET("/insight", coachLimiter, coachHandler.GetInsight)
 				coach.POST("/generate-plan", coachLimiter, coachHandler.GeneratePlan)
+				// Sessions
+				coach.POST("/sessions", coachHandler.CreateSession)
+				coach.GET("/sessions", coachHandler.GetSessions)
+				coach.GET("/sessions/:id/messages", coachHandler.GetSessionMessages)
 			}
 
 			// Profile / Settings

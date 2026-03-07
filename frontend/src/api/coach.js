@@ -1,36 +1,51 @@
 import client from './client';
 
 export const coachAPI = {
-  sendMessage: async (message) => {
-    const response = await client.post('/coach/message', { message });
-    return {
-      ...response.data,
-      _quota: extractQuotaHeaders(response.headers),
-    };
+  // Sessions
+  getSessions: async () => {
+    const res = await client.get('/coach/sessions');
+    return res.data;
+  },
+  createSession: async () => {
+    const res = await client.post('/coach/sessions');
+    return res.data;
+  },
+  getSessionMessages: async (sessionId) => {
+    const res = await client.get(`/coach/sessions/${sessionId}/messages`);
+    return res.data;
   },
 
+  // Messages
+  sendMessage: async (message, sessionId = null) => {
+    const res = await client.post('/coach/message', {
+      message,
+      session_id: sessionId,
+    });
+    return { ...res.data, _quota: extractQuota(res.headers) };
+  },
+
+  // Legacy history (no session)
   getHistory: async () => {
-    const response = await client.get('/coach/history');
-    return response.data;
+    const res = await client.get('/coach/history');
+    return res.data;
   },
 
+  // Quota
   getQuota: async () => {
-    const response = await client.get('/coach/quota');
-    return response.data;
+    const res = await client.get('/coach/quota');
+    return res.data;
   },
 
+  // Plan
   generatePlan: async (days = 7, confirm = false) => {
-    const response = await client.post('/coach/generate-plan', { days, confirm });
-    return {
-      ...response.data,
-      _quota: extractQuotaHeaders(response.headers),
-    };
+    const res = await client.post('/coach/generate-plan', { days, confirm });
+    return { ...res.data, _quota: extractQuota(res.headers) };
   },
 };
 
-function extractQuotaHeaders(headers) {
+function extractQuota(headers) {
   const limit = parseInt(headers['x-ratelimit-limit'], 10);
-  const used = parseInt(headers['x-ratelimit-used'], 10);
+  const used  = parseInt(headers['x-ratelimit-used'], 10);
   const remaining = parseInt(headers['x-ratelimit-remaining'], 10);
   if (isNaN(limit)) return null;
   return { limit, used, remaining };
