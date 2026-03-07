@@ -42,7 +42,7 @@ const DataExportCard = () => {
       <button
         onClick={handleExport}
         disabled={loading}
-        className="btn btn-outline flex items-center gap-2 text-sm"
+        className="btn btn-sm btn-outline flex items-center gap-2"
       >
         {loading ? 'Generating File...' : 'Download My Data'}
       </button>

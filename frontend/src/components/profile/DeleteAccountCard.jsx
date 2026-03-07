@@ -47,7 +47,7 @@ const DeleteAccountCard = () => {
           >
             <button
               onClick={() => setConfirming(true)}
-              className="btn border border-error text-error hover:bg-error hover:text-white"
+              className="btn btn-sm border border-error text-error hover:bg-error hover:text-white"
             >
               Delete Account
             </button>
@@ -73,14 +73,14 @@ const DeleteAccountCard = () => {
             <div className="flex gap-3 mt-2">
               <button
                 onClick={() => { setConfirming(false); setTextVerify(''); }}
-                className="btn btn-outline text-text-secondary border-border bg-white"
+                className="btn btn-sm btn-outline text-text-secondary border-border bg-white"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={textVerify !== 'DELETE' || loading}
-                className="btn bg-error text-white border-error hover:bg-error/90 disabled:opacity-50"
+                className="btn btn-sm bg-error text-white border-error hover:bg-error/90 disabled:opacity-50"
               >
                 {loading ? 'Deleting...' : 'Yes, Delete My Account'}
               </button>

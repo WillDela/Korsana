@@ -76,7 +76,7 @@ const ConnectedServicesCard = ({ stravaConnected, stravaAthleteId, stravaMessage
             </p>
             <div className="flex gap-4">
               <button
-                className="btn btn-outline text-sm font-semibold flex items-center justify-center gap-2"
+                className="btn btn-sm btn-outline font-semibold flex items-center justify-center gap-2"
                 onClick={handleSync}
                 disabled={syncing}
               >
@@ -92,7 +92,7 @@ const ConnectedServicesCard = ({ stravaConnected, stravaAthleteId, stravaMessage
                 {syncing ? 'Syncing...' : 'Sync Now'}
               </button>
               <button
-                className="btn text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-error border-none transition-colors"
+                className="btn btn-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-error border-none transition-colors"
                 onClick={handleDisconnect}
               >
                 Disconnect
@@ -105,7 +105,7 @@ const ConnectedServicesCard = ({ stravaConnected, stravaAthleteId, stravaMessage
               Connect Strava to automatically sync your running activities and get personalized coaching based on your true efforts.
             </p>
             <button
-              className="btn text-sm font-semibold text-white border-none flex items-center justify-center gap-2"
+              className="btn btn-sm font-semibold text-white border-none flex items-center justify-center gap-2"
               onClick={onConnectStrava}
               style={{ background: 'var(--color-strava)' }}
             >

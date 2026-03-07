@@ -115,7 +115,7 @@ const ChangePasswordForm = () => {
         <div>
           <button
             type="submit"
-            className="btn btn-primary text-sm"
+            className="btn btn-sm btn-primary"
             disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
           >
             {changingPassword ? 'Updating...' : 'Update Password'}

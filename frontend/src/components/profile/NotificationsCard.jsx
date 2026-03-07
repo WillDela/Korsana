@@ -44,7 +44,6 @@ const NotificationsCard = ({ profileData, onUpdate }) => {
     setSaving(prev => ({ ...prev, [field]: true }));
     try {
       await userProfileAPI.updateProfile({ [field]: newVal });
-      if (onUpdate) onUpdate();
     } catch (err) {
       console.error('Failed to update notification pref:', field);
       setPrefs(prev => ({ ...prev, [field]: !newVal }));

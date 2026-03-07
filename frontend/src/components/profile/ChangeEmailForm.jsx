@@ -94,7 +94,7 @@ const ChangeEmailForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="btn btn-outline self-start mt-2"
+          className="btn btn-sm btn-outline self-start mt-2"
         >
           {loading ? 'Updating...' : 'Update Email'}
         </button>
