@@ -11,6 +11,14 @@ export const userProfileAPI = {
     return response.data;
   },
 
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/profile/password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+    return response.data;
+  },
+
   uploadAvatar: async (file) => {
     const formData = new FormData();
     formData.append('avatar', file);

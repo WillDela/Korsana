@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { profileAPI } from '../../api/profile';
+import { userProfileAPI } from '../../api/userProfile';
 import { getErrorMessage } from '../../api/client';
 
 const ChangePasswordForm = () => {
@@ -27,7 +27,7 @@ const ChangePasswordForm = () => {
 
     try {
       setChangingPassword(true);
-      await profileAPI.changePassword(currentPassword, newPassword);
+      await userProfileAPI.changePassword(currentPassword, newPassword);
       setPasswordSuccess('Password updated successfully');
       setCurrentPassword('');
       setNewPassword('');

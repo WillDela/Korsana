@@ -32,14 +32,6 @@ const RaceHeader = ({ activeGoal, lastSynced, onSync, syncLoading }) => {
     ? Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
     : 100;
 
-  const formatSyncTime = (ts) => {
-    if (!ts) return 'Never';
-    return new Date(ts).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -64,18 +56,6 @@ const RaceHeader = ({ activeGoal, lastSynced, onSync, syncLoading }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-right">
-            <button
-              onClick={onSync}
-              disabled={syncLoading}
-              className="text-sm font-medium text-navy hover:text-navy-light transition-colors cursor-pointer bg-transparent border-none disabled:opacity-50"
-            >
-              {syncLoading ? 'Syncing...' : 'Sync'}
-            </button>
-            <p className="text-xs text-text-muted" style={{ fontFamily: 'var(--font-mono)' }}>
-              {formatSyncTime(lastSynced)}
-            </p>
-          </div>
           <Link
             to="/goals"
             className="text-sm text-text-secondary underline hover:text-navy transition-colors"
