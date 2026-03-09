@@ -182,7 +182,7 @@ const Goals = () => {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="card text-center py-12">
           <p className="text-text-secondary">Loading goals...</p>
         </div>
@@ -192,7 +192,7 @@ const Goals = () => {
 
   if (goals.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="card text-center py-16 px-8">
           <div className="text-4xl mb-4">🏁</div>
           <h2
@@ -214,7 +214,7 @@ const Goals = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <h1
@@ -234,7 +234,8 @@ const Goals = () => {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="card p-6 mb-6 border-l-4 border-navy"
+          className="card p-6 mb-6"
+          style={{ borderRadius: 16, borderLeft: '4px solid #E8634A', boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}
         >
           <div className="flex items-start justify-between gap-4 mb-3">
             <div>
@@ -332,6 +333,7 @@ const Goals = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
                 className="card p-5 relative"
+                style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}
               >
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-base font-semibold text-text-primary">
@@ -453,6 +455,7 @@ const Goals = () => {
                   <div
                     key={goal.id}
                     className="card p-4 opacity-70"
+                    style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -518,7 +521,7 @@ const Goals = () => {
         </div>
 
         {showAddCT && (
-          <div className="card p-4 mb-4 flex flex-wrap items-end gap-3">
+          <div className="card p-4 mb-4 flex flex-wrap items-end gap-3" style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}>
             <div>
               <label className="block text-xs text-text-muted mb-1">Activity</label>
               <select
@@ -566,7 +569,7 @@ const Goals = () => {
         {ctLoading ? (
           <p className="text-sm text-text-muted">Loading...</p>
         ) : ctGoals.length === 0 ? (
-          <div className="card p-6 text-center text-sm text-text-muted">
+          <div className="card p-6 text-center text-sm text-text-muted" style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}>
             No cross-training targets yet. Add one above!
           </div>
         ) : (
@@ -576,7 +579,7 @@ const Goals = () => {
               const done = ctProgress[goal.activity_type] || 0;
               const pct = Math.min(100, Math.round((done / goal.sessions_per_week) * 100));
               return (
-                <div key={goal.id} className="card p-4">
+                <div key={goal.id} className="card p-4" style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{cfg.icon}</span>

@@ -139,8 +139,8 @@ const Pill = ({ type, sm = false }) => {
 
 const Card = ({ children, style = {} }) => (
   <div style={{
-    background: C.white, borderRadius: 16, padding: '20px 22px',
-    boxShadow: '0 1px 2px rgba(27,37,89,0.05),0 2px 12px rgba(27,37,89,0.04)',
+    background: C.white, borderRadius: 16, padding: '22px 24px',
+    boxShadow: '0 1px 3px rgba(27,37,89,0.07),0 4px 20px rgba(27,37,89,0.08)',
     ...style,
   }}>{children}</div>
 );
@@ -171,16 +171,16 @@ const Gauge = ({ score }) => {
   const r = 48;
   const circ = 2 * Math.PI * r;
   return (
-    <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
-      <svg width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={r} fill="none" stroke={C.gray100} strokeWidth="10" />
-        <circle cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
+    <div style={{ position: 'relative', width: 130, height: 130, flexShrink: 0 }}>
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r={r} fill="none" stroke={C.gray100} strokeWidth="11" />
+        <circle cx="65" cy="65" r={r} fill="none" stroke={color} strokeWidth="11"
           strokeDasharray={`${(score / 100) * circ} ${circ}`}
-          strokeLinecap="round" transform="rotate(-90 60 60)" />
+          strokeLinecap="round" transform="rotate(-90 65 65)" />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400 }}>/ 100</span>
+        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{score}</span>
+        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400 }}>/ 100</span>
       </div>
     </div>
   );
@@ -341,10 +341,10 @@ const ElevWidget = ({ data }) => (
   <Card>
     <SLabel>Elevation This Week</SLabel>
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.navy, lineHeight: 1 }}>
-        {data.weeklyGain.toLocaleString()}<span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, fontWeight: 400 }}> ft gain</span>
+      <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>
+        {data.weeklyGain.toLocaleString()}<span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400, fontWeight: 400 }}> ft gain</span>
       </div>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400, marginTop: 2 }}>↓ {data.weeklyLoss.toLocaleString()} ft loss</div>
+      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginTop: 3 }}>↓ {data.weeklyLoss.toLocaleString()} ft loss</div>
     </div>
     <ResponsiveContainer width="100%" height={90}>
       <AreaChart data={data.trend}>
@@ -368,8 +368,8 @@ const CadWidget = ({ data }) => (
   <Card>
     <SLabel>Cadence</SLabel>
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
-      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.avgSPM}</span>
-      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>spm avg</span>
+      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.avgSPM}</span>
+      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}>spm avg</span>
     </div>
     <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.amber, marginBottom: 12 }}>
       Goal: {data.goal} spm · {Math.max(0, data.goal - data.avgSPM)} away
@@ -401,12 +401,12 @@ const CalWidget = ({ data }) => {
       <SLabel>Calories Burned</SLabel>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
         <div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.weeklyBurn.toLocaleString()}</span>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}> / {data.weeklyTarget.toLocaleString()} kcal</span>
+          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.weeklyBurn.toLocaleString()}</span>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}> / {data.weeklyTarget.toLocaleString()} kcal</span>
         </div>
         <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 14, fontWeight: 700, color: pct >= 80 ? C.green : C.amber }}>{pct}%</span>
       </div>
-      <div style={{ height: 5, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
         <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg,${C.amber},${C.coral})`, borderRadius: 99 }} />
       </div>
       <ResponsiveContainer width="100%" height={80}>
@@ -430,15 +430,15 @@ const HRZWidget = ({ data }) => (
   <Card>
     <SLabel>HR Zones · This Week</SLabel>
     {data.map((z, i) => (
-      <div key={i} style={{ marginBottom: i < data.length - 1 ? 10 : 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+      <div key={i} style={{ marginBottom: i < data.length - 1 ? 12 : 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
           <div>
-            <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray600 }}>{z.zone}</span>
+            <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
             <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: C.gray400, marginLeft: 8 }}>{z.bpm}</span>
           </div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
+          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
         </div>
-        <div style={{ height: 5, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
+        <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
           <div style={{ width: `${z.pct}%`, height: '100%', background: z.color, borderRadius: 99 }} />
         </div>
       </div>
@@ -494,11 +494,11 @@ const ConsistWidget = ({ data }) => (
     <SLabel>Streak & Consistency</SLabel>
     <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${C.gray100}` }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.coral, lineHeight: 1 }}>{data.streak}</div>
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, marginTop: 3 }}>week streak</div>
+        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 40, fontWeight: 700, color: C.coral, lineHeight: 1 }}>{data.streak}</div>
+        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400, marginTop: 4 }}>week streak</div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.longestStreak}</div>
+        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 40, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.longestStreak}</div>
         <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, marginTop: 3 }}>longest</div>
       </div>
     </div>
@@ -535,12 +535,12 @@ const MonthlyWidget = ({ data }) => {
       <SLabel>{data.monthName} Mileage</SLabel>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
         <div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.navy }}>{data.actual.toFixed(1)}</span>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}> / {data.target} mi</span>
+          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy }}>{data.actual.toFixed(1)}</span>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}> / {data.target} mi</span>
         </div>
         <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 14, fontWeight: 700, color: pct >= 80 ? C.green : C.amber }}>{pct}%</span>
       </div>
-      <div style={{ height: 5, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
         <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg,${C.navy},${C.coral})`, borderRadius: 99 }} />
       </div>
       <ResponsiveContainer width="100%" height={80}>
@@ -1211,7 +1211,7 @@ const Dashboard = () => {
                 <div style={{ width: 4, height: 50, background: C.coral, borderRadius: 99, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5, flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 22, color: C.navy, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 24, color: C.navy, letterSpacing: '-0.02em', lineHeight: 1 }}>
                       {activeGoal.race_name}
                     </span>
                     <div style={{ background: pc.badge, borderRadius: 6, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
@@ -1241,7 +1241,7 @@ const Dashboard = () => {
                 ].map((stat, i) => (
                   <div key={i} style={{ padding: '0 24px', borderLeft: i > 0 ? `1px solid ${C.gray100}` : undefined, textAlign: 'center' }}>
                     <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 5 }}>{stat.label}</div>
-                    <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 22, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{stat.value}</div>
+                    <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{stat.value}</div>
                     <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, marginTop: 3 }}>{stat.sub}</div>
                   </div>
                 ))}
@@ -1251,10 +1251,10 @@ const Dashboard = () => {
               {daysToRace !== null && (
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, justifyContent: 'flex-end' }}>
-                    <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeksOut}</span>
-                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>w</span>
-                    <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 22, fontWeight: 700, color: C.gray400, lineHeight: 1 }}>{daysRem}</span>
-                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>d</span>
+                    <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 38, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeksOut}</span>
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}>w</span>
+                    <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.gray400, lineHeight: 1 }}>{daysRem}</span>
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}>d</span>
                   </div>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, marginTop: 1 }}>to race day</div>
                 </div>
@@ -1297,8 +1297,8 @@ const Dashboard = () => {
                       borderRight: i < 6 ? `1px solid ${C.gray100}` : 'none',
                       position: 'relative', cursor: 'default', transition: 'background 0.15s',
                     }}>
-                      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 700, color: isT ? 'rgba(255,255,255,0.4)' : C.gray400, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>{d.day}</div>
-                      <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 700, color: isT ? C.white : C.navy, lineHeight: 1, marginBottom: 10 }}>{d.date}</div>
+                      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 700, color: isT ? 'rgba(255,255,255,0.4)' : C.gray400, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{d.day}</div>
+                      <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: isT ? C.white : C.navy, lineHeight: 1, marginBottom: 12 }}>{d.date}</div>
                       <div style={{ marginBottom: 8 }}>
                         {d.type ? (
                           <span style={{ background: isT ? 'rgba(255,255,255,0.12)' : s.bg, color: isT ? C.white : s.text, borderRadius: 5, padding: '3px 7px', fontSize: 9, fontFamily: 'DM Sans, sans-serif', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1309,8 +1309,8 @@ const Dashboard = () => {
                         )}
                       </div>
                       {d.miles ? (
-                        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 16, fontWeight: 600, color: isT ? C.coral : C.navy }}>
-                          {d.miles}<span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: isT ? 'rgba(255,255,255,0.3)' : C.gray400 }}> mi</span>
+                        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 18, fontWeight: 600, color: isT ? C.coral : C.navy }}>
+                          {d.miles}<span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: isT ? 'rgba(255,255,255,0.3)' : C.gray400 }}> mi</span>
                         </div>
                       ) : null}
                       {d.done && <div style={{ position: 'absolute', top: 10, right: 10, width: 7, height: 7, borderRadius: '50%', background: C.green }} />}
@@ -1339,7 +1339,7 @@ const Dashboard = () => {
                           <span style={{ background: 'rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.5)', borderRadius: 5, padding: '2px 9px', fontSize: 10, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>AI PLAN</span>
                         )}
                       </div>
-                      <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 30, color: C.white, lineHeight: 1, marginBottom: 8, letterSpacing: '-0.02em' }}>
+                      <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 36, color: C.white, lineHeight: 1, marginBottom: 8, letterSpacing: '-0.02em' }}>
                         {todayEntry.title || todayWorkoutType}
                       </h2>
                       <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
@@ -1350,8 +1350,8 @@ const Dashboard = () => {
                       {todayWorkoutMiles && (
                         <>
                           <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 52, fontWeight: 700, color: C.white, lineHeight: 1 }}>{todayWorkoutMiles}</div>
-                            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 }}>miles</div>
+                            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 58, fontWeight: 700, color: C.white, lineHeight: 1 }}>{todayWorkoutMiles}</div>
+                            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 5 }}>miles</div>
                           </div>
                           <div style={{ width: 1, height: 55, background: 'rgba(255,255,255,0.1)', alignSelf: 'center' }} />
                         </>
@@ -1386,17 +1386,17 @@ const Dashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 13 }}>
               {/* Weekly Mileage */}
               <Card>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Weekly Mileage</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 3 }}>
-                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeklyMileage}</span>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}>mi</span>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Weekly Mileage</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 46, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeklyMileage}</span>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 16, color: C.gray400, fontWeight: 500 }}>mi</span>
                 </div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 12 }}>of {weeklyTarget} mi planned</div>
-                <div style={{ height: 4, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 7 }}>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 14 }}>of {weeklyTarget} mi planned</div>
+                <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 10 }}>
                   <div style={{ width: `${Math.min(100, (weeklyMileage / weeklyTarget) * 100)}%`, height: '100%', background: C.navy, borderRadius: 99 }} />
                 </div>
                 {weeklyMilageDelta !== 0 && (
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: weeklyMilageDelta > 0 ? C.green : C.amber }}>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: weeklyMilageDelta > 0 ? C.green : C.amber }}>
                     {weeklyMilageDelta > 0 ? '▲' : '▼'} {Math.abs(weeklyMilageDelta)} mi vs last week
                   </span>
                 )}
@@ -1404,28 +1404,28 @@ const Dashboard = () => {
 
               {/* Aerobic Efficiency */}
               <Card>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Aerobic Efficiency</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Aerobic Efficiency</div>
                 {aerobicEffImprovement !== null ? (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>
-                        {aerobicEffImprovement > 0 ? '+' : ''}{aerobicEffImprovement}<span style={{ fontSize: 18 }}>%</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 46, fontWeight: 700, color: aerobicEffImprovement >= 0 ? C.navy : C.amber, lineHeight: 1 }}>
+                        {aerobicEffImprovement > 0 ? '+' : ''}{aerobicEffImprovement}<span style={{ fontSize: 22 }}>%</span>
                       </span>
                     </div>
-                    <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 8 }}>faster at same HR vs 8 weeks ago</div>
-                    <ResponsiveContainer width="100%" height={38} style={{ marginBottom: 4 }}>
+                    <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 10 }}>faster at same HR vs 8 weeks ago</div>
+                    <ResponsiveContainer width="100%" height={44} style={{ marginBottom: 6 }}>
                       <LineChart data={aerobicEffData.filter(w => w.eff !== null)}>
                         <YAxis domain={['dataMin - 0.001', 'dataMax + 0.001']} hide />
-                        <Line type="monotone" dataKey="eff" stroke={aerobicEffImprovement >= 0 ? C.green : C.amber} strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="eff" stroke={aerobicEffImprovement >= 0 ? C.green : C.amber} strokeWidth={2.5} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
-                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: aerobicEffImprovement >= 0 ? C.green : C.amber }}>
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: aerobicEffImprovement >= 0 ? C.green : C.amber }}>
                       {aerobicEffImprovement >= 0 ? '▲ Aerobic engine improving' : '▼ Monitor training stress'}
                     </span>
                   </>
                 ) : (
                   <>
-                    <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.gray200, lineHeight: 1, marginBottom: 8 }}>—</div>
+                    <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 46, fontWeight: 700, color: C.gray200, lineHeight: 1, marginBottom: 10 }}>—</div>
                     <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>Sync HR data to track aerobic efficiency</div>
                   </>
                 )}
@@ -1433,16 +1433,16 @@ const Dashboard = () => {
 
               {/* Training Load */}
               <Card>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Training Load</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{trainingLoadScore}</span>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600, color: trainingLoadScore >= 85 ? C.coral : trainingLoadScore >= 60 ? C.amber : C.green }}>{trainingLoadLabel}</span>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Training Load</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 46, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{trainingLoadScore}</span>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 16, fontWeight: 700, color: trainingLoadScore >= 85 ? C.coral : trainingLoadScore >= 60 ? C.amber : C.green }}>{trainingLoadLabel}</span>
                 </div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 12 }}>Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week</div>
-                <div style={{ height: 4, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 7 }}>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginBottom: 14 }}>Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week</div>
+                <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 10 }}>
                   <div style={{ width: `${trainingLoadScore}%`, height: '100%', background: `linear-gradient(90deg,${C.green},${C.amber})`, borderRadius: 99 }} />
                 </div>
-                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: C.green }}>
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: C.green }}>
                   {trainingLoadScore >= 60 ? '▲ Trending up' : '— Building volume'}
                 </span>
               </Card>
@@ -1458,8 +1458,8 @@ const Dashboard = () => {
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Weekly Mileage</div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400, marginBottom: 14 }}>8-week history</div>
                 {weeklyChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={140}>
-                    <BarChart data={weeklyChartData} barSize={15} barCategoryGap="30%">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={weeklyChartData} barSize={18} barCategoryGap="28%">
                       <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
                       <YAxis hide />
                       <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} />
@@ -1483,24 +1483,28 @@ const Dashboard = () => {
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400, marginBottom: 16 }}>
                   Time in zone this week · {effortDist.reduce((s, z) => s + z.mins, 0) > 0 ? `${Math.round(effortDist.reduce((s, z) => s + z.mins, 0))} min total` : 'No data yet'}
                 </div>
-                {effortDist.map((z, i) => (
-                  <div key={i} style={{ marginBottom: i < effortDist.length - 1 ? 10 : 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: z.color, flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600 }}>{z.zone}</span>
-                        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, color: C.gray400 }}>{z.label}</span>
+                {effortDist.map((z, i) => {
+                  const onTarget = z.pct >= 10;
+                  return (
+                    <div key={i} style={{ marginBottom: i < effortDist.length - 1 ? 12 : 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: z.color, flexShrink: 0 }} />
+                          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
+                          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: C.gray400 }}>{z.label}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {z.mins > 0 && <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: C.gray400 }}>{Math.round(z.mins)}m</span>}
+                          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
+                          {onTarget && <span style={{ fontSize: 11, color: C.green, fontWeight: 700 }}>✓</span>}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {z.mins > 0 && <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: C.gray400 }}>{Math.round(z.mins)}m</span>}
-                        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
+                      <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ width: `${z.pct}%`, height: '100%', background: z.color, borderRadius: 99 }} />
                       </div>
                     </div>
-                    <div style={{ height: 5, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
-                      <div style={{ width: `${z.pct}%`, height: '100%', background: z.color, borderRadius: 99, opacity: 0.85 }} />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {effortDist[0].pct + effortDist[1].pct > 0 && (
                   <div style={{ marginTop: 12, padding: '8px 10px', background: C.gray50, borderRadius: 8 }}>
                     <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600 }}>
@@ -1541,8 +1545,8 @@ const Dashboard = () => {
                         {new Date(r.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                       <span><Pill type={runType} sm /></span>
-                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 18, fontWeight: 700, color: C.navy }}>
-                        {distMi}<span style={{ fontSize: 11, fontWeight: 400, color: C.gray400 }}> mi</span>
+                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 24, fontWeight: 700, color: C.navy }}>
+                        {distMi}<span style={{ fontSize: 13, fontWeight: 400, color: C.gray400 }}> mi</span>
                       </span>
                       <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, color: C.navy }}>
                         {fmtPace(r.average_pace_seconds_per_km)}
@@ -1579,10 +1583,10 @@ const Dashboard = () => {
           {/* Race Readiness */}
           <Card>
             <SLabel>Race Readiness</SLabel>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
               <Gauge score={readinessScore} />
               <div>
-                <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700, color: readinessColor, marginBottom: 5 }}>{readinessLabel}</div>
+                <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 20, fontWeight: 700, color: readinessColor, marginBottom: 6, letterSpacing: '-0.01em' }}>{readinessLabel}</div>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray600, lineHeight: 1.65 }}>
                   {readinessScore >= 70
                     ? 'Strong base. Stay consistent and taper well.'
@@ -1605,11 +1609,11 @@ const Dashboard = () => {
               <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
                   <div key={name}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600 }}>{name}</span>
-                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, fontWeight: 700, color: score >= 70 ? C.green : score >= 50 ? C.amber : C.red }}>{score}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray600 }}>{name}</span>
+                      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, fontWeight: 700, color: score >= 70 ? C.green : score >= 50 ? C.amber : C.red }}>{score}</span>
                     </div>
-                    <div style={{ height: 4, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
                       <div style={{ width: `${score}%`, height: '100%', background: score >= 70 ? C.green : score >= 50 ? C.amber : C.red, borderRadius: 99 }} />
                     </div>
                   </div>
