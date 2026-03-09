@@ -182,7 +182,7 @@ const Goals = () => {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div>
         <div className="card text-center py-12">
           <p className="text-text-secondary">Loading goals...</p>
         </div>
@@ -192,7 +192,7 @@ const Goals = () => {
 
   if (goals.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-lg mx-auto">
         <div className="card text-center py-16 px-8">
           <div className="text-4xl mb-4">🏁</div>
           <h2
@@ -214,7 +214,7 @@ const Goals = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div>
       {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <h1
@@ -325,7 +325,7 @@ const Goals = () => {
           >
             Upcoming
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {upcoming.map((goal, i) => (
               <motion.div
                 key={goal.id}

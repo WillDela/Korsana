@@ -1172,8 +1172,8 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '8px 36px' }}>
-        <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '8px 24px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => setShowLogModal(true)}
@@ -1202,8 +1202,8 @@ const Dashboard = () => {
       </div>
 
       {/* ── GOAL HERO BAR ── */}
-      <div style={{ background: C.white, borderBottom: `1px solid ${C.gray100}`, padding: '18px 36px 20px', boxShadow: '0 1px 3px rgba(27,37,89,0.06)' }}>
-        <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+      <div style={{ background: C.white, borderBottom: `1px solid ${C.gray100}`, padding: '18px 24px 20px', boxShadow: '0 1px 3px rgba(27,37,89,0.06)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           {activeGoal ? (
             <>
               {/* Race identity */}
@@ -1273,7 +1273,7 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 36px', display: 'grid', gridTemplateColumns: '1fr 316px', gap: 22 }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px', display: 'grid', gridTemplateColumns: '1fr 316px', gap: 22 }}>
 
         {/* ── LEFT COLUMN ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
