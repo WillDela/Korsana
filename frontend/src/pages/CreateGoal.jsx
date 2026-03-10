@@ -51,24 +51,40 @@ const CreateGoal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState('form');
   const [selectedDist, setSelectedDist] = useState(null);
+  const [distError, setDistError] = useState('');
   const [formSnapshot, setFormSnapshot] = useState(null);
 
   const goalType = watch('goal_type', 'time');
 
-  const buildGoalData = (data) => ({
-    race_name: data.race_name,
-    race_date: data.race_date,
-    race_distance_km: parseFloat(data.race_distance_km),
-    goal_type: data.goal_type,
-    target_time_seconds:
-      data.goal_type === 'time' && data.target_hours
-        ? (parseInt(data.target_hours) * 3600)
-          + (parseInt(data.target_minutes) * 60)
-          + parseInt(data.target_seconds || 0)
-        : null,
-  });
+  const buildGoalData = (data) => {
+    const preset = DISTANCES.find(d => d.label === selectedDist);
+    const distKm = preset?.km !== null && preset?.km !== undefined
+      ? preset.km
+      : parseFloat(data.race_distance_km);
+    return {
+      race_name: data.race_name,
+      race_date: data.race_date,
+      race_distance_km: distKm,
+      goal_type: data.goal_type,
+      target_time_seconds:
+        data.goal_type === 'time' && data.target_hours
+          ? (parseInt(data.target_hours) * 3600)
+            + (parseInt(data.target_minutes) * 60)
+            + parseInt(data.target_seconds || 0)
+          : null,
+    };
+  };
 
   const onReview = (data) => {
+    if (!selectedDist) {
+      setDistError('Please select a distance');
+      return;
+    }
+    if (selectedDist === 'Custom' && !parseFloat(data.race_distance_km)) {
+      setDistError('Please enter a valid distance');
+      return;
+    }
+    setDistError('');
     setFormSnapshot(buildGoalData(data));
     setStep('confirm');
   };
@@ -91,11 +107,8 @@ const CreateGoal = () => {
 
   const handleDistSelect = (dist) => {
     setSelectedDist(dist.label);
-    if (dist.km !== null) {
-      setValue('race_distance_km', dist.km);
-    } else {
-      setValue('race_distance_km', '');
-    }
+    setDistError('');
+    setValue('race_distance_km', dist.km ?? '');
   };
 
   if (step === 'confirm' && formSnapshot) {
@@ -281,37 +294,18 @@ const CreateGoal = () => {
                 </button>
               ))}
             </div>
-            {selectedDist === 'Custom' ? (
+            {selectedDist === 'Custom' && (
               <input
                 id="race_distance_km"
                 type="number"
                 step="0.1"
-                className={`input ${errors.race_distance_km ? 'input-error' : ''}`}
+                className="input"
                 placeholder={`Distance in ${distanceLabel(unit)}`}
-                {...register('race_distance_km', {
-                  required: 'Distance is required',
-                  min: {
-                    value: 1,
-                    message: 'Distance must be at least 1km',
-                  },
-                })}
-              />
-            ) : (
-              <input
-                type="hidden"
-                {...register('race_distance_km', {
-                  required: 'Distance is required',
-                  min: {
-                    value: 1,
-                    message: 'Distance must be at least 1km',
-                  },
-                })}
+                {...register('race_distance_km')}
               />
             )}
-            {errors.race_distance_km && (
-              <p className="text-error text-sm mt-1">
-                {errors.race_distance_km.message}
-              </p>
+            {distError && (
+              <p className="text-error text-sm mt-1">{distError}</p>
             )}
           </div>
 

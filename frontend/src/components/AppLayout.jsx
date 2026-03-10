@@ -9,9 +9,11 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen bg-bg-app">
       <Navbar variant="app" />
-      <main className={isDashboard ? '' : `max-w-[1280px] mx-auto ${isCoach ? 'px-2 sm:px-3 py-4' : 'px-4 sm:px-6 py-6'}`}>
-        <Outlet />
-      </main>
+      <div style={isDashboard ? {} : { padding: isCoach ? '0 12px' : '0 24px' }}>
+        <main className={isDashboard ? '' : 'w-full mx-auto'} style={isDashboard ? {} : { maxWidth: 1280, padding: isCoach ? '16px 0' : '24px 0' }}>
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };

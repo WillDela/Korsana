@@ -40,18 +40,18 @@ const PC = {
 };
 
 const WIDGETS = [
+  { id: 'hrzones', label: 'HR Zones', icon: '❤' },
+  { id: 'volume', label: 'Volume', icon: '🥧' },
   { id: 'elevation', label: 'Elevation', icon: '⛰' },
   { id: 'cadence', label: 'Cadence', icon: '👟' },
   { id: 'calories', label: 'Calories', icon: '🔥' },
-  { id: 'splits', label: 'Splits', icon: '📊' },
-  { id: 'prs', label: 'PRs', icon: '🏆' },
-  { id: 'shoes', label: 'Shoes', icon: '👟' },
-  { id: 'hrzones', label: 'HR Zones', icon: '❤' },
-  { id: 'vo2max', label: 'VO₂ Max', icon: '📈' },
-  { id: 'power', label: 'Power', icon: '⚡' },
-  { id: 'volume', label: 'Volume', icon: '🥧' },
   { id: 'consistency', label: 'Streak', icon: '🔥' },
   { id: 'monthly', label: 'Monthly', icon: '📅' },
+  { id: 'prs', label: 'PRs', icon: '🏆' },
+  { id: 'vo2max', label: 'VO₂ Max', icon: '📈' },
+  { id: 'splits', label: 'Paces', icon: '📊' },
+  { id: 'power', label: 'Power', icon: '⚡' },
+  { id: 'shoes', label: 'Shoes', icon: '👟' },
 ];
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -586,18 +586,53 @@ const PowerPlaceholder = () => (
   </Card>
 );
 
-// ─── Widget: PRs (placeholder) ────────────────────────────────
-const PRPlaceholder = () => (
-  <Card>
-    <SLabel>Recent Achievements</SLabel>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-      <span style={{ fontSize: 28 }}>🏆</span>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.6 }}>
-        PR tracking coming soon
-      </div>
-    </div>
-  </Card>
-);
+// ─── Widget: PRs ──────────────────────────────────────────────
+const PRWidget = ({ data }) => {
+  const hasPRs = data.some(d => d.pr);
+  return (
+    <Card>
+      <SLabel>Personal Bests</SLabel>
+      {!hasPRs ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
+          <span style={{ fontSize: 28 }}>🏆</span>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.5 }}>
+            Sync runs near race distances<br />to see your PRs here
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {data.map((d, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 0',
+              borderBottom: i < data.length - 1 ? `1px solid ${C.gray100}` : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 8,
+                  background: d.pr ? `${C.navy}12` : C.gray50,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: d.pr ? C.navy : C.gray400 }}>{d.label}</span>
+                </div>
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400 }}>
+                  {d.pr ? new Date(d.pr.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}
+                </span>
+              </div>
+              {d.pr ? (
+                <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 18, fontWeight: 700, color: C.navy }}>
+                  {fmtTime(d.pr.time)}
+                </span>
+              ) : (
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray200 }}>no data</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+};
 
 // ─── Widget: Shoes (placeholder) ─────────────────────────────
 const ShoesPlaceholder = () => (
@@ -612,39 +647,76 @@ const ShoesPlaceholder = () => (
   </Card>
 );
 
-// ─── Widget: Splits (placeholder) ────────────────────────────
-const SplitsPlaceholder = () => (
-  <Card style={{ gridColumn: '1 / -1' }}>
-    <SLabel>Mile Splits</SLabel>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-      <span style={{ fontSize: 28 }}>📊</span>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.6 }}>
-        Mile splits require Strava segment stream data
+// ─── Widget: Recent Paces ─────────────────────────────────────
+const RecentPacesWidget = ({ data }) => {
+  if (!data.length) {
+    return (
+      <Card>
+        <SLabel>Recent Paces</SLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
+          <span style={{ fontSize: 28 }}>📊</span>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center' }}>
+            No runs synced yet
+          </div>
+        </div>
+      </Card>
+    );
+  }
+  const avgPace = data.reduce((s, r) => s + r.pace, 0) / data.length;
+  return (
+    <Card>
+      <SLabel>Recent Paces</SLabel>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
+        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{fmtPace(avgPace)}</span>
+        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>avg /mi · last {data.length} runs</span>
       </div>
-    </div>
-  </Card>
-);
+      <ResponsiveContainer width="100%" height={90}>
+        <BarChart data={data} barSize={14}>
+          <XAxis dataKey="date" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
+          <YAxis hide domain={['dataMin * 0.97', 'dataMax * 1.03']} reversed />
+          <Tooltip content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            return (
+              <div style={{ background: C.white, border: `1px solid ${C.gray100}`, borderRadius: 8, padding: '8px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600, marginBottom: 2 }}>{label}</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy }}>{fmtPace(payload[0].value)}/mi</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400 }}>{payload[0].payload.miles} mi</div>
+              </div>
+            );
+          }} />
+          <Bar dataKey="pace" radius={[3, 3, 0, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={i === data.length - 1 ? C.coral : C.navy} fillOpacity={i === data.length - 1 ? 1 : 0.55} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+};
 
 // ─── WidgetGrid ───────────────────────────────────────────────
 const WidgetGrid = ({ active, computedData }) => {
   if (!active.length) return null;
   const has = (id) => active.includes(id);
+  // Full-width widgets span both columns
+  const wide = { gridColumn: '1 / -1' };
   return (
     <div>
       <SLabel>{active.length} Strava Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
+        {has('hrzones') && <HRZWidget data={computedData.hrZones} />}
+        {has('volume') && <VolumeWidget data={computedData.volumeByType} />}
         {has('elevation') && <ElevWidget data={computedData.elevation} />}
         {has('cadence') && <CadWidget data={computedData.cadence} />}
         {has('calories') && <CalWidget data={computedData.calories} />}
-        {has('hrzones') && <HRZWidget data={computedData.hrZones} />}
-        {has('volume') && <VolumeWidget data={computedData.volumeByType} />}
         {has('consistency') && <ConsistWidget data={computedData.consistency} />}
-        {has('monthly') && <MonthlyWidget data={computedData.monthly} />}
+        {has('monthly') && <div style={wide}><MonthlyWidget data={computedData.monthly} /></div>}
+        {has('prs') && <PRWidget data={computedData.prs} />}
         {has('vo2max') && <VO2Placeholder />}
+        {has('splits') && <div style={wide}><RecentPacesWidget data={computedData.recentPaces} /></div>}
         {has('power') && <PowerPlaceholder />}
-        {has('prs') && <PRPlaceholder />}
         {has('shoes') && <ShoesPlaceholder />}
-        {has('splits') && <SplitsPlaceholder />}
       </div>
     </div>
   );
@@ -668,7 +740,15 @@ const Dashboard = () => {
   // UI state
   const [showFactors, setShowFactors] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
-  const [activeWidgets, setActiveWidgets] = useState(['hrzones', 'elevation', 'volume', 'consistency']);
+  const [activeWidgets, setActiveWidgets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dashboard_widgets');
+      return saved ? JSON.parse(saved) : ['hrzones', 'elevation', 'volume', 'consistency'];
+    } catch { return ['hrzones', 'elevation', 'volume', 'consistency']; }
+  });
+  useEffect(() => {
+    localStorage.setItem('dashboard_widgets', JSON.stringify(activeWidgets));
+  }, [activeWidgets]);
   const toggleWidget = useCallback((id) => setActiveWidgets(prev =>
     prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
   ), []);
@@ -1150,6 +1230,39 @@ const Dashboard = () => {
       return { week: wk, planned: weeklyTarget, actual };
     });
 
+    // PRs — best estimated time for each standard distance (±15% tolerance)
+    const PR_DISTS = [
+      { label: '5K', km: 5.0 },
+      { label: '10K', km: 10.0 },
+      { label: 'Half', km: 21.1 },
+      { label: 'Marathon', km: 42.2 },
+    ];
+    const prs = PR_DISTS.map(d => {
+      const candidates = activities.filter(a => {
+        if (a.activity_type !== 'run' || !a.average_pace_seconds_per_km) return false;
+        const km = (a.distance_meters || 0) / 1000;
+        return Math.abs(km - d.km) / d.km <= 0.15;
+      });
+      if (!candidates.length) return { label: d.label, pr: null };
+      const best = candidates.reduce((b, a) => {
+        const est = a.average_pace_seconds_per_km * d.km;
+        return !b || est < b.est ? { est, date: a.start_time } : b;
+      }, null);
+      return { label: d.label, pr: best ? { time: Math.round(best.est), date: best.date } : null };
+    });
+
+    // Recent paces — last 8 runs
+    const recentPaces = activities
+      .filter(a => a.activity_type === 'run' && a.average_pace_seconds_per_km && (a.distance_meters || 0) > 500)
+      .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
+      .slice(0, 8)
+      .reverse()
+      .map(a => ({
+        date: new Date(a.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        pace: a.average_pace_seconds_per_km,
+        miles: parseFloat(((a.distance_meters || 0) * 0.000621371).toFixed(1)),
+      }));
+
     return {
       elevation: { weeklyGain: weeklyElevGain || 0, weeklyLoss: weeklyElevLoss || 0, trend: Object.values(elevWeeks) },
       cadence: { avgSPM: avgCadence || 174, goal: 180, trend: cadWeeks, byActivity: [{ type: 'Easy', spm: avgCadence || 170 }, { type: 'Tempo', spm: (avgCadence || 170) + 6 }, { type: 'Long', spm: avgCadence || 172 }, { type: 'Intervals', spm: (avgCadence || 170) + 10 }] },
@@ -1158,6 +1271,8 @@ const Dashboard = () => {
       volumeByType: volumeByType.length ? volumeByType : [{ type: 'Easy', miles: 0, color: C.blue }],
       consistency: { streak, longestStreak: longest, weeklyTarget: 3, weeks: allWeeks.slice(-8) },
       monthly: { monthName, actual: monthActual, target: monthTarget, byWeek },
+      prs,
+      recentPaces,
     };
   }, [activities, effortDist, weeklyTarget, startOfWeek]);
 
@@ -1184,7 +1299,7 @@ const Dashboard = () => {
 
       {/* ── TOOLBAR ── */}
       <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '8px 24px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => setShowLogModal(true)}
@@ -1212,9 +1327,13 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ── GOAL HERO BAR ── */}
-      <div style={{ background: C.white, borderBottom: `1px solid ${C.gray100}`, padding: "18px 24px 20px", boxShadow: "0 1px 3px rgba(27,37,89,0.06)" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* ── BODY ── */}
+      <div style={{ width: '100%', padding: '24px 24px' }}>
+        <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
+
+        {/* ── GOAL HERO CARD ── */}
+        <Card style={{ padding: "18px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {activeGoal ? (
             <>
               {/* Left: race identity */}
@@ -1242,7 +1361,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Center: target + goal pace only (readiness lives in sidebar) */}
+              {/* Center: target + goal pace */}
               <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
                 {[
                   { label: "TARGET TIME", value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : "—", sub: "finish goal" },
@@ -1256,7 +1375,7 @@ const Dashboard = () => {
                 ))}
               </div>
 
-              {/* Right: countdown only */}
+              {/* Right: countdown */}
               {daysToRace !== null && (
                 <div style={{ textAlign: "right" }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 3, justifyContent: "flex-end" }}>
@@ -1278,405 +1397,407 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
+          </div>
+        </Card>
 
-      {/* ── BODY ── */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px', display: 'grid', gridTemplateColumns: '1fr 316px', gap: 22 }}>
+        {/* ── GRID ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 316px', gap: 22 }}>
 
-        {/* ── LEFT COLUMN ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
+          {/* ── LEFT COLUMN ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
 
-          {/* ① WEEK CALENDAR STRIP */}
-          <div>
-            <SLabel action={
-              <Link to="/calendar" style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.coral, background: "none", border: "none", textDecoration: "none", cursor: "pointer" }}>
-                Full Calendar →
-              </Link>
-            }>This Week's Plan</SLabel>
-            <Card style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
-                {calendarStrip.map((d, i) => {
-                  const s = WC[d.type] || WC.Easy;
-                  const isT = d.today;
-                  return (
-                    <div key={i} className={isT ? "" : "krs-cal"} style={{
-                      padding: "18px 8px 16px", textAlign: "center",
-                      background: isT ? C.navy : "transparent",
-                      borderRight: i < 6 ? `1px solid ${C.gray100}` : "none",
-                      position: "relative", cursor: "default", transition: "background 0.15s",
-                    }}>
-                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: isT ? "rgba(255,255,255,0.4)" : C.gray400, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>{d.day}</div>
-                      {/* Big date number */}
-                      <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 28, fontWeight: 700, color: isT ? C.white : C.navy, lineHeight: 1, marginBottom: 10 }}>{d.date}</div>
-                      {/* Workout pill */}
-                      <div style={{ marginBottom: 8 }}>
-                        {d.type ? (
-                          <span style={{ background: isT ? "rgba(255,255,255,0.12)" : s.bg, color: isT ? C.white : s.text, borderRadius: 5, padding: "3px 7px", fontSize: 9, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                            {d.type}
-                          </span>
+            {/* ① WEEK CALENDAR STRIP */}
+            <div>
+              <SLabel action={
+                <Link to="/calendar" style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.coral, background: "none", border: "none", textDecoration: "none", cursor: "pointer" }}>
+                  Full Calendar →
+                </Link>
+              }>This Week's Plan</SLabel>
+              <Card style={{ padding: 0, overflow: "hidden" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+                  {calendarStrip.map((d, i) => {
+                    const s = WC[d.type] || WC.Easy;
+                    const isT = d.today;
+                    return (
+                      <div key={i} className={isT ? "" : "krs-cal"} style={{
+                        padding: "18px 8px 16px", textAlign: "center",
+                        background: isT ? C.navy : "transparent",
+                        borderRight: i < 6 ? `1px solid ${C.gray100}` : "none",
+                        position: "relative", cursor: "default", transition: "background 0.15s",
+                      }}>
+                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: isT ? "rgba(255,255,255,0.4)" : C.gray400, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>{d.day}</div>
+                        {/* Big date number */}
+                        <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 28, fontWeight: 700, color: isT ? C.white : C.navy, lineHeight: 1, marginBottom: 10 }}>{d.date}</div>
+                        {/* Workout pill */}
+                        <div style={{ marginBottom: 8 }}>
+                          {d.type ? (
+                            <span style={{ background: isT ? "rgba(255,255,255,0.12)" : s.bg, color: isT ? C.white : s.text, borderRadius: 5, padding: "3px 7px", fontSize: 9, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {d.type}
+                            </span>
+                          ) : (
+                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>Rest</span>
+                          )}
+                        </div>
+                        {/* Miles */}
+                        {d.miles ? (
+                          <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 16, fontWeight: 600, color: isT ? C.coral : C.navy }}>
+                            {d.miles}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: isT ? "rgba(255,255,255,0.3)" : C.gray400 }}> mi</span>
+                          </div>
                         ) : (
-                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>Rest</span>
+                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>
+                            {d.type ? "—" : "Rest"}
+                          </div>
+                        )}
+                        {/* Done dot */}
+                        {d.done && <div style={{ position: "absolute", top: 10, right: 10, width: 7, height: 7, borderRadius: "50%", background: C.green }} />}
+                        {/* Today indicator */}
+                        {isT && <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 20, height: 2, background: C.coral, borderRadius: 99 }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </div>
+
+            {/* ② TODAY'S WORKOUT */}
+            <div>
+              <SLabel>Today's Workout</SLabel>
+              {todayEntry ? (
+                <div style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>
+                  {/* Accent bar */}
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 6, background: C.coral }} />
+                  {/* Background graphic */}
+                  <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.05, pointerEvents: "none" }}>
+                    <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" /></svg>
+                  </div>
+                  <div style={{ padding: "24px 24px 24px 30px", position: "relative", zIndex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                          </span>
+                          {todayEntry.completed && <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>}
+                        </div>
+                        <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
+                          {todayWorkoutType === 'Rest' ? 'Rest Day' : todayWorkoutType === 'Cross Train' ? 'Cross Training' : `${todayWorkoutMiles} mi ${todayWorkoutType}`}
+                        </div>
+                        {todayEntry.title && (
+                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginTop: 10 }}>
+                            {todayEntry.title}
+                          </div>
                         )}
                       </div>
-                      {/* Miles */}
-                      {d.miles ? (
-                        <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 16, fontWeight: 600, color: isT ? C.coral : C.navy }}>
-                          {d.miles}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: isT ? "rgba(255,255,255,0.3)" : C.gray400 }}> mi</span>
-                        </div>
-                      ) : (
-                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>
-                          {d.type ? "—" : "Rest"}
-                        </div>
-                      )}
-                      {/* Done dot */}
-                      {d.done && <div style={{ position: "absolute", top: 10, right: 10, width: 7, height: 7, borderRadius: "50%", background: C.green }} />}
-                      {/* Today indicator */}
-                      {isT && <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 20, height: 2, background: C.coral, borderRadius: 99 }} />}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-
-          {/* ② TODAY'S WORKOUT */}
-          <div>
-            <SLabel>Today's Workout</SLabel>
-            {todayEntry ? (
-              <div style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>
-                {/* Accent bar */}
-                <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 6, background: C.coral }} />
-                {/* Background graphic */}
-                <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.05, pointerEvents: "none" }}>
-                  <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" /></svg>
-                </div>
-                <div style={{ padding: "24px 24px 24px 30px", position: "relative", zIndex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                          {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
-                        </span>
-                        {todayEntry.completed && <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>}
-                      </div>
-                      <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
-                        {todayWorkoutType === 'Rest' ? 'Rest Day' : todayWorkoutType === 'Cross Train' ? 'Cross Training' : `${todayWorkoutMiles} mi ${todayWorkoutType}`}
-                      </div>
-                      {todayEntry.title && (
-                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginTop: 10 }}>
-                          {todayEntry.title}
-                        </div>
+                      {!todayEntry.completed && (
+                        <button onClick={handleLogActivity} style={{ background: C.coral, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, boxShadow: "0 4px 12px rgba(232,99,74,0.3)" }}>
+                          Log Run
+                        </button>
                       )}
                     </div>
-                    {!todayEntry.completed && (
-                      <button onClick={handleLogActivity} style={{ background: C.coral, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, boxShadow: "0 4px 12px rgba(232,99,74,0.3)" }}>
-                        Log Run
-                      </button>
+                    {todaySegments && todaySegments.length > 0 && (
+                      <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Workout Structure</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {todaySegments.map((seg, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.type === 'warmup' || seg.type === 'cooldown' ? "rgba(255,255,255,0.2)" : C.coral }} />
+                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 45 }}>{seg.type === 'rest' ? '—' : seg.miles + 'm'}</div>
+                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.desc || seg.detail}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {todaySegments && todaySegments.length > 0 && (
-                    <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Workout Structure</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {todaySegments.map((seg, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.type === 'warmup' || seg.type === 'cooldown' ? "rgba(255,255,255,0.2)" : C.coral }} />
-                            <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 45 }}>{seg.type === 'rest' ? '—' : seg.miles + 'm'}</div>
-                            <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.desc || seg.detail}</div>
-                          </div>
-                        ))}
+                </div>
+              ) : (
+                <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
+                </Card>
+              )}
+            </div>
+
+            {/* ③ METRIC CARDS */}
+            <div>
+              <SLabel>This Week</SLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+                {/* Weekly Mileage */}
+                <Card>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Weekly Mileage</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeklyMileage}</span>
+                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400, fontWeight: 600 }}>mi</span>
+                  </div>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>of {weeklyTarget} mi planned</div>
+                  <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
+                    <div style={{ width: `${Math.min(100, (weeklyMileage / weeklyTarget) * 100)}%`, height: "100%", background: C.navy, borderRadius: 99 }} />
+                  </div>
+                  {weeklyMilageDelta !== 0 && (
+                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: weeklyMilageDelta > 0 ? C.green : C.amber }}>
+                      {weeklyMilageDelta > 0 ? "▲" : "▼"} {Math.abs(weeklyMilageDelta)} mi vs last week
+                    </span>
+                  )}
+                </Card>
+
+                {/* Aerobic Efficiency */}
+                <Card>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Aerobic Efficiency</div>
+                  {aerobicEffImprovement !== null ? (
+                    <>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: aerobicEffImprovement >= 0 ? C.navy : C.amber, lineHeight: 1 }}>
+                          {aerobicEffImprovement > 0 ? "+" : ""}{aerobicEffImprovement}<span style={{ fontSize: 22 }}>%</span>
+                        </span>
                       </div>
+                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 14 }}>faster at same HR vs 8 weeks ago</div>
+                      <ResponsiveContainer width="100%" height={36} style={{ marginBottom: 12 }}>
+                        <LineChart data={aerobicEffData.filter(w => w.eff !== null)}>
+                          <YAxis domain={['dataMin - 0.001', 'dataMax + 0.001']} hide />
+                          <Line type="monotone" dataKey="eff" stroke={aerobicEffImprovement >= 0 ? C.green : C.amber} strokeWidth={2.5} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: aerobicEffImprovement >= 0 ? C.green : C.amber }}>
+                        {aerobicEffImprovement >= 0 ? "▲ Aerobic engine improving" : "▼ Monitor training stress"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.gray200, lineHeight: 1, marginBottom: 10 }}>—</div>
+                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>Sync HR data to track aerobic efficiency</div>
+                    </>
+                  )}
+                </Card>
+
+                {/* Training Load */}
+                <Card>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Training Load</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{trainingLoadScore}</span>
+                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, fontWeight: 700, color: trainingLoadScore >= 85 ? C.coral : trainingLoadScore >= 60 ? C.amber : C.green }}>{trainingLoadLabel}</span>
+                  </div>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week</div>
+                  <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
+                    <div style={{ width: `${trainingLoadScore}%`, height: "100%", background: `linear-gradient(90deg,${C.green},${C.amber})`, borderRadius: 99 }} />
+                  </div>
+                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.green }}>
+                    {trainingLoadScore >= 60 ? "▲ Trending up" : "— Building volume"}
+                  </span>
+                </Card>
+              </div>
+            </div>
+
+            {/* ④ TRAINING TRENDS */}
+            <div>
+              <SLabel>Training Trends</SLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {/* Weekly Mileage chart */}
+                <Card>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Weekly Mileage</div>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>8-week history</div>
+                  {weeklyChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
+                        <XAxis dataKey="week" tick={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 9, fill: C.gray400 }} axisLine={false} tickLine={false} tickMargin={8} />
+                        <YAxis hide />
+                        <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: "rgba(27,37,89,0.02)" }} />
+                        <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
+                          {weeklyChartData.map((_, idx) => (
+                            <Cell key={idx} fill={idx === weeklyChartData.length - 1 ? C.coral : C.navy} fillOpacity={idx === weeklyChartData.length - 1 ? 1 : 0.4} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray400 }}>
+                      No data — sync your activities
                     </div>
                   )}
-                </div>
-              </div>
-            ) : (
-              <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
-              </Card>
-            )}
-          </div>
+                </Card>
 
-          {/* ③ METRIC CARDS */}
-          <div>
-            <SLabel>This Week</SLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-              {/* Weekly Mileage */}
-              <Card>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Weekly Mileage</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
-                  <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeklyMileage}</span>
-                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400, fontWeight: 600 }}>mi</span>
-                </div>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>of {weeklyTarget} mi planned</div>
-                <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
-                  <div style={{ width: `${Math.min(100, (weeklyMileage / weeklyTarget) * 100)}%`, height: "100%", background: C.navy, borderRadius: 99 }} />
-                </div>
-                {weeklyMilageDelta !== 0 && (
-                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: weeklyMilageDelta > 0 ? C.green : C.amber }}>
-                    {weeklyMilageDelta > 0 ? "▲" : "▼"} {Math.abs(weeklyMilageDelta)} mi vs last week
-                  </span>
-                )}
-              </Card>
-
-              {/* Aerobic Efficiency */}
-              <Card>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Aerobic Efficiency</div>
-                {aerobicEffImprovement !== null ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: aerobicEffImprovement >= 0 ? C.navy : C.amber, lineHeight: 1 }}>
-                        {aerobicEffImprovement > 0 ? "+" : ""}{aerobicEffImprovement}<span style={{ fontSize: 22 }}>%</span>
+                {/* Effort Distribution */}
+                <Card>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Effort Distribution</div>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>
+                    Time in zone this week · {effortDist.reduce((s, z) => s + z.mins, 0) > 0 ? `${Math.round(effortDist.reduce((s, z) => s + z.mins, 0))} min total` : "No data yet"}
+                  </div>
+                  {effortDist.map((z, i) => {
+                    const onTarget = z.pct >= 10;
+                    return (
+                      <div key={i} style={{ marginBottom: i < effortDist.length - 1 ? 14 : 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
+                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
+                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{z.label}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {z.mins > 0 && <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{Math.round(z.mins)}m</span>}
+                            <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
+                            {onTarget && <span style={{ fontSize: 12, color: C.green, fontWeight: 700, marginLeft: 2 }}>✓</span>}
+                          </div>
+                        </div>
+                        <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
+                          <div style={{ width: `${z.pct}%`, height: "100%", background: z.color, borderRadius: 99 }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {effortDist.length > 0 && effortDist[0].pct + effortDist[1].pct > 0 && (
+                    <div style={{ marginTop: 16, padding: "10px 12px", background: C.gray50, borderRadius: 8 }}>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray600 }}>
+                        💡 Z1+Z2 = <span style={{ fontWeight: 700, color: C.green }}>{effortDist[0].pct + effortDist[1].pct}%</span>
+                        {effortDist[0].pct + effortDist[1].pct >= 70 ? " — precise aerobic base building" : " — aim for 70%+ in Z1–Z2"}
                       </span>
                     </div>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 14 }}>faster at same HR vs 8 weeks ago</div>
-                    <ResponsiveContainer width="100%" height={36} style={{ marginBottom: 12 }}>
-                      <LineChart data={aerobicEffData.filter(w => w.eff !== null)}>
-                        <YAxis domain={['dataMin - 0.001', 'dataMax + 0.001']} hide />
-                        <Line type="monotone" dataKey="eff" stroke={aerobicEffImprovement >= 0 ? C.green : C.amber} strokeWidth={2.5} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: aerobicEffImprovement >= 0 ? C.green : C.amber }}>
-                      {aerobicEffImprovement >= 0 ? "▲ Aerobic engine improving" : "▼ Monitor training stress"}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.gray200, lineHeight: 1, marginBottom: 10 }}>—</div>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>Sync HR data to track aerobic efficiency</div>
-                  </>
-                )}
-              </Card>
-
-              {/* Training Load */}
-              <Card>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Training Load</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{trainingLoadScore}</span>
-                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, fontWeight: 700, color: trainingLoadScore >= 85 ? C.coral : trainingLoadScore >= 60 ? C.amber : C.green }}>{trainingLoadLabel}</span>
-                </div>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week</div>
-                <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
-                  <div style={{ width: `${trainingLoadScore}%`, height: "100%", background: `linear-gradient(90deg,${C.green},${C.amber})`, borderRadius: 99 }} />
-                </div>
-                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.green }}>
-                  {trainingLoadScore >= 60 ? "▲ Trending up" : "— Building volume"}
-                </span>
-              </Card>
+                  )}
+                </Card>
+              </div>
             </div>
-          </div>
 
-          {/* ④ TRAINING TRENDS */}
-          <div>
-            <SLabel>Training Trends</SLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {/* Weekly Mileage chart */}
-              <Card>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Weekly Mileage</div>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>8-week history</div>
-                {weeklyChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
-                      <XAxis dataKey="week" tick={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 9, fill: C.gray400 }} axisLine={false} tickLine={false} tickMargin={8} />
-                      <YAxis hide />
-                      <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: "rgba(27,37,89,0.02)" }} />
-                      <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
-                        {weeklyChartData.map((_, idx) => (
-                          <Cell key={idx} fill={idx === weeklyChartData.length - 1 ? C.coral : C.navy} fillOpacity={idx === weeklyChartData.length - 1 ? 1 : 0.4} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray400 }}>
-                    No data — sync your activities
+            {/* ⑤ RECENT RUNS */}
+            <div>
+              <SLabel action={<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>via Strava</span>}>Recent Runs</SLabel>
+              {recentRuns.length > 0 ? (
+                <Card style={{ padding: 0 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.gray100}` }}>
+                    {["Date", "Type", "Distance", "Pace", "Time", "HR", "Elev"].map((h, i) => (
+                      <span key={h} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.09em", textAlign: i >= 2 ? "right" : "left" }}>{h}</span>
+                    ))}
                   </div>
-                )}
-              </Card>
+                  {recentRuns.map((r, i) => {
+                    const hr = r.average_heart_rate;
+                    const hrColor = hr >= 165 ? C.red : hr <= 145 ? C.green : C.amber;
+                    const distMi = parseFloat(((r.distance_meters || 0) * 0.000621371).toFixed(1));
+                    const elevFt = Math.round((r.elevation_gain || 0) * 3.28084);
+                    const runType = r.workout_type || 'Easy';
+                    return (
+                      <div key={i} className="krs-rr" style={{
+                        display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px",
+                        padding: "16px 24px", alignItems: "center",
+                        background: "transparent",
+                        borderBottom: i < recentRuns.length - 1 ? `1px solid ${C.gray50}` : "none",
+                        transition: "background 0.12s",
+                      }}>
+                        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, color: C.gray600 }}>
+                          {new Date(r.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                        <span><Pill type={runType} /></span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 20, fontWeight: 700, color: C.navy, textAlign: "right" }}>
+                          {distMi}<span style={{ fontSize: 12, fontWeight: 500, color: C.gray400 }}> mi</span>
+                        </span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, color: C.navy, textAlign: "right" }}>
+                          {fmtPace(r.average_pace_seconds_per_km)}
+                        </span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.gray600, textAlign: "right" }}>
+                          {r.duration_seconds ? fmtTime(r.duration_seconds) : r.moving_time_seconds ? fmtTime(r.moving_time_seconds) : "—"}
+                        </span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 600, color: hr ? hrColor : C.gray400, textAlign: "right" }}>
+                          {hr ? <>{hr}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 500, color: C.gray400 }}> bpm</span></> : "—"}
+                        </span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.blue, textAlign: "right" }}>
+                          {elevFt > 0 ? <>↑{elevFt}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400 }}> ft</span></> : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </Card>
+              ) : (
+                <Card>
+                  <div style={{ textAlign: "center", padding: "24px 0", fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>
+                    No runs yet — sync your Strava activities to see them here
+                  </div>
+                </Card>
+              )}
+            </div>
 
-              {/* Effort Distribution */}
-              <Card>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Effort Distribution</div>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>
-                  Time in zone this week · {effortDist.reduce((s, z) => s + z.mins, 0) > 0 ? `${Math.round(effortDist.reduce((s, z) => s + z.mins, 0))} min total` : "No data yet"}
+            {/* ⑥ OPTIONAL WIDGET GRID */}
+            <WidgetGrid active={activeWidgets} computedData={widgetData} />
+          </div >
+
+          {/* ── RIGHT SIDEBAR ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Race Readiness */}
+            <Card>
+              <SLabel>Race Readiness</SLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+                <Gauge score={readinessScore} />
+                <div>
+                  <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 22, fontWeight: 700, color: readinessColor, marginBottom: 4, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{readinessLabel}</div>
+                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray600, lineHeight: 1.5 }}>
+                    {readinessScore >= 70
+                      ? 'Strong base. Stay consistent and taper well.'
+                      : readinessScore >= 50
+                        ? 'Good progress. Keep building your long run and weekly volume.'
+                        : 'Focus on consistency and gradual mileage increases.'}
+                  </p>
                 </div>
-                {effortDist.map((z, i) => {
-                  const onTarget = z.pct >= 10;
-                  return (
-                    <div key={i} style={{ marginBottom: i < effortDist.length - 1 ? 14 : 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
-                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
-                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{z.label}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {z.mins > 0 && <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{Math.round(z.mins)}m</span>}
-                          <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
-                          {onTarget && <span style={{ fontSize: 12, color: C.green, fontWeight: 700, marginLeft: 2 }}>✓</span>}
-                        </div>
+              </div>
+              <button onClick={() => setShowFactors(!showFactors)} style={{
+                width: "100%", background: C.gray50, border: `1px solid ${C.gray100}`,
+                borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
+                fontSize: 12, fontWeight: 700, color: C.gray600, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}>
+                {showFactors ? 'Hide' : 'Show'} breakdown
+                <span style={{ display: "inline-block", transform: showFactors ? "rotate(180deg)" : "none", transition: "transform 0.25s" }}>▾</span>
+              </button>
+              {showFactors && (
+                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
+                    <div key={name}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600 }}>{name}</span>
+                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: score >= 70 ? C.green : score >= 50 ? C.amber : C.red }}>{score}</span>
                       </div>
                       <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
-                        <div style={{ width: `${z.pct}%`, height: "100%", background: z.color, borderRadius: 99 }} />
+                        <div style={{ width: `${score}%`, height: "100%", background: score >= 70 ? C.green : score >= 50 ? C.amber : C.red, borderRadius: 99 }} />
                       </div>
                     </div>
-                  );
-                })}
-                {effortDist.length > 0 && effortDist[0].pct + effortDist[1].pct > 0 && (
-                  <div style={{ marginTop: 16, padding: "10px 12px", background: C.gray50, borderRadius: 8 }}>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray600 }}>
-                      💡 Z1+Z2 = <span style={{ fontWeight: 700, color: C.green }}>{effortDist[0].pct + effortDist[1].pct}%</span>
-                      {effortDist[0].pct + effortDist[1].pct >= 70 ? " — precise aerobic base building" : " — aim for 70%+ in Z1–Z2"}
-                    </span>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </div>
-
-          {/* ⑤ RECENT RUNS */}
-          <div>
-            <SLabel action={<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>via Strava</span>}>Recent Runs</SLabel>
-            {recentRuns.length > 0 ? (
-              <Card style={{ padding: 0 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.gray100}` }}>
-                  {["Date", "Type", "Distance", "Pace", "Time", "HR", "Elev"].map((h, i) => (
-                    <span key={h} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.09em", textAlign: i >= 2 ? "right" : "left" }}>{h}</span>
                   ))}
                 </div>
-                {recentRuns.map((r, i) => {
-                  const hr = r.average_heart_rate;
-                  const hrColor = hr >= 165 ? C.red : hr <= 145 ? C.green : C.amber;
-                  const distMi = parseFloat(((r.distance_meters || 0) * 0.000621371).toFixed(1));
-                  const elevFt = Math.round((r.elevation_gain || 0) * 3.28084);
-                  const runType = r.workout_type || 'Easy';
-                  return (
-                    <div key={i} className="krs-rr" style={{
-                      display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px",
-                      padding: "16px 24px", alignItems: "center",
-                      background: "transparent",
-                      borderBottom: i < recentRuns.length - 1 ? `1px solid ${C.gray50}` : "none",
-                      transition: "background 0.12s",
-                    }}>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, color: C.gray600 }}>
-                        {new Date(r.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                      <span><Pill type={runType} /></span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 20, fontWeight: 700, color: C.navy, textAlign: "right" }}>
-                        {distMi}<span style={{ fontSize: 12, fontWeight: 500, color: C.gray400 }}> mi</span>
-                      </span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, color: C.navy, textAlign: "right" }}>
-                        {fmtPace(r.average_pace_seconds_per_km)}
-                      </span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.gray600, textAlign: "right" }}>
-                        {r.duration_seconds ? fmtTime(r.duration_seconds) : r.moving_time_seconds ? fmtTime(r.moving_time_seconds) : "—"}
-                      </span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 600, color: hr ? hrColor : C.gray400, textAlign: "right" }}>
-                        {hr ? <>{hr}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 500, color: C.gray400 }}> bpm</span></> : "—"}
-                      </span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.blue, textAlign: "right" }}>
-                        {elevFt > 0 ? <>↑{elevFt}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400 }}> ft</span></> : "—"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </Card>
-            ) : (
-              <Card>
-                <div style={{ textAlign: "center", padding: "24px 0", fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>
-                  No runs yet — sync your Strava activities to see them here
-                </div>
-              </Card>
-            )}
-          </div>
+              )}
+            </Card>
 
-          {/* ⑥ OPTIONAL WIDGET GRID */}
-          <WidgetGrid active={activeWidgets} computedData={widgetData} />
-        </div >
-
-        {/* ── RIGHT SIDEBAR ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-          {/* Race Readiness */}
-          <Card>
-            <SLabel>Race Readiness</SLabel>
-            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-              <Gauge score={readinessScore} />
-              <div>
-                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 22, fontWeight: 700, color: readinessColor, marginBottom: 4, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{readinessLabel}</div>
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray600, lineHeight: 1.5 }}>
-                  {readinessScore >= 70
-                    ? 'Strong base. Stay consistent and taper well.'
-                    : readinessScore >= 50
-                      ? 'Good progress. Keep building your long run and weekly volume.'
-                      : 'Focus on consistency and gradual mileage increases.'}
-                </p>
+            {/* Coach Insight */}
+            <div style={{ background: C.navy, borderRadius: 16, padding: "20px 24px", boxShadow: "0 6px 24px rgba(27,37,89,0.15)", borderLeft: `6px solid ${C.coral}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: C.coral, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>✦</div>
+                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Coach Insight</span>
               </div>
+              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, marginBottom: 16 }}>
+                {coachInsight || 'Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.'}
+              </p>
+              <Link to="/coach" style={{
+                display: "block", width: "100%", textAlign: "center",
+                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
+                fontSize: 13, fontWeight: 600, color: C.white, textDecoration: "none",
+              }}>Ask Coach →</Link>
             </div>
-            <button onClick={() => setShowFactors(!showFactors)} style={{
-              width: "100%", background: C.gray50, border: `1px solid ${C.gray100}`,
-              borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
-              fontSize: 12, fontWeight: 700, color: C.gray600, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}>
-              {showFactors ? 'Hide' : 'Show'} breakdown
-              <span style={{ display: "inline-block", transform: showFactors ? "rotate(180deg)" : "none", transition: "transform 0.25s" }}>▾</span>
-            </button>
-            {showFactors && (
-              <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
-                  <div key={name}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600 }}>{name}</span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: score >= 70 ? C.green : score >= 50 ? C.amber : C.red }}>{score}</span>
+
+            {/* Up Next */}
+            {upNextEntries.length > 0 && (
+              <Card>
+                <SLabel>Up Next</SLabel>
+                {upNextEntries.map((d, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: i < upNextEntries.length - 1 ? `1px solid ${C.gray100}` : "none" }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: C.gray50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, color: C.gray400, textTransform: "uppercase", fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>{d.day}</span>
+                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 18, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{d.date}</span>
                     </div>
-                    <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ width: `${score}%`, height: "100%", background: score >= 70 ? C.green : score >= 50 ? C.amber : C.red, borderRadius: 99 }} />
+                    <div>
+                      {d.type && <Pill type={d.type} sm />}
+                      {d.miles && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.miles} miles</div>}
+                      {!d.miles && d.title && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.title}</div>}
                     </div>
                   </div>
                 ))}
-              </div>
+              </Card>
             )}
-          </Card>
 
-          {/* Coach Insight */}
-          <div style={{ background: C.navy, borderRadius: 16, padding: "20px 24px", boxShadow: "0 6px 24px rgba(27,37,89,0.15)", borderLeft: `6px solid ${C.coral}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: C.coral, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>✦</div>
-              <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Coach Insight</span>
-            </div>
-            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, marginBottom: 16 }}>
-              {coachInsight || 'Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.'}
-            </p>
-            <Link to="/coach" style={{
-              display: "block", width: "100%", textAlign: "center",
-              background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
-              fontSize: 13, fontWeight: 600, color: C.white, textDecoration: "none",
-            }}>Ask Coach →</Link>
           </div>
-
-          {/* Up Next */}
-          {upNextEntries.length > 0 && (
-            <Card>
-              <SLabel>Up Next</SLabel>
-              {upNextEntries.map((d, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: i < upNextEntries.length - 1 ? `1px solid ${C.gray100}` : "none" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: C.gray50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, color: C.gray400, textTransform: "uppercase", fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>{d.day}</span>
-                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 18, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{d.date}</span>
-                  </div>
-                  <div>
-                    {d.type && <Pill type={d.type} sm />}
-                    {d.miles && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.miles} miles</div>}
-                    {!d.miles && d.title && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.title}</div>}
-                  </div>
-                </div>
-              ))}
-            </Card>
-          )}
-
+        </div>
         </div>
       </div>
 

@@ -113,8 +113,8 @@ const Navbar = ({ variant = 'landing' }) => {
   ════════════════════════════════════════════════════════════ */
   if (isApp) {
     return (
-      <nav className="sticky top-0 z-50 border-b border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.07),0_4px_24px_rgba(0,0,0,0.2)]" style={{ background: '#1B2559' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-[36px] h-[58px] flex items-center justify-between relative">
+      <nav className="sticky top-0 z-50 border-b border-white/10 shadow-[0_1px_0_rgba(255,255,255,0.07),0_4px_24px_rgba(0,0,0,0.2)]" style={{ background: '#1B2559', padding: '0 24px' }}>
+        <div className="relative" style={{ maxWidth: 1280, width: '100%', margin: '0 auto', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
           {/* Logo */}
           <div className="flex-1 flex justify-start">
@@ -124,7 +124,7 @@ const Navbar = ({ variant = 'landing' }) => {
           </div>
 
           {/* Desktop tabs */}
-          <div className="hidden md:flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex items-center gap-0.5" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
             {appTabs.map((tab) => {
               const isActive =
                 location.pathname === tab.path ||
