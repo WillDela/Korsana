@@ -797,6 +797,8 @@ const Dashboard = () => {
     } catch { setWeekEntries([]); }
   }, []);
 
+  const handleLogActivity = () => setShowLogModal(true);
+
   const handleSyncActivities = useCallback(async (provider = 'strava') => {
     if (provider !== 'strava') {
       const name = provider[0].toUpperCase() + provider.slice(1);
@@ -1099,19 +1101,45 @@ const Dashboard = () => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const iso = fmtDateISO(d);
-      const entry = weekEntries.find(e => e.date === iso);
+      // Prefer calendar entries (planned/completed) over raw activities
+      const calEntries = weekEntries.filter(e => e.date === iso);
+      const entry = calEntries[0] || null;
       const isToday = iso === todayISO;
       const isPast = d < todayMidnight;
-      const hasActivity = activities.some(a => fmtDateISO(new Date(a.start_time)) === iso && a.activity_type === 'run');
+      const dayActivities = activities.filter(a => fmtDateISO(new Date(a.start_time)) === iso);
+      const hasActivity = dayActivities.length > 0;
+
+      // If no calendar entry exists for this day, synthesize display from logged activities
+      let type = entry?.workout_type || null;
+      let title = entry?.title || null;
+      let miles = entry?.distance_km
+        ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
+        : entry?.planned_distance_meters
+          ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
+          : null;
+
+      if (!entry && hasActivity) {
+        const act = dayActivities[0];
+        const actLabel = act.activity_type === 'run' ? 'Easy'
+          : act.activity_type === 'recovery' ? 'Recovery'
+          : 'Cross Train';
+        type = actLabel;
+        title = act.name || actLabel;
+        miles = act.distance_meters
+          ? parseFloat((act.distance_meters * 0.000621371).toFixed(1))
+          : null;
+      }
+
       result.push({
         day: DAY_LABELS[d.getDay()],
         date: String(d.getDate()),
         iso,
-        type: entry?.workout_type || null,
-        title: entry?.title || null,
-        miles: entry?.distance_km ? parseFloat((entry.distance_km * 0.621371).toFixed(1)) : null,
-        done: entry?.status === 'completed' || (isPast && hasActivity),
+        type,
+        title,
+        miles,
+        done: entry?.status === 'completed' || hasActivity,
         today: isToday,
+        count: calEntries.length,
       });
     }
     return result;
@@ -1304,14 +1332,18 @@ const Dashboard = () => {
             <button
               onClick={() => setShowLogModal(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: C.white, border: `1px solid ${C.gray200}`,
-                borderRadius: 8, padding: '5px 12px',
-                fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700,
-                color: C.navy, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 7,
+                background: C.coral, border: 'none',
+                borderRadius: 10, padding: '9px 18px',
+                fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 700,
+                color: C.white, cursor: 'pointer',
+                boxShadow: '0 3px 10px rgba(232,99,74,0.35)',
               }}
             >
-              + Log Activity
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Log Activity
             </button>
             {syncMsg.text && (
               <span style={{
@@ -1446,6 +1478,12 @@ const Dashboard = () => {
                         ) : (
                           <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>
                             {d.type ? "—" : "Rest"}
+                          </div>
+                        )}
+                        {/* Activity count badge */}
+                        {d.count > 1 && (
+                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: isT ? "rgba(255,255,255,0.5)" : C.gray400, marginTop: 4 }}>
+                            +{d.count - 1} more
                           </div>
                         )}
                         {/* Done dot */}
@@ -1804,7 +1842,10 @@ const Dashboard = () => {
       <ManualActivityModal
         isOpen={showLogModal}
         onClose={() => setShowLogModal(false)}
-        onSuccess={fetchActivities}
+        onSuccess={() => {
+          fetchActivities();
+          fetchWeekEntries();
+        }}
       />
     </div>
   );

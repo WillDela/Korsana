@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
 import { activitiesAPI } from '../api/activities';
+import { calendarAPI } from '../api/calendar';
 import { useUnits } from '../context/UnitsContext';
 import { distanceLabel, toMeters } from '../utils/units';
+
+const ACTIVITY_TO_WORKOUT_TYPE = {
+  run: 'easy',
+  cycling: 'cross_train',
+  swimming: 'cross_train',
+  rowing: 'cross_train',
+  walking: 'easy',
+  hiking: 'easy',
+  weight_lifting: 'cross_train',
+  elliptical: 'cross_train',
+  stair_master: 'cross_train',
+  workout: 'cross_train',
+  recovery: 'recovery',
+};
 
 const MUSCLE_GROUPS = [
   'chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'full body',
@@ -61,6 +76,24 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
       };
 
       const result = await activitiesAPI.createActivity(payload);
+
+      // Also create a calendar entry so it shows in This Week's Plan and Training Calendar
+      try {
+        await calendarAPI.createEntry({
+          date,
+          workout_type: ACTIVITY_TO_WORKOUT_TYPE[activityType] || 'cross_train',
+          title: name || config.label,
+          description: notes.trim() || null,
+          planned_distance_meters: payload.distance_meters || null,
+          planned_duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
+          status: 'completed',
+          source: 'manual',
+          activity_id: result.activity?.id || null,
+        });
+      } catch {
+        // Calendar entry creation is best-effort; don't block the activity log
+      }
+
       onSuccess?.(result.activity);
       onClose();
       resetForm();
@@ -92,7 +125,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2
@@ -126,20 +159,20 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
             <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Activity Type
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {Object.entries(ACTIVITY_CONFIGS).map(([type, cfg]) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setActivityType(type)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
                     activityType === type
                       ? 'border-navy bg-navy text-white'
                       : 'border-border bg-white text-text-secondary hover:bg-bg-app'
                   }`}
                 >
-                  <span className="text-base">{cfg.icon}</span>
-                  <span className="leading-none">{cfg.label}</span>
+                  <span className="text-base flex-shrink-0">{cfg.icon}</span>
+                  <span className="leading-none truncate">{cfg.label}</span>
                 </button>
               ))}
             </div>
