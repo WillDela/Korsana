@@ -317,7 +317,13 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 	syncedCount := 0
 
 	for _, act := range activities {
-		startTime, err := time.Parse(time.RFC3339, act.StartDate)
+		// Use local date so calendar bucketing matches the athlete's timezone.
+		// start_date_local is formatted as RFC3339 but represents local time.
+		localDateStr := act.StartDateLocal
+		if localDateStr == "" {
+			localDateStr = act.StartDate
+		}
+		startTime, err := time.Parse(time.RFC3339, localDateStr)
 		if err != nil {
 			continue
 		}
