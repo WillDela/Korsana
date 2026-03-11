@@ -124,10 +124,10 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 py-8 bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-border w-full max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full pb-4">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        <div className="flex items-center justify-between border-b border-border" style={{ padding: '28px 40px' }}>
           <h2
             className="text-lg font-bold text-text-primary"
             style={{ fontFamily: 'var(--font-heading)' }}
@@ -153,26 +153,27 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6" style={{ padding: '28px 40px' }}>
           {/* Activity type picker */}
           <div>
             <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Activity Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {Object.entries(ACTIVITY_CONFIGS).map(([type, cfg]) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setActivityType(type)}
-                  className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors ${
+                  style={{ padding: '12px 16px', gap: '12px' }}
+                  className={`flex items-center rounded-xl border text-sm font-medium cursor-pointer transition-all ${
                     activityType === type
-                      ? 'border-navy bg-navy text-white'
-                      : 'border-border bg-white text-text-secondary hover:bg-bg-app'
+                      ? 'border-navy bg-navy text-white shadow-sm'
+                      : 'border-border bg-white text-text-secondary hover:bg-bg-app hover:border-gray-300'
                   }`}
                 >
-                  <span className="text-base flex-shrink-0">{cfg.icon}</span>
-                  <span className="leading-none truncate">{cfg.label}</span>
+                  <span className="text-xl flex-shrink-0">{cfg.icon}</span>
+                  <span className="leading-none whitespace-nowrap">{cfg.label}</span>
                 </button>
               ))}
             </div>
@@ -180,7 +181,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
 
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Name (optional)
             </label>
             <input
@@ -188,27 +189,27 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={config.label}
-              className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+              className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Date
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+              className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               required
             />
           </div>
 
           {/* Duration */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Duration (minutes)
             </label>
             <input
@@ -217,7 +218,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
               onChange={(e) => setDurationMinutes(e.target.value)}
               placeholder="45"
               min="1"
-              className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+              className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               required
             />
           </div>
@@ -225,7 +226,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* Distance (distance-based only) */}
           {isDistanceBased && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 Distance ({distanceLabel(unit)})
               </label>
               <input
@@ -235,7 +236,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
                 placeholder="3.1"
                 min="0"
                 step="0.01"
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               />
             </div>
           )}
@@ -243,13 +244,13 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* Muscle group (strength only) */}
           {activityType === 'weight_lifting' && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 Muscle Group
               </label>
               <select
                 value={muscleGroup}
                 onChange={(e) => setMuscleGroup(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy bg-white"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy bg-white" style={{ padding: '12px 16px' }}
               >
                 <option value="">Select muscle group</option>
                 {MUSCLE_GROUPS.map((g) => (
@@ -264,7 +265,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* Floors (stair master only) */}
           {activityType === 'stair_master' && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 Floors
               </label>
               <input
@@ -273,7 +274,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
                 onChange={(e) => setFloors(e.target.value)}
                 placeholder="30"
                 min="1"
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               />
             </div>
           )}
@@ -281,7 +282,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* Resistance level (elliptical only) */}
           {activityType === 'elliptical' && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 Resistance Level (1-20)
               </label>
               <input
@@ -291,7 +292,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
                 placeholder="8"
                 min="1"
                 max="20"
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               />
             </div>
           )}
@@ -299,7 +300,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* RPE (effort-based only) */}
           {!isDistanceBased && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 RPE (1-10)
               </label>
               <input
@@ -309,7 +310,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
                 placeholder="7"
                 min="1"
                 max="10"
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               />
             </div>
           )}
@@ -317,7 +318,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
           {/* Calories (effort-based only) */}
           {!isDistanceBased && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
                 Calories (optional)
               </label>
               <input
@@ -326,14 +327,14 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
                 onChange={(e) => setCalories(e.target.value)}
                 placeholder="300"
                 min="0"
-                className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+                className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
               />
             </div>
           )}
 
           {/* Heart rate */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Avg Heart Rate (optional)
             </label>
             <input
@@ -343,13 +344,13 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
               placeholder="145"
               min="40"
               max="220"
-              className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy"
+              className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               Notes (optional)
             </label>
             <textarea
@@ -357,7 +358,7 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="How did it go?"
               rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-border text-sm text-text-primary focus:outline-none focus:border-navy resize-none"
+              className="w-full rounded-xl border border-border text-sm text-text-primary focus:outline-none focus:border-navy resize-none" style={{ padding: '12px 16px' }}
             />
           </div>
 
@@ -365,18 +366,18 @@ const ManualActivityModal = ({ isOpen, onClose, onSuccess, defaultDate }) => {
             <p className="text-xs text-error">{error}</p>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-6 pb-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-medium text-text-secondary hover:bg-bg-app cursor-pointer bg-transparent"
+              className="flex-1 rounded-xl border border-border text-sm font-semibold text-text-secondary hover:bg-bg-app cursor-pointer bg-transparent" style={{ padding: '14px 16px' }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-navy text-white text-sm font-medium hover:bg-navy-light cursor-pointer border-none disabled:opacity-60"
+              className="flex-1 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy-light cursor-pointer border-none disabled:opacity-60" style={{ padding: '14px 16px' }}
             >
               {submitting ? 'Logging...' : 'Log Activity'}
             </button>

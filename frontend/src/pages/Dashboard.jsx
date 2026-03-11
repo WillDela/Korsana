@@ -1326,7 +1326,7 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '8px 24px' }}>
+      <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '14px 24px' }}>
         <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
