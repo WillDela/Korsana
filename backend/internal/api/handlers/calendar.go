@@ -142,7 +142,7 @@ func (h *CalendarHandler) parseEntryRequest(c *gin.Context) (uuid.UUID, *models.
 	validTypes := map[string]bool{
 		"easy": true, "tempo": true, "interval": true,
 		"long": true, "recovery": true, "rest": true, "race": true,
-		"cross_train": true,
+		"cross_train": true, "cycling": true, "swimming": true, "lifting": true,
 	}
 	if !validTypes[req.WorkoutType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid workout_type"})
