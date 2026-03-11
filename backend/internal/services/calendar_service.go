@@ -65,7 +65,9 @@ func (s *CalendarService) AutoMatchActivity(
 		newEntry.PlannedDistanceMeters = &distInt
 	}
 
-	// Check if this activity is already on the calendar
+	// Check if this activity is already on the calendar.
+	// If so, update the date (it may have been wrong due to a UTC/local mismatch
+	// on a previous sync) rather than leaving a stale entry on the wrong day.
 	var exists bool
 	err = s.db.GetContext(ctx, &exists,
 		`SELECT EXISTS(SELECT 1 FROM training_calendar
@@ -75,7 +77,12 @@ func (s *CalendarService) AutoMatchActivity(
 		return err
 	}
 	if exists {
-		return nil
+		_, err = s.db.ExecContext(ctx, `
+			UPDATE training_calendar
+			SET date = $1, updated_at = NOW()
+			WHERE user_id = $2 AND completed_activity_id = $3
+		`, date, userID, activity.ID)
+		return err
 	}
 
 	query := `
@@ -110,6 +117,12 @@ func isActivityCompatibleWithWorkout(activityType, workoutType string) bool {
 	switch workoutType {
 	case "easy", "tempo", "interval", "long", "race":
 		return activityType == models.ActivityTypeRun
+	case "cycling":
+		return activityType == models.ActivityTypeCycling
+	case "swimming":
+		return activityType == models.ActivityTypeSwimming
+	case "lifting":
+		return activityType == models.ActivityTypeWeightLifting
 	case "cross_train":
 		crossTrainTypes := map[string]bool{
 			models.ActivityTypeCycling:       true,

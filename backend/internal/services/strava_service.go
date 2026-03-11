@@ -400,6 +400,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 				activity_type = EXCLUDED.activity_type,
 				distance_meters = EXCLUDED.distance_meters,
 				duration_seconds = EXCLUDED.duration_seconds,
+				start_time = EXCLUDED.start_time,
 				average_pace_seconds_per_km = EXCLUDED.average_pace_seconds_per_km,
 				average_heart_rate = EXCLUDED.average_heart_rate,
 				max_heart_rate = EXCLUDED.max_heart_rate,

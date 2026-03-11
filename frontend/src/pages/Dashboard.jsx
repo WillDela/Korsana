@@ -10,7 +10,7 @@ import { stravaAPI } from '../api/strava';
 import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
-import ManualActivityModal from '../components/ManualActivityModal';
+import SessionDetailsModal from '../components/SessionDetailsModal';
 
 // ─── Design tokens ────────────────────────────────────────────
 const C = {
@@ -739,7 +739,7 @@ const Dashboard = () => {
 
   // UI state
   const [showFactors, setShowFactors] = useState(false);
-  const [showLogModal, setShowLogModal] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState(() => {
     try {
       const saved = localStorage.getItem('dashboard_widgets');
@@ -797,7 +797,12 @@ const Dashboard = () => {
     } catch { setWeekEntries([]); }
   }, []);
 
-  const handleLogActivity = () => setShowLogModal(true);
+  const handlePlanWorkout = () => setShowPlanModal(true);
+
+  const handleSavePlan = useCallback(async (data) => {
+    await calendarAPI.createEntry(data);
+    fetchWeekEntries();
+  }, [fetchWeekEntries]);
 
   const handleSyncActivities = useCallback(async (provider = 'strava') => {
     if (provider !== 'strava') {
@@ -1082,10 +1087,30 @@ const Dashboard = () => {
     return zones.map(z => ({ ...z, pct: Math.round((z.mins / total) * 100) }));
   }, [activities]);
 
-  // Today's calendar entry
-  const todayEntry = useMemo(() =>
-    weekEntries.find(e => e.date === todayISO) || null,
+  // Today's calendar entries (all of them)
+  const todayEntries = useMemo(() =>
+    weekEntries.filter(e => e.date === todayISO),
     [weekEntries, todayISO]);
+
+  // Primary entry (first planned, or first completed, or null)
+  const todayEntry = useMemo(() =>
+    todayEntries.find(e => e.status === 'planned') || todayEntries[0] || null,
+    [todayEntries]);
+
+  // Additional entries to show below the main card
+  const todayExtraEntries = useMemo(() =>
+    todayEntries.filter(e => e !== todayEntry),
+    [todayEntries, todayEntry]);
+
+  const handleMarkComplete = useCallback(async () => {
+    if (!todayEntry) return;
+    try {
+      await calendarAPI.updateStatus(todayEntry.id, 'completed');
+      fetchWeekEntries();
+    } catch (e) {
+      console.error('Failed to mark workout complete', e);
+    }
+  }, [todayEntry, fetchWeekEntries]);
 
   // Calendar strip: Mon-Sun with entries
   const calendarStrip = useMemo(() => {
@@ -1330,7 +1355,7 @@ const Dashboard = () => {
         <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
-              onClick={() => setShowLogModal(true)}
+              onClick={handlePlanWorkout}
               style={{
                 display: 'flex', alignItems: 'center', gap: 7,
                 background: C.coral, border: 'none',
@@ -1343,7 +1368,7 @@ const Dashboard = () => {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Log Activity
+              Plan Activity
             </button>
             {syncMsg.text && (
               <span style={{
@@ -1515,7 +1540,7 @@ const Dashboard = () => {
                           <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
                             {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
                           </span>
-                          {todayEntry.completed && <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>}
+                          {todayEntry.status === 'completed' && <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>}
                         </div>
                         <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
                           {todayWorkoutType === 'Rest' ? 'Rest Day' : todayWorkoutType === 'Cross Train' ? 'Cross Training' : `${todayWorkoutMiles} mi ${todayWorkoutType}`}
@@ -1526,10 +1551,15 @@ const Dashboard = () => {
                           </div>
                         )}
                       </div>
-                      {!todayEntry.completed && (
-                        <button onClick={handleLogActivity} style={{ background: C.coral, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, boxShadow: "0 4px 12px rgba(232,99,74,0.3)" }}>
-                          Log Run
-                        </button>
+                      {todayEntry.status !== 'completed' && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                          <button onClick={handleMarkComplete} style={{ background: C.green, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>✓</span> Mark Done
+                          </button>
+                          <button onClick={handlePlanWorkout} style={{ background: "rgba(255,255,255,0.1)", color: C.white, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            Plan Activity
+                          </button>
+                        </div>
                       )}
                     </div>
                     {todaySegments && todaySegments.length > 0 && (
@@ -1552,6 +1582,66 @@ const Dashboard = () => {
                 <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
                   <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
                 </Card>
+              )}
+
+              {/* Additional today entries (cross-training, extra activities, etc.) */}
+              {todayExtraEntries.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                  {todayExtraEntries.map(entry => {
+                    const distMi = entry.planned_distance_meters
+                      ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
+                      : null;
+                    const typeLabel = entry.workout_type
+                      ? entry.workout_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                      : 'Activity';
+                    return (
+                      <div key={entry.id} style={{
+                        background: C.white, borderRadius: 12, padding: "14px 16px",
+                        border: `1px solid ${C.gray100}`,
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        boxShadow: "0 1px 4px rgba(27,37,89,0.06)",
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{
+                            width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                            background: entry.status === 'completed' ? C.green : C.amber,
+                          }} />
+                          <div>
+                            <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: 600, color: C.navy }}>
+                              {entry.title || typeLabel}
+                            </div>
+                            {distMi && (
+                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 11, color: C.gray400, marginTop: 2 }}>
+                                {distMi} mi
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{
+                            fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700,
+                            textTransform: "uppercase", letterSpacing: "0.06em",
+                            padding: "3px 8px", borderRadius: 5,
+                            background: entry.status === 'completed' ? "rgba(46,204,139,0.12)" : "rgba(229,168,48,0.12)",
+                            color: entry.status === 'completed' ? C.green : C.amber,
+                          }}>
+                            {entry.status === 'completed' ? 'Done' : typeLabel}
+                          </span>
+                          {entry.status !== 'completed' && (
+                            <button
+                              onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
+                              style={{
+                                background: C.green, color: C.white, border: "none",
+                                borderRadius: 6, padding: "4px 10px",
+                                fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                              }}
+                            >✓</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
@@ -1839,13 +1929,13 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <ManualActivityModal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
-        onSuccess={() => {
-          fetchActivities();
-          fetchWeekEntries();
-        }}
+      <SessionDetailsModal
+        isOpen={showPlanModal}
+        onClose={() => setShowPlanModal(false)}
+        onSave={handleSavePlan}
+        onDelete={() => {}}
+        entry={null}
+        selectedDate={todayISO}
       />
     </div>
   );

@@ -99,6 +99,7 @@ const DayDetailModal = ({
   onAddWorkout,
   onLogActivity,
   onEditEntry,
+  onMarkComplete,
 }) => {
   if (!isOpen || !date) return null;
 
@@ -190,67 +191,93 @@ const DayDetailModal = ({
                   paceStr = `${m}:${s.toString().padStart(2, '0')}/mi`;
                 }
 
+                const isComplete = entry.status === 'completed';
+
                 return (
                   <motion.div
                     key={entry.id}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => onEditEntry(entry)}
-                    className="p-3.5 rounded-xl cursor-pointer transition-shadow hover:shadow-md"
+                    className="rounded-xl transition-shadow hover:shadow-md"
                     style={{
                       backgroundColor: `${color}08`,
                       border: `1px solid ${color}25`,
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}
-                      >
-                        {getBadgeLabel(entry.workout_type)}
-                      </span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold ${entry.status === 'completed'
-                          ? 'bg-green-100 text-green-700'
-                          : entry.status === 'missed'
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-blue-50 text-blue-600'
-                          }`}
-                      >
-                        {entry.status}
-                      </span>
-                      {entry.source && entry.source !== 'manual' && (
+                    <div
+                      className="p-3.5 cursor-pointer"
+                      onClick={() => onEditEntry(entry)}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
                         <span
-                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${entry.source === 'strava'
-                            ? 'bg-orange-100 text-orange-600'
-                            : 'bg-sage/20 text-sage'
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}
+                        >
+                          {getBadgeLabel(entry.workout_type)}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold ${isComplete
+                            ? 'bg-green-100 text-green-700'
+                            : entry.status === 'missed'
+                              ? 'bg-red-100 text-red-600'
+                              : 'bg-blue-50 text-blue-600'
                             }`}
                         >
-                          {entry.source === 'ai_coach'
-                            ? 'AI'
-                            : entry.source.toUpperCase()}
+                          {entry.status}
                         </span>
+                        {entry.source && entry.source !== 'manual' && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${entry.source === 'strava'
+                              ? 'bg-orange-100 text-orange-600'
+                              : 'bg-sage/20 text-sage'
+                              }`}
+                          >
+                            {entry.source === 'ai_coach'
+                              ? 'AI'
+                              : entry.source.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        {entry.title}
+                      </p>
+                      {(distMi || paceStr || durMin) && (
+                        <div className="flex items-center gap-3 mt-1.5">
+                          {distMi && (
+                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
+                              {distMi} mi
+                            </span>
+                          )}
+                          {paceStr && (
+                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
+                              {paceStr}
+                            </span>
+                          )}
+                          {durMin && (
+                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
+                              {durMin} min
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <p className="text-sm font-semibold text-text-primary">
-                      {entry.title}
-                    </p>
-                    {(distMi || paceStr || durMin) && (
-                      <div className="flex items-center gap-3 mt-1.5">
-                        {distMi && (
-                          <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                            {distMi} mi
-                          </span>
-                        )}
-                        {paceStr && (
-                          <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                            {paceStr}
-                          </span>
-                        )}
-                        {durMin && (
-                          <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                            {durMin} min
-                          </span>
-                        )}
+                    {!isComplete && (
+                      <div className="px-3.5 pb-3 flex gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onMarkComplete(entry.id); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-50 text-green-700 text-[11px] font-bold border border-green-200 cursor-pointer hover:bg-green-100 transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Mark Complete
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onLogActivity(); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white text-text-secondary text-[11px] font-bold border border-border cursor-pointer hover:bg-bg-app transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                          </svg>
+                          Log Activity
+                        </button>
                       </div>
                     )}
                   </motion.div>
@@ -419,6 +446,15 @@ const Calendar = () => {
     setEditingEntry(null);
     setModalMode('session');
   };
+
+  const handleMarkComplete = useCallback(async (entryId) => {
+    try {
+      await calendarAPI.updateStatus(entryId, 'completed');
+      await fetchMonthEntries();
+    } catch (err) {
+      console.error('Failed to mark complete:', err);
+    }
+  }, [fetchMonthEntries]);
 
   const monthLabel = currentMonth.toLocaleDateString('en-US', {
     month: 'long',
@@ -795,6 +831,7 @@ const Calendar = () => {
         onAddWorkout={handleAddWorkout}
         onLogActivity={handleLogActivity}
         onEditEntry={handleEditEntry}
+        onMarkComplete={handleMarkComplete}
       />
 
       {/* Session details modal (create/edit) */}

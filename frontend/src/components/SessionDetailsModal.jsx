@@ -6,9 +6,12 @@ export const WORKOUT_TYPES = [
   { value: 'tempo', label: 'Tempo', color: '#3B82F6', badge: 'TEMPO', badgeBg: 'bg-blue-500', badgeText: 'text-white' },
   { value: 'long', label: 'Long Run', color: '#1B2559', badge: 'LONG RUN', badgeBg: 'bg-navy', badgeText: 'text-white' },
   { value: 'interval', label: 'Interval', color: '#E8725A', badge: 'INTERVAL', badgeBg: 'bg-coral', badgeText: 'text-white' },
-  { value: 'rest', label: 'Rest', color: '#9CA3AF', badge: 'REST', badgeBg: 'bg-transparent border border-gray-300', badgeText: 'text-gray-500' },
-  { value: 'recovery', label: 'Recovery', color: '#6B7280', badge: 'RECOVERY', badgeBg: 'bg-gray-100', badgeText: 'text-gray-600' },
+  { value: 'cycling', label: 'Cycling', color: '#0EA5E9', badge: 'CYCLING', badgeBg: 'bg-sky-500', badgeText: 'text-white' },
+  { value: 'swimming', label: 'Swimming', color: '#06B6D4', badge: 'SWIM', badgeBg: 'bg-cyan-500', badgeText: 'text-white' },
+  { value: 'lifting', label: 'Lifting', color: '#8B5CF6', badge: 'LIFT', badgeBg: 'bg-violet-500', badgeText: 'text-white' },
   { value: 'cross_train', label: 'Cross Train', color: '#E5A830', badge: 'CROSS TRAIN', badgeBg: 'bg-transparent border border-amber', badgeText: 'text-amber' },
+  { value: 'recovery', label: 'Recovery', color: '#6B7280', badge: 'RECOVERY', badgeBg: 'bg-gray-100', badgeText: 'text-gray-600' },
+  { value: 'rest', label: 'Rest', color: '#9CA3AF', badge: 'REST', badgeBg: 'bg-transparent border border-gray-300', badgeText: 'text-gray-500' },
   { value: 'race', label: 'Race', color: '#7C3AED', badge: 'RACE', badgeBg: 'bg-purple-600', badgeText: 'text-white' },
 ];
 
@@ -143,7 +146,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
             className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-auto shadow-xl"
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-border">
+            <div className="border-b border-border" style={{ padding: '28px 40px' }}>
               <h3 className="text-lg font-bold text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
                 Session Details
               </h3>
@@ -151,7 +154,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
             </div>
 
             {/* Body */}
-            <div className="p-6 space-y-4">
+            <div className="space-y-5" style={{ padding: '28px 40px' }}>
               {error && (
                 <div className="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm">
                   {error}
@@ -166,7 +169,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Session title"
-                  className="w-full px-3 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:border-navy"
+                  className="w-full rounded-lg border border-border text-sm focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
                 />
               </div>
 
@@ -177,7 +180,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                   <select
                     value={workoutType}
                     onChange={(e) => handleTypeChange(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:border-navy bg-white cursor-pointer"
+                    className="w-full rounded-lg border border-border text-sm focus:outline-none focus:border-navy bg-white cursor-pointer" style={{ padding: '12px 16px' }}
                   >
                     {WORKOUT_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -193,7 +196,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                     value={distanceMiles}
                     onChange={(e) => setDistanceMiles(e.target.value)}
                     placeholder="0.0"
-                    className="w-full px-3 py-2.5 rounded-lg border border-border text-sm font-mono focus:outline-none focus:border-navy"
+                    className="w-full rounded-lg border border-border text-sm font-mono focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
                   />
                 </div>
               </div>
@@ -207,7 +210,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                     value={targetPace}
                     onChange={(e) => setTargetPace(e.target.value)}
                     placeholder="8:30"
-                    className="w-full px-3 py-2.5 rounded-lg border border-border text-sm font-mono focus:outline-none focus:border-navy"
+                    className="w-full rounded-lg border border-border text-sm font-mono focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
                   />
                 </div>
                 <div className="flex items-end pb-1">
@@ -239,14 +242,14 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Warm-up plan, pacing strategy, focus areas..."
                   rows={3}
-                  className="w-full px-3 py-2.5 rounded-lg border border-border text-sm focus:outline-none focus:border-navy resize-y"
-                  style={{ fontFamily: 'inherit' }}
+                  className="w-full rounded-lg border border-border text-sm focus:outline-none focus:border-navy resize-y"
+                  style={{ padding: '12px 16px', fontFamily: 'inherit' }}
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-border flex items-center gap-3">
+            <div className="border-t border-border flex items-center gap-3" style={{ padding: '20px 40px' }}>
               {isEditing && (
                 <button
                   onClick={handleDelete}
