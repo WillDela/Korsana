@@ -11,6 +11,7 @@ import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
 import SessionDetailsModal from '../components/SessionDetailsModal';
+import BrandIcon from '../components/BrandIcon';
 
 // ─── Design tokens ────────────────────────────────────────────
 const C = {
@@ -193,10 +194,11 @@ const Gauge = ({ score }) => {
 
 // ─── SyncDropdown ─────────────────────────────────────────────
 const SOURCES = [
-  { id: 'strava', label: 'Strava', status: 'connected', color: '#FC4C02', icon: 'S' },
-  { id: 'garmin', label: 'Garmin', status: 'coming', color: C.blue, icon: 'G' },
-  { id: 'coros', label: 'Coros', status: 'coming', color: C.navy, icon: 'C' },
+  { id: 'strava', label: 'Strava', status: 'connected', color: '#FC4C02' },
+  { id: 'garmin', label: 'Garmin', status: 'coming', color: '#007DC5' },
+  { id: 'coros', label: 'Coros', status: 'coming', color: '#1B2559' },
 ];
+
 
 const SyncDropdown = ({ isSyncing, onSync }) => {
   const [open, setOpen] = useState(false);
@@ -228,7 +230,7 @@ const SyncDropdown = ({ isSyncing, onSync }) => {
           <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={() => setOpen(false)} />
           <div style={{
             position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-            background: C.white, borderRadius: 14, width: 210,
+            background: C.white, borderRadius: 14, width: 220,
             boxShadow: '0 4px 32px rgba(27,37,89,0.16)', border: `1px solid ${C.gray100}`,
             padding: '12px', zIndex: 300,
           }}>
@@ -239,14 +241,18 @@ const SyncDropdown = ({ isSyncing, onSync }) => {
                 padding: '9px 10px', borderRadius: 9, marginBottom: 4,
                 background: s.status === 'connected' ? C.gray50 : 'transparent',
                 border: `1px solid ${s.status === 'connected' ? C.gray100 : 'transparent'}`,
-              }}>
+                cursor: s.status === 'coming' ? 'pointer' : 'default',
+              }}
+                onClick={s.status === 'coming' ? () => { onSync(s.id); setOpen(false); } : undefined}
+              >
                 <div style={{
-                  width: 28, height: 28, borderRadius: 7,
-                  background: s.status === 'connected' ? s.color : '#E8EAF0',
+                  width: 30, height: 30, borderRadius: 7,
+                  background: C.white, border: `1px solid ${C.gray200}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, fontWeight: 700,
-                  color: s.status === 'connected' ? C.white : C.gray400, flexShrink: 0,
-                }}>{s.icon}</div>
+                  flexShrink: 0, overflow: 'hidden',
+                }}>
+                  <BrandIcon brand={s.id} size={18} />
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: s.status === 'connected' ? C.navy : C.gray400 }}>{s.label}</div>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: s.status === 'connected' ? C.green : C.gray400, marginTop: 1 }}>
@@ -285,8 +291,7 @@ const WidgetSelector = ({ active, toggle }) => {
           color: C.navy, cursor: 'pointer', transition: 'all 0.15s',
         }}
       >
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green, display: 'inline-block' }} />
-        Strava live
+        Customize
         <span style={{
           fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
           background: C.coral, color: C.white, borderRadius: 99, padding: '1px 6px',
@@ -793,7 +798,9 @@ const Dashboard = () => {
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       monday.setHours(0, 0, 0, 0);
       const res = await calendarAPI.getWeek(fmtDateISO(monday));
-      setWeekEntries(res.entries || []);
+      // Normalize date to YYYY-MM-DD — backend returns full ISO timestamps
+      const entries = (res.entries || []).map(e => ({ ...e, date: e.date.slice(0, 10) }));
+      setWeekEntries(entries);
     } catch { setWeekEntries([]); }
   }, []);
 
@@ -1130,30 +1137,12 @@ const Dashboard = () => {
       const calEntries = weekEntries.filter(e => e.date === iso);
       const entry = calEntries[0] || null;
       const isToday = iso === todayISO;
-      const isPast = d < todayMidnight;
-      const dayActivities = activities.filter(a => fmtDateISO(new Date(a.start_time)) === iso);
-      const hasActivity = dayActivities.length > 0;
 
-      // If no calendar entry exists for this day, synthesize display from logged activities
-      let type = entry?.workout_type || null;
-      let title = entry?.title || null;
-      let miles = entry?.distance_km
-        ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
-        : entry?.planned_distance_meters
-          ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
-          : null;
-
-      if (!entry && hasActivity) {
-        const act = dayActivities[0];
-        const actLabel = act.activity_type === 'run' ? 'Easy'
-          : act.activity_type === 'recovery' ? 'Recovery'
-          : 'Cross Train';
-        type = actLabel;
-        title = act.name || actLabel;
-        miles = act.distance_meters
-          ? parseFloat((act.distance_meters * 0.000621371).toFixed(1))
-          : null;
-      }
+      const type = entry?.workout_type || null;
+      const title = entry?.title || null;
+      const miles = entry?.planned_distance_meters
+        ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
+        : null;
 
       result.push({
         day: DAY_LABELS[d.getDay()],
@@ -1162,13 +1151,13 @@ const Dashboard = () => {
         type,
         title,
         miles,
-        done: entry?.status === 'completed' || hasActivity,
+        done: entry?.status === 'completed',
         today: isToday,
         count: calEntries.length,
       });
     }
     return result;
-  }, [weekEntries, activities, todayISO]);
+  }, [weekEntries, todayISO]);
 
   // Up next: future entries this week
   const upNextEntries = useMemo(() =>
