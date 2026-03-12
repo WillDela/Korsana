@@ -47,6 +47,7 @@ func main() {
 	stravaService := services.NewStravaService(db, stravaClient, redisClient, calendarService)
 	goalsService := services.NewGoalsService(db)
 	activityService := services.NewActivityService(db)
+	metricsService := services.NewMetricsService(db)
 	crossTrainingGoalsService := services.NewCrossTrainingGoalsService(db)
 	userProfileService := services.NewUserProfileService(db)
 	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
@@ -59,6 +60,10 @@ func main() {
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
 	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService, userProfileService)
 	activitiesHandler := handlers.NewActivitiesHandler(activityService)
+	dashboardHandler := handlers.NewDashboardHandler(metricsService)
+	crossTrainingHandler := handlers.NewCrossTrainingHandler(db)
+	gearHandler := handlers.NewGearHandler(db)
+	predictorHandler := handlers.NewPredictorHandler(db)
 	crossTrainingGoalsHandler := handlers.NewCrossTrainingGoalsHandler(crossTrainingGoalsService)
 
 	// 6. Setup Router
@@ -180,6 +185,23 @@ func main() {
 			protected.POST("/activities", activitiesHandler.CreateActivity)
 			protected.GET("/activities", activitiesHandler.GetActivities)
 			protected.DELETE("/activities/:id", activitiesHandler.DeleteActivity)
+
+			// Dashboard metrics
+			protected.GET("/dashboard", dashboardHandler.Get)
+
+			// Cross-training sessions
+			protected.GET("/crosstraining", crossTrainingHandler.List)
+			protected.POST("/crosstraining", crossTrainingHandler.Create)
+			protected.DELETE("/crosstraining/:id", crossTrainingHandler.Delete)
+
+			// Gear / Shoes
+			protected.GET("/gear/shoes", gearHandler.ListShoes)
+			protected.POST("/gear/shoes", gearHandler.AddShoe)
+			protected.PUT("/gear/shoes/:id", gearHandler.UpdateShoe)
+			protected.DELETE("/gear/shoes/:id", gearHandler.DeleteShoe)
+
+			// Race Predictor manual override
+			protected.POST("/predictor/manual", predictorHandler.SaveManual)
 
 			// Cross-training goals
 			ctg := protected.Group("/cross-training-goals")

@@ -12,6 +12,21 @@ import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
 import SessionDetailsModal from '../components/SessionDetailsModal';
 import BrandIcon from '../components/BrandIcon';
+import { dashboardAPI } from '../api/dashboard';
+import TrainingLoadWidget from '../components/dashboard/widgets/TrainingLoadWidget';
+import RacePredictorWidget from '../components/dashboard/widgets/RacePredictorWidget';
+import LongRunConfidenceWidget from '../components/dashboard/widgets/LongRunConfidenceWidget';
+import RecoveryWidget from '../components/dashboard/widgets/RecoveryWidget';
+import InjuryRiskWidget from '../components/dashboard/widgets/InjuryRiskWidget';
+import HRZonesWidget from '../components/dashboard/widgets/HRZonesWidget';
+import ElevationWidget from '../components/dashboard/widgets/ElevationWidget';
+import CadenceWidget from '../components/dashboard/widgets/CadenceWidget';
+import StreakWidget from '../components/dashboard/widgets/StreakWidget';
+import CrossTrainingWidget from '../components/dashboard/widgets/CrossTrainingWidget';
+import ExecutionScoreWidget from '../components/dashboard/widgets/ExecutionScoreWidget';
+import ShoeWidget from '../components/dashboard/widgets/ShoeWidget';
+import CardiacDriftWidget from '../components/dashboard/widgets/CardiacDriftWidget';
+import CaloriesWidget from '../components/dashboard/widgets/CaloriesWidget';
 
 // ─── Design tokens ────────────────────────────────────────────
 const C = {
@@ -41,18 +56,20 @@ const PC = {
 };
 
 const WIDGETS = [
-  { id: 'hrzones', label: 'HR Zones', icon: '❤' },
-  { id: 'volume', label: 'Volume', icon: '🥧' },
-  { id: 'elevation', label: 'Elevation', icon: '⛰' },
-  { id: 'cadence', label: 'Cadence', icon: '👟' },
-  { id: 'calories', label: 'Calories', icon: '🔥' },
-  { id: 'consistency', label: 'Streak', icon: '🔥' },
-  { id: 'monthly', label: 'Monthly', icon: '📅' },
-  { id: 'prs', label: 'PRs', icon: '🏆' },
-  { id: 'vo2max', label: 'VO₂ Max', icon: '📈' },
-  { id: 'splits', label: 'Paces', icon: '📊' },
-  { id: 'power', label: 'Power', icon: '⚡' },
-  { id: 'shoes', label: 'Shoes', icon: '👟' },
+  { id: 'load',          label: 'Training Load',  icon: '📊' },
+  { id: 'predictor',     label: 'Race Predictor', icon: '🎯' },
+  { id: 'longrun',       label: 'Long Run',       icon: '🏃' },
+  { id: 'recovery',      label: 'Recovery',       icon: '💚' },
+  { id: 'injuryrisk',    label: 'Injury Risk',    icon: '⚡' },
+  { id: 'hrzones',       label: 'HR Zones',       icon: '❤' },
+  { id: 'elevation',     label: 'Elevation',      icon: '⛰' },
+  { id: 'cadence',       label: 'Cadence',        icon: '👟' },
+  { id: 'streak',        label: 'Streak',         icon: '🔥' },
+  { id: 'crosstraining', label: 'Cross-Training', icon: '🏋' },
+  { id: 'execution',     label: 'Exec Score',     icon: '✓' },
+  { id: 'shoes',         label: 'Shoes',          icon: '👟' },
+  { id: 'cardiac',       label: 'Cardiac Drift',  icon: '📈' },
+  { id: 'calories',      label: 'Calories',       icon: '🔥' },
 ];
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -308,7 +325,7 @@ const WidgetSelector = ({ active, toggle }) => {
             padding: '14px 14px 10px', zIndex: 300,
           }}>
             <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-              Choose what to show from Strava
+              Customize your widgets
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
               {WIDGETS.map(w => {
@@ -346,382 +363,31 @@ const WidgetSelector = ({ active, toggle }) => {
   );
 };
 
-// ─── Widget: Elevation ────────────────────────────────────────
-const ElevWidget = ({ data }) => (
-  <Card>
-    <SLabel>Elevation This Week</SLabel>
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>
-        {data.weeklyGain.toLocaleString()}<span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400, fontWeight: 400 }}> ft gain</span>
-      </div>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, marginTop: 3 }}>↓ {data.weeklyLoss.toLocaleString()} ft loss</div>
-    </div>
-    <ResponsiveContainer width="100%" height={90}>
-      <AreaChart data={data.trend}>
-        <defs>
-          <linearGradient id="krsEG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={C.blue} stopOpacity={0.25} />
-            <stop offset="100%" stopColor={C.blue} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
-        <YAxis hide />
-        <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" ft" />} />
-        <Area type="monotone" dataKey="ft" stroke={C.blue} strokeWidth={2} fill="url(#krsEG)" dot={false} />
-      </AreaChart>
-    </ResponsiveContainer>
-  </Card>
-);
 
-// ─── Widget: Cadence ──────────────────────────────────────────
-const CadWidget = ({ data }) => (
-  <Card>
-    <SLabel>Cadence</SLabel>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
-      <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.avgSPM}</span>
-      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}>spm avg</span>
-    </div>
-    <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.amber, marginBottom: 12 }}>
-      Goal: {data.goal} spm · {Math.max(0, data.goal - data.avgSPM)} away
-    </div>
-    <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-      {data.byActivity.map((a, i) => (
-        <div key={i} style={{ flex: 1, background: C.gray50, borderRadius: 8, padding: '7px 4px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy }}>{a.spm}</div>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: C.gray400, marginTop: 1 }}>{a.type}</div>
-        </div>
-      ))}
-    </div>
-    <ResponsiveContainer width="100%" height={70}>
-      <LineChart data={data.trend}>
-        <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
-        <YAxis domain={[160, 190]} hide />
-        <ReferenceLine y={data.goal} stroke={C.coral} strokeDasharray="4 3" strokeWidth={1.5} />
-        <Line type="monotone" dataKey="spm" stroke={C.green} strokeWidth={2.5} dot={false} />
-      </LineChart>
-    </ResponsiveContainer>
-  </Card>
-);
-
-// ─── Widget: Calories ─────────────────────────────────────────
-const CalWidget = ({ data }) => {
-  const pct = Math.min(100, Math.round((data.weeklyBurn / data.weeklyTarget) * 100));
-  return (
-    <Card>
-      <SLabel>Calories Burned</SLabel>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
-        <div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.weeklyBurn.toLocaleString()}</span>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}> / {data.weeklyTarget.toLocaleString()} kcal</span>
-        </div>
-        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 14, fontWeight: 700, color: pct >= 80 ? C.green : C.amber }}>{pct}%</span>
-      </div>
-      <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg,${C.amber},${C.coral})`, borderRadius: 99 }} />
-      </div>
-      <ResponsiveContainer width="100%" height={80}>
-        <BarChart data={data.trend} barSize={14}>
-          <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
-          <YAxis hide />
-          <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" kcal" />} />
-          <Bar dataKey="kcal" radius={[3, 3, 0, 0]}>
-            {data.trend.map((_, i) => (
-              <Cell key={i} fill={i === data.trend.length - 1 ? C.amber : C.navy} fillOpacity={i === data.trend.length - 1 ? 1 : 0.5} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
-};
-
-// ─── Widget: HR Zones ─────────────────────────────────────────
-const HRZWidget = ({ data }) => (
-  <Card>
-    <SLabel>HR Zones · This Week</SLabel>
-    {data.map((z, i) => (
-      <div key={i} style={{ marginBottom: i < data.length - 1 ? 12 : 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-          <div>
-            <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
-            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: C.gray400, marginLeft: 8 }}>{z.bpm}</span>
-          </div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
-        </div>
-        <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ width: `${z.pct}%`, height: '100%', background: z.color, borderRadius: 99 }} />
-        </div>
-      </div>
-    ))}
-  </Card>
-);
-
-// ─── Widget: Volume by Type ───────────────────────────────────
-const VolumeWidget = ({ data }) => {
-  const [hov, setHov] = useState(null);
-  const total = data.reduce((s, x) => s + x.miles, 0);
-  return (
-    <Card>
-      <SLabel>Volume by Type</SLabel>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ position: 'relative', width: 100, height: 100, flexShrink: 0 }}>
-          <ResponsiveContainer width={100} height={100}>
-            <PieChart>
-              <Pie data={data} dataKey="miles" cx="50%" cy="50%" innerRadius={28} outerRadius={46} strokeWidth={0}
-                onMouseEnter={(_, i) => setHov(i)} onMouseLeave={() => setHov(null)}>
-                {data.map((x, i) => <Cell key={i} fill={x.color} opacity={hov === null || hov === i ? 1 : 0.3} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy, lineHeight: 1 }}>
-              {hov !== null ? data[hov].miles.toFixed(1) : total.toFixed(0)}
-            </span>
-            <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: C.gray400 }}>mi</span>
-          </div>
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {data.map((x, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: hov === null || hov === i ? 1 : 0.4, transition: 'opacity 0.15s', cursor: 'default' }}
-              onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: x.color, flexShrink: 0 }} />
-              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600, flex: 1 }}>{x.type}</span>
-              <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, fontWeight: 600, color: C.navy }}>{x.miles.toFixed(1)}</span>
-              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, minWidth: 28, textAlign: 'right' }}>
-                {total > 0 ? Math.round((x.miles / total) * 100) : 0}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-// ─── Widget: Streak & Consistency ────────────────────────────
-const ConsistWidget = ({ data }) => (
-  <Card>
-    <SLabel>Streak & Consistency</SLabel>
-    <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${C.gray100}` }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 40, fontWeight: 700, color: C.coral, lineHeight: 1 }}>{data.streak}</div>
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400, marginTop: 4 }}>week streak</div>
-      </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 40, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{data.longestStreak}</div>
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, marginTop: 3 }}>longest</div>
-      </div>
-    </div>
-    <div style={{ display: 'flex', gap: 4 }}>
-      {data.weeks.map((w, i) => {
-        const hit = w.runs >= data.weeklyTarget;
-        const latest = i === data.weeks.length - 1;
-        return (
-          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{
-              height: 28, borderRadius: 5,
-              background: hit ? (latest ? C.green : '#C8F5E3') : (latest ? C.red : '#FDDEDE'),
-              border: latest ? `2px solid ${hit ? C.green : C.red}` : 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700,
-              color: hit ? (latest ? C.white : '#1A7A50') : (latest ? C.white : '#C0391B'),
-            }}>{hit ? '✓' : '✗'}</div>
-            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, color: C.gray400, marginTop: 3 }}>{w.week}</div>
-          </div>
-        );
-      })}
-    </div>
-    <div style={{ marginTop: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: C.gray400, textAlign: 'center' }}>
-      Target {data.weeklyTarget} runs/wk
-    </div>
-  </Card>
-);
-
-// ─── Widget: Monthly Mileage ──────────────────────────────────
-const MonthlyWidget = ({ data }) => {
-  const pct = Math.min(100, Math.round((data.actual / data.target) * 100));
-  return (
-    <Card>
-      <SLabel>{data.monthName} Mileage</SLabel>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
-        <div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 34, fontWeight: 700, color: C.navy }}>{data.actual.toFixed(1)}</span>
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: C.gray400 }}> / {data.target} mi</span>
-        </div>
-        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 14, fontWeight: 700, color: pct >= 80 ? C.green : C.amber }}>{pct}%</span>
-      </div>
-      <div style={{ height: 7, background: C.gray100, borderRadius: 99, overflow: 'hidden', marginBottom: 14 }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg,${C.navy},${C.coral})`, borderRadius: 99 }} />
-      </div>
-      <ResponsiveContainer width="100%" height={80}>
-        <BarChart data={data.byWeek} barGap={2} barSize={14}>
-          <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fill: C.gray400 }} axisLine={false} tickLine={false} />
-          <YAxis hide domain={[0, Math.max(50, data.target / 4 + 10)]} />
-          <Bar dataKey="planned" radius={[3, 3, 0, 0]} fill={C.gray100} />
-          <Bar dataKey="actual" radius={[3, 3, 0, 0]} fill={C.navy} fillOpacity={0.8} />
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
-};
-
-// ─── Widget: VO2 Max (placeholder) ───────────────────────────
-const VO2Placeholder = () => (
-  <Card>
-    <SLabel>VO₂ Max</SLabel>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-      <span style={{ fontSize: 28 }}>📈</span>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.6 }}>
-        VO₂ Max requires Garmin or<br />premium Strava data
-      </div>
-    </div>
-  </Card>
-);
-
-// ─── Widget: Power (placeholder) ─────────────────────────────
-const PowerPlaceholder = () => (
-  <Card>
-    <SLabel>Running Power</SLabel>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-      <span style={{ fontSize: 28 }}>⚡</span>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.6 }}>
-        Power requires a running<br />power meter or Stryd
-      </div>
-    </div>
-  </Card>
-);
-
-// ─── Widget: PRs ──────────────────────────────────────────────
-const PRWidget = ({ data }) => {
-  const hasPRs = data.some(d => d.pr);
-  return (
-    <Card>
-      <SLabel>Personal Bests</SLabel>
-      {!hasPRs ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-          <span style={{ fontSize: 28 }}>🏆</span>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.5 }}>
-            Sync runs near race distances<br />to see your PRs here
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {data.map((d, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 0',
-              borderBottom: i < data.length - 1 ? `1px solid ${C.gray100}` : 'none',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: 8,
-                  background: d.pr ? `${C.navy}12` : C.gray50,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: d.pr ? C.navy : C.gray400 }}>{d.label}</span>
-                </div>
-                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400 }}>
-                  {d.pr ? new Date(d.pr.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}
-                </span>
-              </div>
-              {d.pr ? (
-                <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 18, fontWeight: 700, color: C.navy }}>
-                  {fmtTime(d.pr.time)}
-                </span>
-              ) : (
-                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray200 }}>no data</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-};
-
-// ─── Widget: Shoes (placeholder) ─────────────────────────────
-const ShoesPlaceholder = () => (
-  <Card>
-    <SLabel>Shoe Mileage</SLabel>
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-      <span style={{ fontSize: 28 }}>👟</span>
-      <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center', lineHeight: 1.6 }}>
-        Shoe tracking coming soon
-      </div>
-    </div>
-  </Card>
-);
-
-// ─── Widget: Recent Paces ─────────────────────────────────────
-const RecentPacesWidget = ({ data }) => {
-  if (!data.length) {
-    return (
-      <Card>
-        <SLabel>Recent Paces</SLabel>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 0', gap: 8 }}>
-          <span style={{ fontSize: 28 }}>📊</span>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400, textAlign: 'center' }}>
-            No runs synced yet
-          </div>
-        </div>
-      </Card>
-    );
-  }
-  const avgPace = data.reduce((s, r) => s + r.pace, 0) / data.length;
-  return (
-    <Card>
-      <SLabel>Recent Paces</SLabel>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{fmtPace(avgPace)}</span>
-        <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.gray400 }}>avg /mi · last {data.length} runs</span>
-      </div>
-      <ResponsiveContainer width="100%" height={90}>
-        <BarChart data={data} barSize={14}>
-          <XAxis dataKey="date" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: C.gray400 }} axisLine={false} tickLine={false} />
-          <YAxis hide domain={['dataMin * 0.97', 'dataMax * 1.03']} reversed />
-          <Tooltip content={({ active, payload, label }) => {
-            if (!active || !payload?.length) return null;
-            return (
-              <div style={{ background: C.white, border: `1px solid ${C.gray100}`, borderRadius: 8, padding: '8px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray600, marginBottom: 2 }}>{label}</div>
-                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, fontWeight: 700, color: C.navy }}>{fmtPace(payload[0].value)}/mi</div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: C.gray400 }}>{payload[0].payload.miles} mi</div>
-              </div>
-            );
-          }} />
-          <Bar dataKey="pace" radius={[3, 3, 0, 0]}>
-            {data.map((_, i) => (
-              <Cell key={i} fill={i === data.length - 1 ? C.coral : C.navy} fillOpacity={i === data.length - 1 ? 1 : 0.55} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
-};
 
 // ─── WidgetGrid ───────────────────────────────────────────────
-const WidgetGrid = ({ active, computedData }) => {
+const WidgetGrid = ({ active, dashboardData, computedData, onRefresh }) => {
   if (!active.length) return null;
   const has = (id) => active.includes(id);
-  // Full-width widgets span both columns
   const wide = { gridColumn: '1 / -1' };
   return (
     <div>
-      <SLabel>{active.length} Strava Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
+      <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
-        {has('hrzones') && <HRZWidget data={computedData.hrZones} />}
-        {has('volume') && <VolumeWidget data={computedData.volumeByType} />}
-        {has('elevation') && <ElevWidget data={computedData.elevation} />}
-        {has('cadence') && <CadWidget data={computedData.cadence} />}
-        {has('calories') && <CalWidget data={computedData.calories} />}
-        {has('consistency') && <ConsistWidget data={computedData.consistency} />}
-        {has('monthly') && <div style={wide}><MonthlyWidget data={computedData.monthly} /></div>}
-        {has('prs') && <PRWidget data={computedData.prs} />}
-        {has('vo2max') && <VO2Placeholder />}
-        {has('splits') && <div style={wide}><RecentPacesWidget data={computedData.recentPaces} /></div>}
-        {has('power') && <PowerPlaceholder />}
-        {has('shoes') && <ShoesPlaceholder />}
+        {has('load') && <div style={wide}><TrainingLoadWidget data={dashboardData?.training_load} /></div>}
+        {has('predictor') && <div style={wide}><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} /></div>}
+        {has('longrun') && <LongRunConfidenceWidget data={dashboardData?.long_run} />}
+        {has('recovery') && <RecoveryWidget data={dashboardData?.recovery} />}
+        {has('injuryrisk') && <InjuryRiskWidget data={dashboardData?.injury_risk} />}
+        {has('hrzones') && <HRZonesWidget data={dashboardData?.hr_zones} />}
+        {has('elevation') && <ElevationWidget data={computedData?.elevation} />}
+        {has('cadence') && <CadenceWidget data={computedData?.cadence} />}
+        {has('streak') && <StreakWidget data={computedData?.streak} />}
+        {has('crosstraining') && <div style={wide}><CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} /></div>}
+        {has('execution') && <ExecutionScoreWidget data={dashboardData?.execution} />}
+        {has('shoes') && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
+        {has('cardiac') && <CardiacDriftWidget />}
+        {has('calories') && <CaloriesWidget data={computedData?.calories} />}
       </div>
     </div>
   );
@@ -748,8 +414,8 @@ const Dashboard = () => {
   const [activeWidgets, setActiveWidgets] = useState(() => {
     try {
       const saved = localStorage.getItem('dashboard_widgets');
-      return saved ? JSON.parse(saved) : ['hrzones', 'elevation', 'volume', 'consistency'];
-    } catch { return ['hrzones', 'elevation', 'volume', 'consistency']; }
+      return saved ? JSON.parse(saved) : ['load', 'predictor', 'longrun', 'recovery', 'hrzones', 'crosstraining'];
+    } catch { return ['load', 'predictor', 'longrun', 'recovery', 'hrzones', 'crosstraining']; }
   });
   useEffect(() => {
     localStorage.setItem('dashboard_widgets', JSON.stringify(activeWidgets));
@@ -757,6 +423,8 @@ const Dashboard = () => {
   const toggleWidget = useCallback((id) => setActiveWidgets(prev =>
     prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
   ), []);
+
+  const [dashboardData, setDashboardData] = useState(null);
 
   // ─── Fetches ────────────────────────────────────────────────
   const fetchActiveGoal = useCallback(async () => {
@@ -789,16 +457,21 @@ const Dashboard = () => {
     } catch { setActivities([]); }
   }, []);
 
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const data = await dashboardAPI.get();
+      setDashboardData(data);
+    } catch { /* dashboard data unavailable */ }
+  }, []);
+
   const fetchWeekEntries = useCallback(async () => {
     try {
       const today = new Date();
-      // Monday of current week
       const monday = new Date(today);
       const day = today.getDay();
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       monday.setHours(0, 0, 0, 0);
       const res = await calendarAPI.getWeek(fmtDateISO(monday));
-      // Normalize date to YYYY-MM-DD — backend returns full ISO timestamps
       const entries = (res.entries || []).map(e => ({ ...e, date: e.date.slice(0, 10) }));
       setWeekEntries(entries);
     } catch { setWeekEntries([]); }
@@ -823,6 +496,7 @@ const Dashboard = () => {
       setIsSyncing(true);
       const result = await stravaAPI.syncActivities();
       await fetchActivities();
+      await fetchDashboardData();
       setLastSynced(new Date().toISOString());
       const count = result?.count || 0;
       setSyncMsg({
@@ -836,7 +510,7 @@ const Dashboard = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [fetchActivities]);
+  }, [fetchActivities, fetchDashboardData]);
 
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
@@ -849,6 +523,7 @@ const Dashboard = () => {
     fetchActiveGoal();
     fetchActivitiesAndAutoSync();
     fetchWeekEntries();
+    fetchDashboardData();
   }, []);
 
   // ─── Date helpers ────────────────────────────────────────────
@@ -928,7 +603,6 @@ const Dashboard = () => {
     return 'Peak';
   }, [trainingLoadScore]);
 
-  // Aerobic efficiency: pace_secs_per_km / avg_heart_rate per week
   const aerobicEffData = useMemo(() => {
     const weeks = {};
     for (let i = 7; i >= 0; i--) {
@@ -962,7 +636,6 @@ const Dashboard = () => {
     if (withData.length < 2) return null;
     const oldest = withData[0].eff;
     const newest = withData[withData.length - 1].eff;
-    // Lower ratio = more efficient (less pace-seconds per HR beat)
     const pctChange = ((oldest - newest) / oldest) * 100;
     return parseFloat(pctChange.toFixed(1));
   }, [aerobicEffData]);
@@ -1305,16 +978,44 @@ const Dashboard = () => {
         miles: parseFloat(((a.distance_meters || 0) * 0.000621371).toFixed(1)),
       }));
 
+    const weekRunCount = activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= startOfWeek).length;
+    const lastRunWithElev = activities
+      .filter(a => a.activity_type === 'run' && (a.elevation_gain || a.elevation_gain_meters))
+      .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0];
+    const lastRunGainFt = lastRunWithElev
+      ? Math.round((lastRunWithElev.elevation_gain || lastRunWithElev.elevation_gain_meters || 0) * 3.28084)
+      : 0;
+
     return {
-      elevation: { weeklyGain: weeklyElevGain || 0, weeklyLoss: weeklyElevLoss || 0, trend: Object.values(elevWeeks) },
-      cadence: { avgSPM: avgCadence || 174, goal: 180, trend: cadWeeks, byActivity: [{ type: 'Easy', spm: avgCadence || 170 }, { type: 'Tempo', spm: (avgCadence || 170) + 6 }, { type: 'Long', spm: avgCadence || 172 }, { type: 'Intervals', spm: (avgCadence || 170) + 10 }] },
-      calories: { weeklyBurn: weekCals || 0, weeklyTarget: weeklyTarget * 120, trend: calWeeks.slice(-8) },
-      hrZones,
-      volumeByType: volumeByType.length ? volumeByType : [{ type: 'Easy', miles: 0, color: C.blue }],
-      consistency: { streak, longestStreak: longest, weeklyTarget: 3, weeks: allWeeks.slice(-8) },
-      monthly: { monthName, actual: monthActual, target: monthTarget, byWeek },
-      prs,
-      recentPaces,
+      elevation: {
+        weekly_gain_ft: weeklyElevGain || 0,
+        weekly_loss_ft: weeklyElevLoss || 0,
+        last_run_gain_ft: lastRunGainFt,
+        trend: Object.values(elevWeeks).map(w => ({ week: w.week, ft: w.ft })),
+      },
+      cadence: {
+        avg_spm: avgCadence || 174,
+        goal_spm: 180,
+        trend: cadWeeks.map(w => ({ week: w.week, spm: w.spm })),
+        by_activity: [
+          { type: 'Easy', spm: avgCadence || 170 },
+          { type: 'Tempo', spm: (avgCadence || 170) + 6 },
+          { type: 'Long', spm: avgCadence || 172 },
+          { type: 'Intervals', spm: (avgCadence || 170) + 10 },
+        ],
+      },
+      calories: {
+        weekly_burn: weekCals || 0,
+        weekly_target: weeklyTarget * 120,
+        per_run_avg: weekRunCount > 0 ? Math.round((weekCals || 0) / weekRunCount) : 0,
+        trend: calWeeks.slice(-8).map(w => ({ week: w.week, kcal: w.kcal })),
+      },
+      streak: {
+        current_streak: streak,
+        longest_streak: longest,
+        weekly_target: 3,
+        weeks: allWeeks.slice(-8).map(w => ({ week: w.week, runs: w.runs, hit: w.runs >= 3 })),
+      },
     };
   }, [activities, effortDist, weeklyTarget, startOfWeek]);
 
@@ -1828,7 +1529,7 @@ const Dashboard = () => {
             </div>
 
             {/* ⑥ OPTIONAL WIDGET GRID */}
-            <WidgetGrid active={activeWidgets} computedData={widgetData} />
+            <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
           </div >
 
           {/* ── RIGHT SIDEBAR ── */}
