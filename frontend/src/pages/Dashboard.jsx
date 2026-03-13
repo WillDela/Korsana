@@ -1258,9 +1258,9 @@ const Dashboard = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {todaySegments.map((seg, i) => (
                             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.type === 'warmup' || seg.type === 'cooldown' ? "rgba(255,255,255,0.2)" : C.coral }} />
-                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 45 }}>{seg.type === 'rest' ? '—' : seg.miles + 'm'}</div>
-                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.desc || seg.detail}</div>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.name === 'Warm-up' || seg.name === 'Cool-down' ? "rgba(255,255,255,0.2)" : C.coral }} />
+                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 60 }}>{seg.name}</div>
+                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.detail}</div>
                             </div>
                           ))}
                         </div>
