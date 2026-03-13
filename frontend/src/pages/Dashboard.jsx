@@ -1020,12 +1020,6 @@ const Dashboard = () => {
   }, [activities, effortDist, weeklyTarget, startOfWeek]);
 
   // ─── Render ──────────────────────────────────────────────────
-  const todayWorkoutMiles = todayEntry?.distance_km
-    ? parseFloat((todayEntry.distance_km * 0.621371).toFixed(1))
-    : null;
-  const todayWorkoutType = todayEntry?.workout_type || null;
-  const todaySegments = todayWorkoutType ? getWorkoutSegments(todayWorkoutType, todayWorkoutMiles) : null;
-
   return (
     <div style={{ fontFamily: "DM Sans, sans-serif", background: C.bg, minHeight: "100vh" }}>
       <style>{`
@@ -1215,123 +1209,82 @@ const Dashboard = () => {
             {/* ② TODAY'S WORKOUT */}
             <div>
               <SLabel>Today's Workout</SLabel>
-              {todayEntry ? (
-                <div style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>
-                  {/* Accent bar */}
-                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 6, background: C.coral }} />
-                  {/* Background graphic */}
-                  <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.05, pointerEvents: "none" }}>
-                    <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" /></svg>
-                  </div>
-                  <div style={{ padding: "24px 24px 24px 30px", position: "relative", zIndex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
-                          </span>
-                          {todayEntry.status === 'completed' && <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>}
-                        </div>
-                        <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
-                          {todayWorkoutType === 'Rest' ? 'Rest Day' : todayWorkoutType === 'Cross Train' ? 'Cross Training' : `${todayWorkoutMiles} mi ${todayWorkoutType}`}
-                        </div>
-                        {todayEntry.title && (
-                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginTop: 10 }}>
-                            {todayEntry.title}
-                          </div>
-                        )}
-                      </div>
-                      {todayEntry.status !== 'completed' && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                          <button onClick={handleMarkComplete} style={{ background: C.green, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                            <span>✓</span> Mark Done
-                          </button>
-                          <button onClick={handlePlanWorkout} style={{ background: "rgba(255,255,255,0.1)", color: C.white, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                            Plan Activity
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {todaySegments && todaySegments.length > 0 && (
-                      <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Workout Structure</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {todaySegments.map((seg, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.name === 'Warm-up' || seg.name === 'Cool-down' ? "rgba(255,255,255,0.2)" : C.coral }} />
-                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 60 }}>{seg.name}</div>
-                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.detail}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
-                </Card>
-              )}
-
-              {/* Additional today entries (cross-training, extra activities, etc.) */}
-              {todayExtraEntries.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-                  {todayExtraEntries.map(entry => {
-                    const distMi = entry.planned_distance_meters
-                      ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
+              {todayEntries.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {todayEntries.map(entry => {
+                    const entryMiles = entry.distance_km
+                      ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
                       : null;
-                    const typeLabel = entry.workout_type
-                      ? entry.workout_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-                      : 'Activity';
+                    const entryType = entry.workout_type || null;
+                    const entryHeading = entryType === 'Rest' ? 'Rest Day'
+                      : entryType === 'Cross Train' ? 'Cross Training'
+                      : entryMiles ? `${entryMiles} mi ${entryType}`
+                      : (entryType || entry.title || 'Workout');
+                    const showSubtitle = entry.title && entryHeading !== entry.title;
+                    const segments = entryType ? getWorkoutSegments(entryType, entryMiles) : null;
                     return (
-                      <div key={entry.id} style={{
-                        background: C.white, borderRadius: 12, padding: "14px 16px",
-                        border: `1px solid ${C.gray100}`,
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        boxShadow: "0 1px 4px rgba(27,37,89,0.06)",
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{
-                            width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                            background: entry.status === 'completed' ? C.green : C.amber,
-                          }} />
-                          <div>
-                            <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: 600, color: C.navy }}>
-                              {entry.title || typeLabel}
+                      <div key={entry.id} style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>
+                        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 6, background: C.coral }} />
+                        <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.05, pointerEvents: "none" }}>
+                          <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" /></svg>
+                        </div>
+                        <div style={{ padding: "24px 24px 24px 30px", position: "relative", zIndex: 1 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: segments ? 20 : 0 }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                                  {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                                </span>
+                                {entry.status === 'completed' && (
+                                  <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>
+                                )}
+                              </div>
+                              <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
+                                {entryHeading}
+                              </div>
+                              {showSubtitle && (
+                                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginTop: 10 }}>
+                                  {entry.title}
+                                </div>
+                              )}
                             </div>
-                            {distMi && (
-                              <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 11, color: C.gray400, marginTop: 2 }}>
-                                {distMi} mi
+                            {entry.status !== 'completed' && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                                <button
+                                  onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
+                                  style={{ background: C.green, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                                >
+                                  <span>✓</span> Mark Done
+                                </button>
+                                <button onClick={handlePlanWorkout} style={{ background: "rgba(255,255,255,0.1)", color: C.white, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                                  Plan Activity
+                                </button>
                               </div>
                             )}
                           </div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{
-                            fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700,
-                            textTransform: "uppercase", letterSpacing: "0.06em",
-                            padding: "3px 8px", borderRadius: 5,
-                            background: entry.status === 'completed' ? "rgba(46,204,139,0.12)" : "rgba(229,168,48,0.12)",
-                            color: entry.status === 'completed' ? C.green : C.amber,
-                          }}>
-                            {entry.status === 'completed' ? 'Done' : typeLabel}
-                          </span>
-                          {entry.status !== 'completed' && (
-                            <button
-                              onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
-                              style={{
-                                background: C.green, color: C.white, border: "none",
-                                borderRadius: 6, padding: "4px 10px",
-                                fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 600, cursor: "pointer",
-                              }}
-                            >✓</button>
+                          {segments && segments.length > 0 && (
+                            <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Workout Structure</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {segments.map((seg, i) => (
+                                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.name === 'Warm-up' || seg.name === 'Cool-down' ? "rgba(255,255,255,0.2)" : C.coral }} />
+                                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 60 }}>{seg.name}</div>
+                                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.detail}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
+              ) : (
+                <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
+                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
+                </Card>
               )}
             </div>
 
