@@ -193,57 +193,104 @@ func (s *UserProfileService) DeletePersonalRecord(ctx context.Context, userID uu
 }
 
 // DetectPRsFromStrava scans activities for standard distances and upserts new PRs.
+//
+// Two strategies per distance:
+//  1. Direct: activities whose total distance is within ±12% of the target — use total duration.
+//  2. Split:  activities longer than 1.2× the target that have a recorded average pace —
+//     estimate the split time as avg_pace × target_km. This catches 10K splits inside a
+//     long run, half-marathon pace inside a marathon, etc.
+//
+// The faster time from either strategy wins.
 func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uuid.UUID) (int, error) {
-	windows := []struct {
+	targets := []struct {
 		Label   string
-		MinDist float64
-		MaxDist float64
+		Dist    float64 // canonical distance in meters
 		DistInt int
 	}{
-		{"5K", 4500, 5500, 5000},
-		{"10K", 9500, 10500, 10000},
-		{"Half Marathon", 20500, 22000, 21097},
-		{"Marathon", 41000, 43500, 42195},
+		{"5K", 5000, 5000},
+		{"10K", 10000, 10000},
+		{"Half Marathon", 21097, 21097},
+		{"Marathon", 42195, 42195},
 	}
 
+	runTypes := []string{"run", "walking", "hiking"}
+
 	detectedCount := 0
-	for _, w := range windows {
-		var bestAct models.Activity
-		query := `
-			SELECT * FROM activities 
-			WHERE user_id = $1 AND activity_type = 'run' 
-			AND distance_meters >= $2 AND distance_meters <= $3
-			ORDER BY duration_seconds ASC LIMIT 1
+	for _, t := range targets {
+		minDirect := t.Dist * 0.88
+		maxDirect := t.Dist * 1.12
+		minSplit := t.Dist * 1.20
+
+		bestTime := 0
+		var bestActID uuid.UUID
+		var bestStart time.Time
+
+		// Strategy 1: activities whose total distance matches the target distance (±12%).
+		// Widened from the old ±500m/fixed window to handle GPS over-recording in races.
+		var directActs []models.Activity
+		directQ := `
+			SELECT * FROM activities
+			WHERE user_id = $1
+			  AND activity_type = ANY($2)
+			  AND distance_meters >= $3
+			  AND distance_meters <= $4
+			ORDER BY duration_seconds ASC
 		`
-		err := s.db.GetContext(ctx, &bestAct, query, userID, w.MinDist, w.MaxDist)
-		if err != nil {
-			continue // none found or error
-		}
-
-		var currentPR models.PersonalRecord
-		err = s.db.GetContext(ctx, &currentPR, "SELECT * FROM personal_records WHERE user_id = $1 AND label = $2", userID, w.Label)
-
-		isNewBest := true
-		if err == nil {
-			if bestAct.DurationSeconds >= currentPR.TimeSeconds {
-				isNewBest = false // existing is faster or tied
+		_ = s.db.SelectContext(ctx, &directActs, directQ, userID, runTypes, minDirect, maxDirect)
+		for _, a := range directActs {
+			if a.DurationSeconds > 0 && (bestTime == 0 || a.DurationSeconds < bestTime) {
+				bestTime = a.DurationSeconds
+				bestActID = a.ID
+				bestStart = a.StartTime
 			}
 		}
 
-		if isNewBest {
-			recAt := bestAct.StartTime
-			pr := models.PersonalRecord{
-				UserID:         userID,
-				Label:          w.Label,
-				DistanceMeters: &w.DistInt,
-				TimeSeconds:    bestAct.DurationSeconds,
-				Source:         "strava",
-				ActivityID:     &bestAct.ID,
-				RecordedAt:     &recAt,
+		// Strategy 2: longer activities — estimate split from average pace.
+		// average_pace_seconds_per_km × (target_dist / 1000) = estimated split seconds.
+		var splitActs []models.Activity
+		splitQ := `
+			SELECT * FROM activities
+			WHERE user_id = $1
+			  AND activity_type = ANY($2)
+			  AND distance_meters > $3
+			  AND average_pace_seconds_per_km > 0
+			ORDER BY average_pace_seconds_per_km ASC
+		`
+		_ = s.db.SelectContext(ctx, &splitActs, splitQ, userID, runTypes, minSplit)
+		for _, a := range splitActs {
+			estimated := int(a.AveragePaceSecondsPerKm * (t.Dist / 1000.0))
+			if estimated > 0 && (bestTime == 0 || estimated < bestTime) {
+				bestTime = estimated
+				bestActID = a.ID
+				bestStart = a.StartTime
 			}
-			if err := s.UpsertPersonalRecord(ctx, &pr); err == nil {
-				detectedCount++
-			}
+		}
+
+		if bestTime == 0 {
+			continue
+		}
+
+		// Only upsert if it beats the stored PR (or none exists yet).
+		var current models.PersonalRecord
+		err := s.db.GetContext(ctx, &current, "SELECT * FROM personal_records WHERE user_id = $1 AND label = $2", userID, t.Label)
+		if err == nil && current.TimeSeconds <= bestTime {
+			continue // stored PR is faster or tied
+		}
+
+		recAt := bestStart
+		distInt := t.DistInt
+		actID := bestActID
+		pr := models.PersonalRecord{
+			UserID:         userID,
+			Label:          t.Label,
+			DistanceMeters: &distInt,
+			TimeSeconds:    bestTime,
+			Source:         "strava",
+			ActivityID:     &actID,
+			RecordedAt:     &recAt,
+		}
+		if err := s.UpsertPersonalRecord(ctx, &pr); err == nil {
+			detectedCount++
 		}
 	}
 	return detectedCount, nil
