@@ -53,10 +53,10 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 		stravaAthleteID = conn.StravaAthleteID
 	}
 
-	var goalInfo map[string]interface{}
+	var goalInfo map[string]any
 	goal, err := h.goalsService.GetActiveGoal(c.Request.Context(), userID)
 	if err == nil && goal != nil {
-		goalInfo = map[string]interface{}{
+		goalInfo = map[string]any{
 			"id":        goal.ID,
 			"race_name": goal.RaceName,
 			"race_date": goal.RaceDate,
