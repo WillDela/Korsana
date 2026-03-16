@@ -6,6 +6,23 @@ import { goalsAPI } from '../api/goals';
 import { getErrorMessage } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 
+// ── Design tokens (style guide) ───────────────────────────────────────────────
+
+const C = {
+  navy:    '#1B2559',
+  coral:   '#E8634A',
+  bg:      '#F5F6FA',
+  white:   '#FFFFFF',
+  gray50:  '#F8F9FC',
+  gray100: '#ECEEF4',
+  gray200: '#D4D8E8',
+  gray400: '#8B93B0',
+  gray600: '#4A5173',
+  green:   '#2ECC8B',
+  amber:   '#F5A623',
+  red:     '#E84A4A',
+};
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PROMPTS = [
