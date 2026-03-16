@@ -42,7 +42,7 @@ func main() {
 	stravaClient := strava.NewClient(cfg.StravaClientID, cfg.StravaClientSecret, cfg.StravaRedirectURI)
 
 	// 5. Initialize Services
-	authService := services.NewAuthService(db, cfg)
+	authService := services.NewAuthService(db)
 	calendarService := services.NewCalendarService(db)
 	stravaService := services.NewStravaService(db, stravaClient, redisClient, calendarService)
 	goalsService := services.NewGoalsService(db)
@@ -53,8 +53,7 @@ func main() {
 	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
 
 	// 6. Initialize Handlers
-	authHandler := handlers.NewAuthHandler(authService)
-	stravaHandler := handlers.NewStravaHandler(stravaService, authService, cfg.FrontendURL)
+	stravaHandler := handlers.NewStravaHandler(stravaService, cfg.FrontendURL)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService, db)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
@@ -97,17 +96,7 @@ func main() {
 	// API Routes
 	api := r.Group("/api")
 	{
-		// Public Auth Routes
-		auth := api.Group("/auth")
-		{
-			auth.POST("/signup", authHandler.Signup)
-			auth.POST("/login", authHandler.Login)
-			auth.GET("/me", middleware.AuthMiddleware(cfg), authHandler.Me)
-			auth.POST("/logout", middleware.AuthMiddleware(cfg), authHandler.Logout)
-		}
-
-		// Public Strava routes (no auth required)
-		api.GET("/auth/strava/login", stravaHandler.LoginRedirect)
+		// Strava OAuth callback (public — Strava redirects here after user approves)
 		api.GET("/strava/callback", stravaHandler.Callback)
 
 		// Protected Routes
@@ -158,8 +147,6 @@ func main() {
 				profile.DELETE("", profileHandler.DeleteAccount)
 				profile.GET("/export", profileHandler.ExportData)
 				profile.POST("/avatar", profileHandler.UploadAvatar)
-				profile.PUT("/password", profileHandler.ChangePassword)
-				profile.PUT("/email", profileHandler.ChangeEmail)
 
 				profile.GET("/prs", profileHandler.GetPersonalRecords)
 				profile.PUT("/prs/:label", profileHandler.UpsertPersonalRecord)

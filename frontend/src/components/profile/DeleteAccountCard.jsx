@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userProfileAPI } from '../../api/userProfile';
+import { supabase } from '../../context/AuthContext';
 
 const DeleteAccountCard = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const DeleteAccountCard = () => {
     try {
       setLoading(true);
       await userProfileAPI.deleteAccount();
-      localStorage.removeItem('token');
+      await supabase.auth.signOut();
       navigate('/login');
     } catch (err) {
       console.error('Failed to delete account', err);

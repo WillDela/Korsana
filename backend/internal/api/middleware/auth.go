@@ -10,7 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// AuthMiddleware validates JWT tokens
+// AuthMiddleware validates Supabase JWT tokens.
+// Supabase signs tokens with HS256 using the project JWT Secret.
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -30,7 +31,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
-			return []byte(cfg.JWTSecret), nil
+			return []byte(cfg.SupabaseJWTSecret), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -56,7 +57,6 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Set user ID in context
 		c.Set("userID", userID)
 		c.Next()
 	}

@@ -15,8 +15,8 @@ type Config struct {
 	// Redis
 	RedisURL string
 
-	// JWT
-	JWTSecret string
+	// Supabase
+	SupabaseJWTSecret string
 
 	// Strava OAuth
 	StravaClientID     string
@@ -41,9 +41,9 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		Port:               getEnv("PORT", "8080"),
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/korsana?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", ""),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
-		JWTSecret:          getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
+		SupabaseJWTSecret:  getEnv("SUPABASE_JWT_SECRET", ""),
 		StravaClientID:     getEnv("STRAVA_CLIENT_ID", ""),
 		StravaClientSecret: getEnv("STRAVA_CLIENT_SECRET", ""),
 		StravaRedirectURI:  getEnv("STRAVA_REDIRECT_URI", "http://localhost:8080/api/strava/callback"),

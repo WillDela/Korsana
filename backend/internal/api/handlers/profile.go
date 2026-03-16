@@ -256,64 +256,6 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "training zones updated"})
 }
 
-type changePasswordRequest struct {
-	CurrentPassword string `json:"current_password" binding:"required,min=12"`
-	NewPassword     string `json:"new_password" binding:"required,min=12"`
-}
-
-// ChangePassword updates the user's password
-func (h *ProfileHandler) ChangePassword(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	userID := userIDVal.(uuid.UUID)
-
-	var req changePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := h.authService.ChangePassword(c.Request.Context(), userID, req.CurrentPassword, req.NewPassword)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "password updated successfully"})
-}
-
-type changeEmailRequest struct {
-	CurrentPassword string `json:"current_password" binding:"required,min=12"`
-	NewEmail        string `json:"new_email" binding:"required,email"`
-}
-
-// ChangeEmail updates the user's email address
-func (h *ProfileHandler) ChangeEmail(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	userID := userIDVal.(uuid.UUID)
-
-	var req changeEmailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	err := h.authService.ChangeEmail(c.Request.Context(), userID, req.CurrentPassword, req.NewEmail)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "email updated successfully"})
-}
-
 // DeleteAccount deletes the user account
 func (h *ProfileHandler) DeleteAccount(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")

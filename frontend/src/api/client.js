@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../context/AuthContext';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -7,42 +8,37 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor to attach the token
+// Attach the live Supabase JWT to every request
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to handle 401 errors
+// On 401, sign out and redirect to login
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
+  async (error) => {
+    if (error.response?.status === 401) {
+      await supabase.auth.signOut();
       window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
-// Helper function to extract user-friendly error messages
 export const getErrorMessage = (error) => {
   if (error.response) {
-    // Server responded with error
     return error.response.data?.error || error.response.data?.message || `Error: ${error.response.status}`;
   } else if (error.request) {
-    // Request made but no response
     return 'Network error. Please check your connection.';
-  } else {
-    // Something else happened
-    return error.message || 'An unexpected error occurred';
   }
+  return error.message || 'An unexpected error occurred';
 };
 
 export default api;

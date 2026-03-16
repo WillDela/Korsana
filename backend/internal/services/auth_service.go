@@ -3,94 +3,23 @@ package services
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
-// AuthService handles authentication logic
+// AuthService provides user-record helpers used by profile and other handlers.
+// Authentication itself is handled by Supabase Auth.
 type AuthService struct {
-	db     *database.DB
-	config *config.Config
+	db *database.DB
 }
 
-// NewAuthService creates a new auth service
-func NewAuthService(db *database.DB, cfg *config.Config) *AuthService {
-	return &AuthService{
-		db:     db,
-		config: cfg,
-	}
+func NewAuthService(db *database.DB) *AuthService {
+	return &AuthService{db: db}
 }
 
-// Signup creates a new user
-func (s *AuthService) Signup(ctx context.Context, email, password string) (*models.User, error) {
-	// 1. Check if user exists
-	var count int
-	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE email = $1", email)
-	if err != nil {
-		return nil, err
-	}
-	if count > 0 {
-		return nil, errors.New("email already registered")
-	}
-
-	// 2. Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-
-	// 3. Create user
-	user := &models.User{
-		ID:           uuid.New(),
-		Email:        email,
-		PasswordHash: string(hashedPassword),
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
-	query := `
-		INSERT INTO users (id, email, password_hash, created_at, updated_at)
-		VALUES (:id, :email, :password_hash, :created_at, :updated_at)
-	`
-	_, err = s.db.NamedExecContext(ctx, query, user)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-// Login validates credentials and returns a JWT
-func (s *AuthService) Login(ctx context.Context, email, password string) (string, *models.User, error) {
-	// 1. Find user
-	var user models.User
-	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE email = $1", email)
-	if err != nil {
-		return "", nil, errors.New("invalid credentials")
-	}
-
-	// 2. Verify password
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		return "", nil, errors.New("invalid credentials")
-	}
-
-	// 3. Generate Token
-	token, err := s.generateToken(user.ID, user.Email)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return token, &user, nil
-}
-
-// GetUserByID retrieves a user by their ID
+// GetUserByID retrieves a user from the public.users table by their Supabase UUID.
 func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
@@ -100,76 +29,10 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*model
 	return &user, nil
 }
 
-// ChangePassword verifies the current password and updates to a new one
-func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
-	var user models.User
-	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
-	if err != nil {
-		return errors.New("user not found")
-	}
-
-	// Verify current password
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword))
-	if err != nil {
-		return errors.New("current password is incorrect")
-	}
-
-	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.db.ExecContext(ctx, "UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3",
-		string(hashedPassword), time.Now(), userID)
-	return err
-}
-
-// ChangeEmail verifies the current password and updates the user's email address
-func (s *AuthService) ChangeEmail(ctx context.Context, userID uuid.UUID, currentPassword, newEmail string) error {
-	var user models.User
-	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
-	if err != nil {
-		return errors.New("user not found")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword))
-	if err != nil {
-		return errors.New("current password is incorrect")
-	}
-
-	var count int
-	err = s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM users WHERE email = $1 AND id != $2", newEmail, userID)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return errors.New("email is already taken")
-	}
-
-	_, err = s.db.ExecContext(ctx, "UPDATE users SET email = $1, updated_at = $2 WHERE id = $3", newEmail, time.Now(), userID)
-	return err
-}
-
-// DeleteUser deletes an account and all its cascaded row dependencies
+// DeleteUser removes a user record and all cascaded rows.
+// The corresponding auth.users row must be deleted separately via Supabase Admin API
+// or the Supabase dashboard if a full account purge is needed.
 func (s *AuthService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
 	return err
-}
-
-// GenerateToken creates a JWT token (exported for use by other services/handlers).
-func (s *AuthService) GenerateToken(userID uuid.UUID, email string) (string, error) {
-	return s.generateToken(userID, email)
-}
-
-// generateToken creates a JWT token
-func (s *AuthService) generateToken(userID uuid.UUID, email string) (string, error) {
-	claims := jwt.MapClaims{
-		"sub":   userID.String(),
-		"email": email,
-		"exp":   time.Now().Add(7 * 24 * time.Hour).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.config.JWTSecret))
 }

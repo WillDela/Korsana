@@ -98,8 +98,8 @@ const Navbar = ({ variant = 'landing' }) => {
   const isApp = variant === 'app';
   const initial = user?.email?.charAt(0)?.toUpperCase() || 'U';
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    await logout();
     window.location.replace('/');
   };
 

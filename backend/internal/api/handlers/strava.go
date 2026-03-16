@@ -11,29 +11,18 @@ import (
 
 type StravaHandler struct {
 	stravaService *services.StravaService
-	authService   *services.AuthService
 	frontendURL   string
 }
 
-func NewStravaHandler(stravaService *services.StravaService, authService *services.AuthService, frontendURL string) *StravaHandler {
+func NewStravaHandler(stravaService *services.StravaService, frontendURL string) *StravaHandler {
 	return &StravaHandler{
 		stravaService: stravaService,
-		authService:   authService,
 		frontendURL:   frontendURL,
 	}
 }
 
-// LoginRedirect redirects unauthenticated users to the Strava OAuth page.
-func (h *StravaHandler) LoginRedirect(c *gin.Context) {
-	authURL, err := h.stravaService.GetLoginURL(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate auth URL"})
-		return
-	}
-	c.Redirect(http.StatusFound, authURL)
-}
-
-// AuthURL generates Strava OAuth URL with state parameter
+// AuthURL generates a Strava OAuth URL with a per-user state parameter.
+// Called from the authenticated Settings page.
 func (h *StravaHandler) AuthURL(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -51,62 +40,37 @@ func (h *StravaHandler) AuthURL(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
-// Callback handles the redirect from Strava (public endpoint - no auth required).
-// It handles two flows: unauthenticated login/signup (login state) and
-// connecting Strava to an existing account (connect state).
+// Callback handles the redirect from Strava after the user approves the connection.
+// This is the "connect existing account" flow only — Strava is a data source, not
+// an identity provider.
 func (h *StravaHandler) Callback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 
 	if code == "" {
-		c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=missing_code")
+		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=missing_code")
 		return
 	}
-
 	if state == "" {
-		c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=missing_state")
+		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=missing_state")
 		return
 	}
 
-	// Try login flow first (unauthenticated Strava login/signup).
-	if err := h.stravaService.ValidateLoginOAuthState(c.Request.Context(), state); err == nil {
-		user, isNew, loginErr := h.stravaService.LoginWithStrava(c.Request.Context(), code)
-		if loginErr != nil {
-			c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=login_failed")
-			return
-		}
-
-		token, tokenErr := h.authService.GenerateToken(user.ID, user.Email)
-		if tokenErr != nil {
-			c.Redirect(http.StatusFound, h.frontendURL + "/login?strava_error=token_failed")
-			return
-		}
-
-		newParam := "false"
-		if isNew {
-			newParam = "true"
-		}
-		c.Redirect(http.StatusFound,
-			h.frontendURL + "/auth/strava/callback?token="+token+"&new="+newParam)
-		return
-	}
-
-	// Fall through to the authenticated connect flow.
 	userID, err := h.stravaService.ValidateOAuthState(c.Request.Context(), state)
 	if err != nil {
-		c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_error=invalid_state")
+		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=invalid_state")
 		return
 	}
 
 	if err = h.stravaService.HandleCallback(c.Request.Context(), userID, code); err != nil {
-		c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_error=connection_failed")
+		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=connection_failed")
 		return
 	}
 
-	c.Redirect(http.StatusFound, h.frontendURL + "/settings?strava_connected=true")
+	c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_connected=true")
 }
 
-// SyncActivities syncs activities from Strava
+// SyncActivities syncs activities from Strava for the authenticated user.
 func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -127,7 +91,7 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	})
 }
 
-// GetActivities retrieves user's activities
+// GetActivities retrieves the user's synced activities with pagination.
 func (h *StravaHandler) GetActivities(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -161,7 +125,7 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 	})
 }
 
-// Disconnect removes the Strava connection
+// Disconnect removes the Strava connection for the authenticated user.
 func (h *StravaHandler) Disconnect(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -170,8 +134,7 @@ func (h *StravaHandler) Disconnect(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	err := h.stravaService.DisconnectStrava(c.Request.Context(), userID)
-	if err != nil {
+	if err := h.stravaService.DisconnectStrava(c.Request.Context(), userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to disconnect Strava"})
 		return
 	}
