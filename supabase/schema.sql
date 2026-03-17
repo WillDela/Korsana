@@ -1,8 +1,3 @@
--- ============================================================
--- Korsana — Supabase Schema
--- Run this entire file in SQL Editor → New query
--- ============================================================
-
 -- ── 001: Core tables ─────────────────────────────────────────
 
 -- password_hash is nullable because Supabase Auth manages passwords.
