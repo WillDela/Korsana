@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { SiStrava } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
 import AnimatedButton from '../components/AnimatedButton';
 
@@ -139,24 +138,6 @@ const Login = () => {
             {isSubmitting ? 'Logging in...' : 'Log In →'}
           </AnimatedButton>
         </form>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-text-muted uppercase tracking-wider">or</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Strava */}
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/api/auth/strava/login'; }}
-          className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-lg text-white text-base font-semibold transition-opacity hover:opacity-90 cursor-pointer border-none"
-          style={{ backgroundColor: '#FC4C02' }}
-        >
-          <SiStrava size={20} color="white" />
-          Sign in with Strava
-        </button>
 
         {/* Footer link */}
         <p className="text-center mt-6 text-sm text-text-secondary">

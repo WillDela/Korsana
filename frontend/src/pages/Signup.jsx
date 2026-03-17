@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { SiStrava } from 'react-icons/si';
 import { useAuth } from '../context/AuthContext';
 import AnimatedButton from '../components/AnimatedButton';
 
 const Signup = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
-  const { signup, login } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   const password = watch('password');
 
@@ -19,9 +19,14 @@ const Signup = () => {
     setIsSubmitting(true);
     setServerError('');
     try {
-      await signup(data.email, data.password);
-      await login(data.email, data.password);
-      navigate('/onboarding');
+      const result = await signup(data.email, data.password);
+      if (result.session) {
+        // Email confirmation disabled — already logged in
+        navigate('/onboarding');
+      } else {
+        // Email confirmation required — prompt user to check inbox
+        setConfirmationSent(true);
+      }
     } catch (err) {
       setServerError(err);
     } finally {
@@ -40,8 +45,37 @@ const Signup = () => {
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/50" />
 
+      {/* Confirmation screen */}
+      {confirmationSent && (
+        <motion.div
+          className="relative z-10 w-full max-w-[480px] bg-white rounded-2xl shadow-2xl p-10 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="w-14 h-14 bg-navy/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1B2559" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-navy mb-3" style={{ fontFamily: 'var(--font-heading)' }}>
+            Check your email
+          </h2>
+          <p className="text-text-secondary text-sm mb-6">
+            We sent a confirmation link to your inbox. Click it to activate your account, then come back to log in.
+          </p>
+          <Link
+            to="/login"
+            className="inline-block bg-navy text-white font-semibold px-6 py-3 rounded-lg no-underline hover:opacity-90 transition-opacity text-sm"
+          >
+            Go to Login
+          </Link>
+        </motion.div>
+      )}
+
       {/* Form card */}
-      <motion.div
+      {!confirmationSent && <motion.div
         className="relative z-10 w-full max-w-[480px] bg-white rounded-2xl shadow-2xl p-10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -172,24 +206,6 @@ const Signup = () => {
           </AnimatedButton>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-text-muted uppercase tracking-wider">or</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Strava */}
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/api/auth/strava/login'; }}
-          className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-lg text-white text-base font-semibold transition-opacity hover:opacity-90 cursor-pointer border-none"
-          style={{ backgroundColor: '#FC4C02' }}
-        >
-          <SiStrava size={20} color="white" />
-          Continue with Strava
-        </button>
-
         {/* Terms */}
         <p className="text-center text-xs text-text-muted mt-5">
           By signing up, you agree to our{' '}
@@ -205,7 +221,7 @@ const Signup = () => {
             Log In
           </Link>
         </p>
-      </motion.div>
+      </motion.div>}
     </div>
   );
 };
