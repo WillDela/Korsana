@@ -29,7 +29,7 @@ func (h *DashboardHandler) Get(c *gin.Context) {
 
 	data, err := h.metricsService.ComputeDashboard(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute dashboard metrics"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
