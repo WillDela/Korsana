@@ -81,6 +81,10 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 
 	count, err := h.stravaService.SyncActivities(c.Request.Context(), userID)
 	if err != nil {
+		if err.Error() == "strava connection not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Strava is not connected. Connect it from Settings first."})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

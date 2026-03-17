@@ -142,37 +142,10 @@ func (s *StravaService) LoginWithStrava(ctx context.Context, code string) (*mode
 		return &user, false, nil
 	}
 
-	// New Strava user — create an account.
-	syntheticEmail := fmt.Sprintf("strava_%d@strava.korsana", athleteID)
-
-	newUser := &models.User{
-		ID:           uuid.New(),
-		Email:        syntheticEmail,
-		PasswordHash: "strava_oauth", // sentinel; cannot be used for password login
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
-	insertUser := `
-		INSERT INTO users (id, email, password_hash, created_at, updated_at)
-		VALUES (:id, :email, :password_hash, :created_at, :updated_at)
-	`
-	if _, insertErr := s.db.NamedExecContext(ctx, insertUser, newUser); insertErr != nil {
-		return nil, false, insertErr
-	}
-
-	expiresAt := time.Unix(tokenResp.ExpiresAt, 0)
-	insertConn := `
-		INSERT INTO strava_connections (
-			user_id, strava_athlete_id, access_token, refresh_token, token_expires_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, NOW())
-	`
-	if _, connErr := s.db.ExecContext(ctx, insertConn,
-		newUser.ID, athleteID, tokenResp.AccessToken, tokenResp.RefreshToken, expiresAt); connErr != nil {
-		return nil, false, connErr
-	}
-
-	return newUser, true, nil
+	// Strava is a data source, not an auth provider. The OAuth state is tied
+	// to an authenticated user, so reaching here without finding a user means
+	// the state was invalid or the user was deleted. Return an error.
+	return nil, false, fmt.Errorf("no user found for strava athlete %d", athleteID)
 }
 
 // GetAuthURL returns the Strava OAuth URL with state parameter
