@@ -55,8 +55,7 @@ const Login = () => {
         </Link>
 
         <h1
-          className="text-2xl font-bold text-navy mb-7 whitespace-nowrap"
-          style={{ fontFamily: 'var(--font-serif)' }}
+          className="text-2xl font-bold text-navy mb-7 whitespace-nowrap font-heading"
         >
           Return to Your Training
         </h1>

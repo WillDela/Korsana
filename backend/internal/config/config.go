@@ -16,7 +16,8 @@ type Config struct {
 	RedisURL string
 
 	// Supabase
-	SupabaseURL string
+	SupabaseURL            string
+	SupabaseServiceRoleKey string
 
 	// Strava OAuth
 	StravaClientID     string
@@ -43,7 +44,8 @@ func Load() *Config {
 		Port:               getEnv("PORT", "8080"),
 		DatabaseURL:        getEnv("DATABASE_URL", ""),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
-		SupabaseURL:        getEnv("SUPABASE_URL", ""),
+		SupabaseURL:            getEnv("SUPABASE_URL", ""),
+		SupabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
 		StravaClientID:     getEnv("STRAVA_CLIENT_ID", ""),
 		StravaClientSecret: getEnv("STRAVA_CLIENT_SECRET", ""),
 		StravaRedirectURI:  getEnv("STRAVA_REDIRECT_URI", "http://localhost:8080/api/strava/callback"),

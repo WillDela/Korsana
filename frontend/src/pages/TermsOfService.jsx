@@ -6,7 +6,7 @@ const TermsOfService = () => (
       <Link to="/" className="text-navy text-sm font-medium no-underline hover:underline mb-8 inline-block">
         ← Back to Korsana
       </Link>
-      <h1 className="text-3xl font-bold text-navy mb-4" style={{ fontFamily: 'var(--font-serif)' }}>
+      <h1 className="text-3xl font-bold text-navy mb-4 font-heading">
         Terms of Service
       </h1>
       <p className="text-text-muted text-sm mb-10">Last updated: February 2026</p>

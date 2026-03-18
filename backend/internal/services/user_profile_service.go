@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,11 +19,17 @@ import (
 )
 
 type UserProfileService struct {
-	db *database.DB
+	db                     *database.DB
+	supabaseURL            string
+	supabaseServiceRoleKey string
 }
 
-func NewUserProfileService(db *database.DB) *UserProfileService {
-	return &UserProfileService{db: db}
+func NewUserProfileService(db *database.DB, supabaseURL, supabaseServiceRoleKey string) *UserProfileService {
+	return &UserProfileService{
+		db:                     db,
+		supabaseURL:            supabaseURL,
+		supabaseServiceRoleKey: supabaseServiceRoleKey,
+	}
 }
 
 // GetOrCreateProfile returns the user's profile, creating a default one if it doesn't exist.
@@ -89,8 +96,8 @@ func (s *UserProfileService) UpdateProfile(ctx context.Context, profile *models.
 	return profile, nil
 }
 
-// SaveAvatar handles the file save for a profile picture in the uploads directory.
-func (s *UserProfileService) SaveAvatar(userID uuid.UUID, file *multipart.FileHeader) (string, error) {
+// SaveAvatar uploads a profile picture to Supabase Storage and returns the public URL.
+func (s *UserProfileService) SaveAvatar(ctx context.Context, userID uuid.UUID, file *multipart.FileHeader) (string, error) {
 	const maxSize int64 = 5 * 1024 * 1024
 	if file.Size > maxSize {
 		return "", errors.New("avatar file exceeds 5 MB limit")
@@ -130,25 +137,32 @@ func (s *UserProfileService) SaveAvatar(userID uuid.UUID, file *multipart.FileHe
 		return "", errors.New("failed to reset file reader")
 	}
 
-	err = os.MkdirAll("uploads/avatars", 0755)
+	objectPath := userID.String() + ext
+	uploadURL := fmt.Sprintf("%s/storage/v1/object/avatars/%s", s.supabaseURL, objectPath)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadURL, src)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create upload request: %w", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
+	req.Header.Set("Content-Type", mimeType)
+	req.Header.Set("x-upsert", "true")
+	req.ContentLength = file.Size
 
-	filename := userID.String() + ext
-	path := filepath.Join("uploads/avatars", filename)
-
-	dst, err := os.Create(path)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("upload to storage: %w", err)
 	}
-	defer dst.Close()
+	defer resp.Body.Close()
 
-	if _, err = io.Copy(dst, src); err != nil {
-		return "", err
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		var errBody map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&errBody)
+		return "", fmt.Errorf("storage upload failed (%d): %v", resp.StatusCode, errBody)
 	}
 
-	return "/uploads/avatars/" + filename, nil
+	publicURL := fmt.Sprintf("%s/storage/v1/object/public/avatars/%s", s.supabaseURL, objectPath)
+	return publicURL, nil
 }
 
 // GetPersonalRecords gets all PRs ordered by distance.

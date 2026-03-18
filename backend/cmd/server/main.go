@@ -42,14 +42,14 @@ func main() {
 	stravaClient := strava.NewClient(cfg.StravaClientID, cfg.StravaClientSecret, cfg.StravaRedirectURI)
 
 	// 5. Initialize Services
-	authService := services.NewAuthService(db)
+	authService := services.NewAuthService(db, cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	calendarService := services.NewCalendarService(db)
 	stravaService := services.NewStravaService(db, stravaClient, redisClient, calendarService)
 	goalsService := services.NewGoalsService(db)
 	activityService := services.NewActivityService(db)
 	metricsService := services.NewMetricsService(db)
 	crossTrainingGoalsService := services.NewCrossTrainingGoalsService(db)
-	userProfileService := services.NewUserProfileService(db)
+	userProfileService := services.NewUserProfileService(db, cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
 	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
 
 	// 6. Initialize Handlers
@@ -80,9 +80,6 @@ func main() {
 	corsConfig.AllowOrigins = origins
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(corsConfig))
-
-	// Static Assets
-	r.Static("/uploads", "./uploads")
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -153,6 +150,8 @@ func main() {
 				profile.PUT("/prs/:label", profileHandler.UpsertPersonalRecord)
 				profile.DELETE("/prs/:label", profileHandler.DeletePersonalRecord)
 				profile.POST("/prs/detect", profileHandler.DetectPRsFromStrava)
+
+				profile.PUT("/email", profileHandler.UpdateEmail)
 
 				profile.GET("/zones", profileHandler.GetTrainingZones)
 				profile.PUT("/zones", profileHandler.UpdateTrainingZones)

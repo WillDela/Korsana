@@ -95,6 +95,27 @@ const Navbar = ({ variant = 'landing' }) => {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
+  const [scrolled, setScrolled] = useState(false);
+  const [tickerIdx, setTickerIdx] = useState(0);
+  const [tickerVisible, setTickerVisible] = useState(true);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTickerVisible(false);
+      setTimeout(() => {
+        setTickerIdx((i) => (i + 1) % SPLITS.length);
+        setTickerVisible(true);
+      }, 300);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   const isApp = variant === 'app';
   const initial = user?.email?.charAt(0)?.toUpperCase() || 'U';
 
@@ -260,27 +281,6 @@ const Navbar = ({ variant = 'landing' }) => {
   /* ════════════════════════════════════════════════════════════
      LANDING NAV — public pages
   ════════════════════════════════════════════════════════════ */
-  const [scrolled, setScrolled] = useState(false);
-  const [tickerIdx, setTickerIdx] = useState(0);
-  const [tickerVisible, setTickerVisible] = useState(true);
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerVisible(false);
-      setTimeout(() => {
-        setTickerIdx((i) => (i + 1) % SPLITS.length);
-        setTickerVisible(true);
-      }, 300);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <nav
       className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] transition-shadow duration-200"

@@ -119,7 +119,7 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	urlPath, err := h.userProfileService.SaveAvatar(userID, file)
+	urlPath, err := h.userProfileService.SaveAvatar(c.Request.Context(), userID, file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save avatar"})
 		return
@@ -251,6 +251,31 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "training zones updated"})
+}
+
+// UpdateEmail changes the authenticated user's email via Supabase Admin API.
+func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "valid email is required"})
+		return
+	}
+
+	if err := h.authService.UpdateEmail(c.Request.Context(), userID, req.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "email updated successfully"})
 }
 
 // DeleteAccount deletes the user account
