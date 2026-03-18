@@ -116,31 +116,58 @@ func (s *CrossTrainingGoalsService) DeleteGoal(
 	return nil
 }
 
-// GetWeeklyProgress returns session counts this week per activity type
+// GetWeeklyProgress returns session counts this week per activity type,
+// combining Strava-synced activities and manually logged cross-training sessions.
 func (s *CrossTrainingGoalsService) GetWeeklyProgress(
 	ctx context.Context,
 	userID uuid.UUID,
 ) (map[string]int, error) {
-	type row struct {
+	result := make(map[string]int)
+
+	// Count from Strava-synced activities (excludes runs).
+	type actRow struct {
 		ActivityType string `db:"activity_type"`
 		Count        int    `db:"count"`
 	}
-	var rows []row
-	err := s.db.SelectContext(ctx, &rows, `
+	var actRows []actRow
+	if err := s.db.SelectContext(ctx, &actRows, `
 		SELECT activity_type, COUNT(*) as count
 		FROM activities
 		WHERE user_id = $1
+		  AND activity_type != 'run'
 		  AND start_time >= date_trunc('week', NOW())
 		  AND start_time < date_trunc('week', NOW()) + INTERVAL '7 days'
 		GROUP BY activity_type
-	`, userID)
-	if err != nil {
+	`, userID); err != nil {
 		return nil, err
 	}
-	result := make(map[string]int)
-	for _, r := range rows {
-		result[r.ActivityType] = r.Count
+	for _, r := range actRows {
+		result[r.ActivityType] += r.Count
 	}
+
+	// Count from manually logged cross-training sessions.
+	// "weightlifting" is the legacy type name — map it to the canonical "weight_lifting".
+	type ctRow struct {
+		Type  string `db:"type"`
+		Count int    `db:"count"`
+	}
+	var ctRows []ctRow
+	_ = s.db.SelectContext(ctx, &ctRows, `
+		SELECT type, COUNT(*) as count
+		FROM cross_training_sessions
+		WHERE user_id = $1
+		  AND date >= date_trunc('week', NOW())::date
+		  AND date < (date_trunc('week', NOW()) + INTERVAL '7 days')::date
+		GROUP BY type
+	`, userID)
+	for _, r := range ctRows {
+		t := r.Type
+		if t == "weightlifting" {
+			t = "weight_lifting"
+		}
+		result[t] += r.Count
+	}
+
 	return result, nil
 }
 

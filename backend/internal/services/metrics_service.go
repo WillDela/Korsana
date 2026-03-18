@@ -271,10 +271,14 @@ func (s *MetricsService) ComputeDashboard(ctx context.Context, userID uuid.UUID)
 		goalSecs = goal.TargetTimeSeconds
 	}
 
-	counts := map[string]int{"weightlifting": 0, "cycling": 0, "swimming": 0, "elliptical": 0}
+	counts := map[string]int{"weight_lifting": 0, "cycling": 0, "swimming": 0, "elliptical": 0}
 	for _, sess := range ctSessions {
-		if _, ok := counts[sess.Type]; ok {
-			counts[sess.Type]++
+		t := sess.Type
+		if t == "weightlifting" {
+			t = "weight_lifting"
+		}
+		if _, ok := counts[t]; ok {
+			counts[t]++
 		}
 	}
 

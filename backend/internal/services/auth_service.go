@@ -19,10 +19,14 @@ func NewAuthService(db *database.DB) *AuthService {
 	return &AuthService{db: db}
 }
 
-// GetUserByID retrieves a user from the public.users table by their Supabase UUID.
+// GetUserByID retrieves a user from auth.users by their Supabase UUID.
+// auth.users is the canonical table for Supabase Auth users.
 func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := s.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", userID)
+	err := s.db.GetContext(ctx, &user,
+		"SELECT id, email, created_at, updated_at FROM auth.users WHERE id = $1",
+		userID,
+	)
 	if err != nil {
 		return nil, errors.New("user not found")
 	}

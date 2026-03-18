@@ -103,7 +103,7 @@ const CrossTrainingCard = ({ activities = [], onActivityDeleted }) => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <p className="text-sm font-medium text-text-primary truncate">
-                        {a.name || cfg.label}
+                        {a.activity_type !== 'workout' ? cfg.label : (a.name || cfg.label)}
                       </p>
                       <span className="text-xs font-mono text-text-secondary shrink-0">
                         {isDistanceBased && miles > 0 ? `${miles} mi` : formatDuration(a.duration_seconds || 0)}

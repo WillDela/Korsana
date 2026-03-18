@@ -217,7 +217,7 @@ const SOURCES = [
 ];
 
 
-const SyncDropdown = ({ isSyncing, onSync }) => {
+const SyncDropdown = ({ isSyncing, onSync, stravaConnected }) => {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position: 'relative' }}>
@@ -272,16 +272,29 @@ const SyncDropdown = ({ isSyncing, onSync }) => {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: s.status === 'connected' ? C.navy : C.gray400 }}>{s.label}</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: s.status === 'connected' ? C.green : C.gray400, marginTop: 1 }}>
-                    {s.status === 'connected' ? '● Connected' : 'Coming soon'}
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: s.status === 'connected' ? (stravaConnected === false ? C.coral : C.green) : C.gray400, marginTop: 1 }}>
+                    {s.status === 'connected' ? (stravaConnected === false ? '○ Not connected' : '● Connected') : 'Coming soon'}
                   </div>
                 </div>
                 {s.status === 'connected' && (
-                  <button onClick={() => { onSync('strava'); setOpen(false); }} style={{
-                    background: C.navy, border: 'none', borderRadius: 7,
-                    padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
-                    fontSize: 11, fontWeight: 700, color: C.white, cursor: 'pointer',
-                  }}>Sync</button>
+                  stravaConnected === false ? (
+                    <Link
+                      to="/settings"
+                      onClick={() => setOpen(false)}
+                      style={{
+                        background: C.coral, border: 'none', borderRadius: 7,
+                        padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
+                        fontSize: 11, fontWeight: 700, color: C.white,
+                        textDecoration: 'none', whiteSpace: 'nowrap',
+                      }}
+                    >Connect</Link>
+                  ) : (
+                    <button onClick={() => { onSync('strava'); setOpen(false); }} style={{
+                      background: C.navy, border: 'none', borderRadius: 7,
+                      padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
+                      fontSize: 11, fontWeight: 700, color: C.white, cursor: 'pointer',
+                    }}>Sync</button>
+                  )
                 )}
               </div>
             ))}
@@ -407,6 +420,7 @@ const Dashboard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState({ text: '', type: '' });
   const [lastSynced, setLastSynced] = useState(null);
+  const [stravaConnected, setStravaConnected] = useState(null); // null = unknown
 
   // UI state
   const [showFactors, setShowFactors] = useState(false);
@@ -505,7 +519,13 @@ const Dashboard = () => {
       });
       setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
     } catch (error) {
-      setSyncMsg({ text: getErrorMessage(error), type: 'error' });
+      const status = error?.response?.status;
+      if (status === 401 || status === 404) {
+        setStravaConnected(false);
+        setSyncMsg({ text: 'Strava not connected — go to Settings to connect.', type: 'error' });
+      } else {
+        setSyncMsg({ text: getErrorMessage(error), type: 'error' });
+      }
       setTimeout(() => setSyncMsg({ text: '', type: '' }), 5000);
     } finally {
       setIsSyncing(false);
@@ -1062,7 +1082,7 @@ const Dashboard = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} />
+            <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} stravaConnected={stravaConnected} />
             <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
           </div>
         </div>

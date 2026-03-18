@@ -155,8 +155,15 @@ const CrossTargetModal = ({ onClose, onSave }) => {
 // ── Log Result Modal ──────────────────────────────────────────────────────────
 
 const LogResultModal = ({ goal, onClose, onSave }) => {
-  const [time, setTime] = useState('');
-  const [pr, setPr] = useState(false);
+  const [time, setTime] = useState(() => {
+    if (!goal.result_time_seconds) return '';
+    const h = Math.floor(goal.result_time_seconds / 3600);
+    const m = Math.floor((goal.result_time_seconds % 3600) / 60);
+    const s = goal.result_time_seconds % 60;
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  });
+  const [pr, setPr] = useState(goal.is_pr || false);
+  const isEditing = !!goal.result_time_seconds;
 
   return (
     <div
@@ -169,7 +176,9 @@ const LogResultModal = ({ goal, onClose, onSave }) => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
           <div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)' }}>Log Race Result</h2>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)' }}>
+              {isEditing ? 'Edit Race Result' : 'Log Race Result'}
+            </h2>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0', marginTop: 3 }}>{goal.race_name}</p>
           </div>
           <button
@@ -748,42 +757,50 @@ const Goals = () => {
                               )}
                             </div>
 
-                            {/* Times row */}
-                            <div style={{ display: 'flex', gap: 20, paddingTop: 14, borderTop: `1px solid ${accentColor}33` }}>
-                              {c.target_time_seconds && (
-                                <div>
-                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 600, color: '#8B93B0', lineHeight: 1 }}>
-                                    {secondsToHMS(c.target_time_seconds)}
+                            {/* Times + actions row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 14, borderTop: `1px solid ${accentColor}33`, gap: 12 }}>
+                              {/* Times */}
+                              <div style={{ display: 'flex', gap: 20 }}>
+                                {c.target_time_seconds && (
+                                  <div>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 600, color: '#8B93B0', lineHeight: 1 }}>
+                                      {secondsToHMS(c.target_time_seconds)}
+                                    </div>
+                                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                      Goal
+                                    </div>
                                   </div>
-                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                    Goal
+                                )}
+                                {c.target_time_seconds && c.result_time_seconds && (
+                                  <div style={{ width: 1, background: `${accentColor}55`, alignSelf: 'stretch' }} />
+                                )}
+                                {c.result_time_seconds && (
+                                  <div>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1 }}>
+                                      {secondsToHMS(c.result_time_seconds)}
+                                    </div>
+                                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                      Result
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                              {c.target_time_seconds && c.result_time_seconds && (
-                                <div style={{ width: 1, background: `${accentColor}55`, alignSelf: 'stretch' }} />
-                              )}
-                              {c.result_time_seconds ? (
-                                <div>
-                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1 }}>
-                                    {secondsToHMS(c.result_time_seconds)}
-                                  </div>
-                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                    Result
-                                  </div>
-                                </div>
-                              ) : (
+                                )}
+                              </div>
+
+                              {/* Actions */}
+                              <div style={{ display: 'flex', gap: 7, flexShrink: 0 }}>
+                                <Link
+                                  to={`/goals/${c.id}/edit`}
+                                  style={{ background: '#ECEEF4', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#4A5173', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                >
+                                  Edit
+                                </Link>
                                 <button
                                   onClick={() => setLogGoal(c)}
-                                  style={{
-                                    background: 'var(--color-navy)', border: 'none', borderRadius: 9,
-                                    padding: '7px 16px', fontFamily: 'var(--font-sans)', fontSize: 12,
-                                    fontWeight: 700, color: '#fff', cursor: 'pointer',
-                                  }}
+                                  style={{ background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
                                 >
-                                  Log result
+                                  {c.result_time_seconds ? 'Edit result' : 'Log result'}
                                 </button>
-                              )}
+                              </div>
                             </div>
                           </motion.div>
                         );

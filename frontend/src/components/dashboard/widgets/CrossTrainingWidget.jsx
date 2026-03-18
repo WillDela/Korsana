@@ -8,15 +8,17 @@ const C = {
   amber: "#F5A623",
 };
 
-const TYPE_ICONS = {
-  weightlifting: '🏋', cycling: '🚴',
-  swimming: '🏊', elliptical: '🔄',
+const TYPE_CONFIG = {
+  weight_lifting: { icon: '🏋', label: 'Weight Training' },
+  cycling:        { icon: '🚴', label: 'Cycling' },
+  swimming:       { icon: '🏊', label: 'Swimming' },
+  elliptical:     { icon: '🔄', label: 'Elliptical' },
 };
 
 export default function CrossTrainingWidget({ data, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
-    type: 'weightlifting',
+    type: 'weight_lifting',
     date: new Date().toISOString().slice(0, 10),
     duration_minutes: 45,
     intensity: 'moderate',
@@ -33,7 +35,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
         date: form.date,
         duration_minutes: parseInt(form.duration_minutes) || 45,
       };
-      if (form.type === 'weightlifting' && form.intensity) {
+      if (form.type === 'weight_lifting' && form.intensity) {
         payload.intensity = form.intensity;
       }
       if (
@@ -82,20 +84,20 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        {Object.entries(TYPE_ICONS).map(([type, icon]) => (
+        {Object.entries(TYPE_CONFIG).map(([type, cfg]) => (
           <div key={type} style={{
             flex: 1, textAlign: 'center', background: C.gray50,
             borderRadius: 10, padding: '10px 4px',
           }}>
-            <div style={{ fontSize: 20 }}>{icon}</div>
+            <div style={{ fontSize: 20 }}>{cfg.icon}</div>
             <div style={{
               fontFamily: 'IBM Plex Mono, monospace', fontSize: 16,
               fontWeight: 700, color: C.navy, marginTop: 4,
             }}>{counts[type] || 0}</div>
             <div style={{
               fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-              color: C.gray400, marginTop: 2, textTransform: 'capitalize',
-            }}>{type}</div>
+              color: C.gray400, marginTop: 2,
+            }}>{cfg.label}</div>
           </div>
         ))}
       </div>
@@ -146,8 +148,8 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
               </span>
               <span style={{
                 fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                color: C.navy, textTransform: 'capitalize',
-              }}>{s.type}</span>
+                color: C.navy,
+              }}>{TYPE_CONFIG[s.type]?.label || TYPE_CONFIG[s.type === 'weightlifting' ? 'weight_lifting' : s.type]?.label || s.type}</span>
               <span style={{
                 fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
                 color: C.gray600,
@@ -201,7 +203,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
             {[
               {
                 label: 'Activity Type', field: 'type', type: 'select',
-                options: Object.keys(TYPE_ICONS),
+                options: Object.keys(TYPE_CONFIG),
               },
               { label: 'Date', field: 'date', type: 'date' },
               {
@@ -228,10 +230,9 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
                     }}
                   >
                     {options.map(o => (
-                      <option
-                        key={o} value={o}
-                        style={{ textTransform: 'capitalize' }}
-                      >{o}</option>
+                      <option key={o} value={o}>
+                        {TYPE_CONFIG[o]?.label || o}
+                      </option>
                     ))}
                   </select>
                 ) : (
@@ -250,7 +251,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
                 )}
               </div>
             ))}
-            {form.type === 'weightlifting' && (
+            {form.type === 'weight_lifting' && (
               <div style={{ marginBottom: 14 }}>
                 <label style={{
                   fontFamily: 'DM Sans, sans-serif', fontSize: 11,
