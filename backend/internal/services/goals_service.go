@@ -139,7 +139,7 @@ func (s *GoalsService) SetActiveGoal(ctx context.Context, userID uuid.UUID, goal
 func (s *GoalsService) LogResult(ctx context.Context, userID, goalID uuid.UUID, resultSecs int, isPR bool) (*models.RaceGoal, error) {
 	query := `
 		UPDATE race_goals
-		SET result_time_seconds = $1, is_pr = $2, is_completed = true, updated_at = $3
+		SET result_time_seconds = $1, is_pr = $2, is_completed = true, is_active = false, updated_at = $3
 		WHERE id = $4 AND user_id = $5
 	`
 	result, err := s.db.ExecContext(ctx, query, resultSecs, isPR, time.Now(), goalID, userID)

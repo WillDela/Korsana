@@ -379,7 +379,7 @@ const Goals = () => {
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#8B93B0', marginBottom: 24, maxWidth: 360, margin: '0 auto 24px' }}>
             Set a race goal to unlock personalized training, AI coaching, and readiness tracking.
           </p>
-          <Link to="/goals/new" className="btn btn-primary">Create Goal</Link>
+          <Link to="/goals/new" className="btn btn-primary" style={{ padding: '12px 36px' }}>Create Goal</Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
