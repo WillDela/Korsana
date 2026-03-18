@@ -39,11 +39,7 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-		return
-	}
+	user, _ := h.authService.GetUserByID(c.Request.Context(), userID)
 
 	stravaConnected := false
 	stravaAthleteID := int64(0)
@@ -73,12 +69,13 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 
 	weeklySummary, _ := h.userProfileService.GetCurrentWeekSummary(c.Request.Context(), userID)
 
+	userInfo := gin.H{"id": userID, "email": "", "created_at": nil}
+	if user != nil {
+		userInfo = gin.H{"id": user.ID, "email": user.Email, "created_at": user.CreatedAt}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"user": gin.H{
-			"id":         user.ID,
-			"email":      user.Email,
-			"created_at": user.CreatedAt,
-		},
+		"user": userInfo,
 		"strava": gin.H{
 			"connected":  stravaConnected,
 			"athlete_id": stravaAthleteID,

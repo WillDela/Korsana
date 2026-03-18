@@ -509,8 +509,6 @@ const Dashboard = () => {
       setSyncMsg({ text: '', type: '' });
       setIsSyncing(true);
       const result = await stravaAPI.syncActivities();
-      await fetchActivities();
-      await fetchDashboardData();
       setLastSynced(new Date().toISOString());
       const count = result?.count || 0;
       setSyncMsg({
@@ -518,6 +516,9 @@ const Dashboard = () => {
         type: 'success',
       });
       setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
+      // Refresh data in background — don't block the spinner on these
+      fetchActivities();
+      fetchDashboardData();
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401 || status === 404) {

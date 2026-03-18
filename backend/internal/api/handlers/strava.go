@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -79,7 +81,10 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	count, err := h.stravaService.SyncActivities(c.Request.Context(), userID)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 25*time.Second)
+	defer cancel()
+
+	count, err := h.stravaService.SyncActivities(ctx, userID)
 	if err != nil {
 		if err.Error() == "strava connection not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Strava is not connected. Connect it from Settings first."})

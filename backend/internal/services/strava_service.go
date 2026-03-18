@@ -281,8 +281,9 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		return 0, err
 	}
 
-	// Fetch activities from Strava (last 30 activities)
-	activities, err := s.stravaClient.GetActivities(conn.AccessToken, 1, 200)
+	// Fetch the most recent 50 activities from Strava.
+	// Higher values cause excessive sequential DB round-trips on remote databases.
+	activities, err := s.stravaClient.GetActivities(conn.AccessToken, 1, 50)
 	if err != nil {
 		return 0, err
 	}
