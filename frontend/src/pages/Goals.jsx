@@ -455,11 +455,25 @@ const Goals = () => {
 
                 {/* Bottom row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', gap: 16 }}>
-                  {active.notes ? (
-                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', maxWidth: 260, margin: 0 }}>
-                      "{active.notes}"
-                    </p>
-                  ) : <div />}
+                  {new Date(active.race_date) < new Date() ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ background: 'rgba(232,114,90,0.2)', color: 'var(--color-coral)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                        Race day has passed
+                      </span>
+                      <button
+                        onClick={() => setLogGoal(active)}
+                        style={{ background: 'var(--color-coral)', border: 'none', borderRadius: 9, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+                      >
+                        Log your result
+                      </button>
+                    </div>
+                  ) : (
+                    active.notes ? (
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', maxWidth: 260, margin: 0 }}>
+                        "{active.notes}"
+                      </p>
+                    ) : <div />
+                  )}
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     <Link
                       to={`/goals/${active.id}/edit`}
@@ -655,69 +669,127 @@ const Goals = () => {
                   transition={{ duration: 0.25 }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className="card" style={{ padding: 0 }}>
-                    {/* Header row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 110px 120px 110px', padding: '10px 22px', borderBottom: '1px solid #ECEEF4' }}>
-                      {['Race', 'Distance', 'Date', 'Goal', 'Result', 'Diff'].map((h) => (
-                        <span key={h} style={{ fontFamily: 'var(--font-sans)', fontSize: 9, fontWeight: 700, color: '#8B93B0', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
-                          {h}
-                        </span>
-                      ))}
+                  {completed.length === 0 ? (
+                    <div className="card" style={{ textAlign: 'center', padding: '32px 0' }}>
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8B93B0' }}>
+                        No completed races yet — go get one
+                      </p>
                     </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                      {completed.map((c, i) => {
+                        const hasDiff = c.target_time_seconds && c.result_time_seconds;
+                        const diff = hasDiff ? timeDiffSec(c.target_time_seconds, c.result_time_seconds) : null;
+                        const needsResult = !c.result_time_seconds;
 
-                    {completed.length === 0 ? (
-                      <div style={{ padding: 32, textAlign: 'center' }}>
-                        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8B93B0' }}>
-                          No completed races yet — go get one 🏁
-                        </p>
-                      </div>
-                    ) : completed.map((c, i) => {
-                      const hasDiff = c.target_time_seconds && c.result_time_seconds;
-                      const diff = hasDiff ? timeDiffSec(c.target_time_seconds, c.result_time_seconds) : null;
-                      return (
-                        <div
-                          key={c.id}
-                          className="completed-row"
-                          style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 110px 120px 110px', padding: '15px 22px', alignItems: 'center', borderBottom: i < completed.length - 1 ? '1px solid #ECEEF4' : 'none', background: 'transparent', transition: 'background 0.12s' }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600, color: 'var(--color-navy)' }}>
-                              {c.race_name}
-                            </span>
-                            {c.is_pr && (
-                              <span style={{ background: '#FFF3CD', color: '#856404', borderRadius: 5, padding: '1px 7px', fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-sans)', flexShrink: 0 }}>
-                                PR 🏆
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)', display: 'inline-block', width: 'fit-content' }}>
-                            {distanceLabel(c.distance_meters || c.race_distance_meters)}
-                          </span>
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0' }}>
-                            {fmtDate(c.race_date)}
-                          </span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#8B93B0' }}>
-                            {c.target_time_seconds ? secondsToHMS(c.target_time_seconds) : '—'}
-                          </span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--color-navy)' }}>
-                            {c.result_time_seconds ? secondsToHMS(c.result_time_seconds) : '—'}
-                          </span>
-                          {diff ? (
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: diff.faster ? '#2ECC8B' : '#E84A4A' }}>
-                              {diff.faster ? '−' : '+'}{diff.str}
-                            </span>
-                          ) : c.target_time_seconds && !c.result_time_seconds ? (
-                            <button
-                              onClick={() => setLogGoal(c)}
-                              style={{ background: 'none', border: '1px solid #D4D8E8', borderRadius: 7, padding: '4px 10px', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: '#4A5173', cursor: 'pointer', width: 'fit-content' }}
-                            >
-                              Log result
-                            </button>
-                          ) : <span />}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        // Border and accent color based on outcome
+                        let accentColor = '#D4D8E8'; // default: no result
+                        let accentBg = '#F8F9FC';
+                        if (diff) {
+                          accentColor = diff.faster ? '#2ECC8B' : 'var(--color-coral)';
+                          accentBg = diff.faster ? '#F0FBF6' : '#FEF4F2';
+                        } else if (c.result_time_seconds && !c.target_time_seconds) {
+                          accentColor = 'var(--color-sage)';
+                          accentBg = '#F2F7EF';
+                        }
+
+                        return (
+                          <motion.div
+                            key={c.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.25, delay: i * 0.04 }}
+                            style={{
+                              background: accentBg,
+                              borderRadius: 16,
+                              border: `1.5px solid ${accentColor}`,
+                              padding: '20px 22px',
+                              position: 'relative',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {/* Left accent bar */}
+                            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: accentColor, borderRadius: '16px 0 0 16px' }} />
+
+                            {/* Top row: name + badges */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+                                  <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                    {distanceLabel(c.distance_meters || c.race_distance_meters)}
+                                  </span>
+                                  {c.is_pr && (
+                                    <span style={{ background: '#FFF3CD', color: '#856404', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                      PR
+                                    </span>
+                                  )}
+                                  {needsResult && (
+                                    <span style={{ background: 'rgba(229,168,48,0.15)', color: '#B8860B', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                      No result
+                                    </span>
+                                  )}
+                                </div>
+                                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, color: 'var(--color-navy)', margin: 0, lineHeight: 1.2 }}>
+                                  {c.race_name}
+                                </h3>
+                                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0', marginTop: 3 }}>
+                                  {fmtDate(c.race_date)}
+                                </p>
+                              </div>
+                              {diff && (
+                                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: accentColor, lineHeight: 1 }}>
+                                    {diff.faster ? '−' : '+'}{diff.str}
+                                  </div>
+                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#8B93B0', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 3 }}>
+                                    {diff.faster ? 'under goal' : 'over goal'}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Times row */}
+                            <div style={{ display: 'flex', gap: 20, paddingTop: 14, borderTop: `1px solid ${accentColor}33` }}>
+                              {c.target_time_seconds && (
+                                <div>
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 600, color: '#8B93B0', lineHeight: 1 }}>
+                                    {secondsToHMS(c.target_time_seconds)}
+                                  </div>
+                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                    Goal
+                                  </div>
+                                </div>
+                              )}
+                              {c.target_time_seconds && c.result_time_seconds && (
+                                <div style={{ width: 1, background: `${accentColor}55`, alignSelf: 'stretch' }} />
+                              )}
+                              {c.result_time_seconds ? (
+                                <div>
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1 }}>
+                                    {secondsToHMS(c.result_time_seconds)}
+                                  </div>
+                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                    Result
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setLogGoal(c)}
+                                  style={{
+                                    background: 'var(--color-navy)', border: 'none', borderRadius: 9,
+                                    padding: '7px 16px', fontFamily: 'var(--font-sans)', fontSize: 12,
+                                    fontWeight: 700, color: '#fff', cursor: 'pointer',
+                                  }}
+                                >
+                                  Log result
+                                </button>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
