@@ -1,9 +1,11 @@
 import api from './client';
 
 export const stravaAPI = {
-  // Get Strava auth URL
-  getAuthURL: async () => {
-    const response = await api.get('/strava/auth');
+  // Get Strava auth URL. Pass returnTo (e.g. '/dashboard') to redirect back
+  // to that page after the user connects, instead of going to /settings.
+  getAuthURL: async (returnTo = '') => {
+    const params = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+    const response = await api.get(`/strava/auth${params}`);
     return response.data;
   },
 

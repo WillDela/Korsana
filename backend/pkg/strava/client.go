@@ -31,7 +31,7 @@ func NewClient(clientID, clientSecret, redirectURI string) *Client {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		RedirectURI:  redirectURI,
-		HTTPClient:   &http.Client{Timeout: 10 * time.Second},
+		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 	}
 }
 

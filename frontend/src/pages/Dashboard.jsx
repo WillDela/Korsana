@@ -228,7 +228,7 @@ const SOURCES = [
 ];
 
 
-const SyncDropdown = ({ isSyncing, onSync, stravaConnected }) => {
+const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position: 'relative' }}>
@@ -289,16 +289,15 @@ const SyncDropdown = ({ isSyncing, onSync, stravaConnected }) => {
                 </div>
                 {s.status === 'connected' && (
                   stravaConnected === false ? (
-                    <Link
-                      to="/settings"
-                      onClick={() => setOpen(false)}
+                    <button
+                      onClick={() => { onConnect(); setOpen(false); }}
                       style={{
                         background: C.coral, border: 'none', borderRadius: 7,
                         padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
                         fontSize: 11, fontWeight: 700, color: C.white,
-                        textDecoration: 'none', whiteSpace: 'nowrap',
+                        cursor: 'pointer', whiteSpace: 'nowrap',
                       }}
-                    >Connect</Link>
+                    >Connect</button>
                   ) : (
                     <button onClick={() => { onSync('strava'); setOpen(false); }} style={{
                       background: C.navy, border: 'none', borderRadius: 7,
@@ -475,7 +474,10 @@ const Dashboard = () => {
           const synced = await activitiesAPI.getActivities();
           setActivities(synced.activities || []);
           setLastSynced(new Date().toISOString());
-        } catch { setActivities([]); }
+        } catch (err) {
+          if (err?.response?.status === 404) setStravaConnected(false);
+          setActivities([]);
+        }
       } else {
         setActivities(res.activities);
       }
@@ -508,6 +510,16 @@ const Dashboard = () => {
     await calendarAPI.createEntry(data);
     fetchWeekEntries();
   }, [fetchWeekEntries]);
+
+  const handleConnectStrava = useCallback(async () => {
+    try {
+      const data = await stravaAPI.getAuthURL('/dashboard');
+      window.location.href = data.url;
+    } catch {
+      setSyncMsg({ text: 'Could not start Strava connect — try from Settings.', type: 'error' });
+      setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
+    }
+  }, []);
 
   const handleSyncActivities = useCallback(async (provider = 'strava') => {
     if (provider !== 'strava') {
@@ -1094,7 +1106,7 @@ const Dashboard = () => {
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} stravaConnected={stravaConnected} />
+            <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} onConnect={handleConnectStrava} stravaConnected={stravaConnected} />
             <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
           </div>
         </div>

@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,42 +35,48 @@ func NewStravaService(db *database.DB, client *strava.Client, redisClient *redis
 	}
 }
 
-// GenerateOAuthState creates a secure random state parameter and stores it in Redis
-func (s *StravaService) GenerateOAuthState(ctx context.Context, userID uuid.UUID) (string, error) {
-	// Generate random state
+// GenerateOAuthState creates a secure random state parameter and stores it in Redis.
+// returnTo is an optional frontend path (e.g. "/dashboard") to redirect to after connect.
+func (s *StravaService) GenerateOAuthState(ctx context.Context, userID uuid.UUID, returnTo string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 	state := hex.EncodeToString(b)
 
-	// Store state in Redis with 10 minute expiration
+	// Value format: "userID|returnTo" (returnTo may be empty)
+	value := userID.String() + "|" + returnTo
 	key := fmt.Sprintf("strava_oauth_state:%s", state)
-	err := s.redis.Set(ctx, key, userID.String(), 10*time.Minute).Err()
-	if err != nil {
+	if err := s.redis.Set(ctx, key, value, 10*time.Minute).Err(); err != nil {
 		return "", err
 	}
 
 	return state, nil
 }
 
-// ValidateOAuthState validates the state parameter and returns the associated user ID
-func (s *StravaService) ValidateOAuthState(ctx context.Context, state string) (uuid.UUID, error) {
+// ValidateOAuthState validates the state parameter and returns the user ID and optional returnTo path.
+func (s *StravaService) ValidateOAuthState(ctx context.Context, state string) (uuid.UUID, string, error) {
 	key := fmt.Sprintf("strava_oauth_state:%s", state)
-	userIDStr, err := s.redis.Get(ctx, key).Result()
+	val, err := s.redis.Get(ctx, key).Result()
 	if err != nil {
-		return uuid.Nil, errors.New("invalid or expired state")
+		return uuid.Nil, "", errors.New("invalid or expired state")
 	}
 
 	// Delete the state (one-time use)
 	s.redis.Del(ctx, key)
 
-	userID, err := uuid.Parse(userIDStr)
+	parts := strings.SplitN(val, "|", 2)
+	userID, err := uuid.Parse(parts[0])
 	if err != nil {
-		return uuid.Nil, errors.New("invalid user ID in state")
+		return uuid.Nil, "", errors.New("invalid user ID in state")
 	}
 
-	return userID, nil
+	returnTo := ""
+	if len(parts) > 1 {
+		returnTo = parts[1]
+	}
+
+	return userID, returnTo, nil
 }
 
 // GenerateLoginOAuthState creates a state for the unauthenticated Strava login flow.
@@ -148,9 +156,10 @@ func (s *StravaService) LoginWithStrava(ctx context.Context, code string) (*mode
 	return nil, false, fmt.Errorf("no user found for strava athlete %d", athleteID)
 }
 
-// GetAuthURL returns the Strava OAuth URL with state parameter
-func (s *StravaService) GetAuthURL(ctx context.Context, userID uuid.UUID) (string, error) {
-	state, err := s.GenerateOAuthState(ctx, userID)
+// GetAuthURL returns the Strava OAuth URL with state parameter.
+// returnTo is an optional frontend path to redirect to after connection (e.g. "/dashboard").
+func (s *StravaService) GetAuthURL(ctx context.Context, userID uuid.UUID, returnTo string) (string, error) {
+	state, err := s.GenerateOAuthState(ctx, userID, returnTo)
 	if err != nil {
 		return "", err
 	}
@@ -289,6 +298,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 	}
 
 	syncedCount := 0
+	insertFailCount := 0
 
 	for _, act := range activities {
 		// Use local date so calendar bucketing matches the athlete's timezone.
@@ -299,6 +309,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		}
 		startTime, err := time.Parse(time.RFC3339, localDateStr)
 		if err != nil {
+			log.Printf("strava sync: skipping activity %d (%s): bad date format %q: %v", act.ID, act.Name, localDateStr, err)
 			continue
 		}
 
@@ -389,6 +400,8 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		// separate SELECT that would otherwise double the DB calls per activity.
 		rows, err := s.db.NamedQueryContext(ctx, query+" RETURNING id", activity)
 		if err != nil {
+			log.Printf("strava sync: failed to upsert activity %d (%s): %v", act.ID, act.Name, err)
+			insertFailCount++
 			continue
 		}
 		if rows.Next() {
@@ -404,6 +417,16 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 		}
 
 		syncedCount++
+	}
+
+	// If every activity failed to insert, surface the error so the caller
+	// doesn't silently report "0 synced" when the real issue is a DB problem
+	// (e.g. a missing unique index from a pending migration).
+	if insertFailCount > 0 && syncedCount == 0 && len(activities) > 0 {
+		return 0, fmt.Errorf(
+			"all %d activities failed to save — check server logs for details (hint: ensure migration 005 has been applied to your database)",
+			insertFailCount,
+		)
 	}
 
 	// After syncing, compute and upsert weekly summaries

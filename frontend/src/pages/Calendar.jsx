@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
 import { stravaAPI } from '../api/strava';
@@ -316,6 +317,7 @@ const DayDetailModal = ({
 };
 
 const Calendar = () => {
+  const [searchParams] = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -327,6 +329,7 @@ const Calendar = () => {
   const [editingEntry, setEditingEntry] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
+  const [stravaConnected, setStravaConnected] = useState(null); // null=unknown, false=not connected
 
   const [view, setView] = useState('month');
   const [filterType, setFilterType] = useState('all');
@@ -382,6 +385,16 @@ const Calendar = () => {
     fetchMonthEntries();
   }, [fetchMonthEntries]);
 
+  const handleConnectStrava = async () => {
+    try {
+      const data = await stravaAPI.getAuthURL('/calendar');
+      window.location.href = data.url;
+    } catch {
+      setSyncError('Could not start Strava connect — try from Settings.');
+      setTimeout(() => setSyncError(''), 4000);
+    }
+  };
+
   const navigateMonth = (dir) => {
     setCurrentMonth(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() + dir, 1)
@@ -398,6 +411,7 @@ const Calendar = () => {
     setSyncError('');
     try {
       const result = await stravaAPI.syncActivities();
+      setStravaConnected(null); // confirmed connected
       await fetchMonthEntries();
       const count = result?.count || 0;
       if (count === 0) setSyncError('Already up to date');
@@ -405,7 +419,8 @@ const Calendar = () => {
     } catch (err) {
       const status = err?.response?.status;
       if (status === 404) {
-        setSyncError('Strava not connected — connect it in Settings');
+        setStravaConnected(false);
+        setSyncError('');
       } else if (err?.code === 'ECONNABORTED') {
         setSyncError('Sync timed out — try again');
       } else {
@@ -416,6 +431,15 @@ const Calendar = () => {
       setTimeout(() => setSyncError(''), 5000);
     }
   };
+
+  // After connecting Strava from this page, auto-sync and clear the param.
+  useEffect(() => {
+    if (searchParams.get('strava_connected') === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      handleSync();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDayClick = (dateKey) => {
     setSelectedDate(dateKey);
@@ -553,19 +577,34 @@ const Calendar = () => {
             Today
           </button>
 
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg border border-border transition-colors ${syncing ? 'bg-bg-app text-text-muted cursor-not-allowed' : 'bg-white hover:bg-bg-app text-orange-500 hover:text-orange-600 hover:border-orange-200'
-              }`}
-            title="Sync Strava"
-          >
-            <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
+          {stravaConnected === false ? (
+            <button
+              onClick={handleConnectStrava}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-orange-300 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors text-xs font-bold"
+              title="Connect Strava to sync activities"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              Connect Strava
+            </button>
+          ) : (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg border border-border transition-colors ${syncing ? 'bg-bg-app text-text-muted cursor-not-allowed' : 'bg-white hover:bg-bg-app text-orange-500 hover:text-orange-600 hover:border-orange-200'
+                }`}
+              title="Sync Strava"
+            >
+              <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+          )}
           {syncError && (
             <span className={`text-xs font-medium ${syncError.startsWith('Synced') || syncError === 'Already up to date' ? 'text-green-600' : 'text-red-500'}`}>
               {syncError}

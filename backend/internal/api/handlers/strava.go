@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,7 +25,8 @@ func NewStravaHandler(stravaService *services.StravaService, frontendURL string)
 }
 
 // AuthURL generates a Strava OAuth URL with a per-user state parameter.
-// Called from the authenticated Settings page.
+// Accepts an optional ?return_to=/path query param so the callback can redirect
+// back to the page the user connected from (e.g. /dashboard, /calendar).
 func (h *StravaHandler) AuthURL(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -33,7 +35,13 @@ func (h *StravaHandler) AuthURL(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	url, err := h.stravaService.GetAuthURL(c.Request.Context(), userID)
+	// Only accept simple internal paths to avoid open-redirect abuse.
+	returnTo := c.Query("return_to")
+	if returnTo != "" && !strings.HasPrefix(returnTo, "/") {
+		returnTo = ""
+	}
+
+	url, err := h.stravaService.GetAuthURL(c.Request.Context(), userID, returnTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate auth URL"})
 		return
@@ -58,7 +66,7 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	userID, err := h.stravaService.ValidateOAuthState(c.Request.Context(), state)
+	userID, returnTo, err := h.stravaService.ValidateOAuthState(c.Request.Context(), state)
 	if err != nil {
 		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=invalid_state")
 		return
@@ -69,7 +77,12 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_connected=true")
+	// Redirect to the page the user connected from, defaulting to settings.
+	dest := "/settings"
+	if returnTo != "" && strings.HasPrefix(returnTo, "/") {
+		dest = returnTo
+	}
+	c.Redirect(http.StatusFound, h.frontendURL+dest+"?strava_connected=true")
 }
 
 // SyncActivities syncs activities from Strava for the authenticated user.
