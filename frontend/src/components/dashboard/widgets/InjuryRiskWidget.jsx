@@ -1,52 +1,24 @@
 import { useState } from 'react';
 
-const C = {
-  navy: "#1B2559", coral: "#E8634A", gray50: "#F8F9FC",
-  gray100: "#ECEEF4", gray400: "#8B93B0", gray600: "#4A5173",
-  white: "#FFFFFF", green: "#2ECC8B", amber: "#F5A623",
-  red: "#E84A4A",
-};
-
 export default function InjuryRiskWidget({ data }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!data) {
     return (
-      <div style={{
-        background: C.white, borderRadius: 16, padding: '20px 22px',
-        boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-      }}>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          marginBottom: 14,
-        }}>
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-            fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-          }}>Injury Risk</span>
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-            fontWeight: 700, color: C.coral,
-          }}>✦ Korsana</span>
+      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+        <div className="flex justify-between mb-3.5">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Injury Risk</span>
+          <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>
         </div>
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '24px 0', gap: 8,
-        }}>
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-            color: C.gray400,
-          }}>No data to assess risk</div>
+        <div className="flex flex-col items-center py-6 gap-2">
+          <span className="text-3xl">📭</span>
+          <div className="font-sans text-xs text-[var(--color-text-muted)]">No data to assess risk</div>
         </div>
       </div>
     );
   }
 
-  const riskColor = data.risk_level === 'High'
-    ? C.red
-    : data.risk_level === 'Moderate' ? C.amber : C.green;
+  const riskColor = data.risk_level === 'High' ? '#E84A4A' : data.risk_level === 'Moderate' ? '#F5A623' : '#2ECC8B';
 
   const factors = [
     { label: 'Mileage Jump', score: data.mileage_jump_score },
@@ -55,93 +27,49 @@ export default function InjuryRiskWidget({ data }) {
   ];
 
   return (
-    <div style={{
-      background: C.white, borderRadius: 16, padding: '20px 22px',
-      boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-    }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        marginBottom: 14,
-      }}>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-          fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-        }}>Injury Risk</span>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-          fontWeight: 700, color: C.coral,
-        }}>✦ Korsana</span>
+    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="flex justify-between mb-3.5">
+        <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Injury Risk</span>
+        <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>
       </div>
-      <div style={{ display: 'flex', gap: 20, marginBottom: 14 }}>
+      <div className="flex gap-5 mb-3.5">
         <div>
-          <div style={{
-            fontFamily: 'IBM Plex Mono, monospace', fontSize: 36,
-            fontWeight: 700, color: riskColor, lineHeight: 1,
-          }}>{data.score}</div>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-            fontWeight: 600, color: riskColor, marginTop: 3,
-          }}>{data.risk_level} Risk</div>
+          <div className="font-mono text-[36px] font-bold leading-none" style={{ color: riskColor }}>{data.score}</div>
+          <div className="font-sans text-[11px] font-semibold mt-0.5" style={{ color: riskColor }}>{data.risk_level} Risk</div>
         </div>
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column', gap: 8,
-        }}>
+        <div className="flex-1 flex flex-col gap-2">
           {factors.map((f, i) => (
             <div key={i}>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between',
-                marginBottom: 3,
-              }}>
-                <span style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-                  color: C.gray600,
-                }}>{f.label}</span>
-                <span style={{
-                  fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
-                  color: C.navy,
-                }}>{Math.round(f.score)}</span>
+              <div className="flex justify-between mb-0.5">
+                <span className="font-sans text-[10px] text-[var(--color-text-secondary)]">{f.label}</span>
+                <span className="font-mono text-[10px] text-navy">{Math.round(f.score)}</span>
               </div>
-              <div style={{
-                height: 5, background: C.gray100, borderRadius: 99,
-              }}>
-                <div style={{
-                  width: `${f.score}%`, height: '100%',
-                  background: f.score > 70
-                    ? C.red
-                    : f.score > 40 ? C.amber : C.green,
-                  borderRadius: 99,
-                }} />
+              <div className="h-[5px] bg-[var(--color-border-light)] rounded-full">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${f.score}%`,
+                    background: f.score > 70 ? '#E84A4A' : f.score > 40 ? '#F5A623' : '#2ECC8B',
+                  }}
+                />
               </div>
             </div>
           ))}
         </div>
       </div>
       {data.primary_signal && (
-        <div style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-          color: C.gray600, padding: '8px 10px', background: C.gray50,
-          borderRadius: 8, marginBottom: 8,
-        }}>
+        <div className="font-sans text-[11px] text-[var(--color-text-secondary)] px-2.5 py-2 bg-[var(--color-bg-elevated)] rounded-lg mb-2">
           {data.primary_signal}
         </div>
       )}
       <button
         onClick={() => setExpanded(!expanded)}
-        style={{
-          background: 'none', border: 'none',
-          fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-          color: C.gray400, cursor: 'pointer', padding: 0,
-        }}
+        className="font-sans text-[11px] text-[var(--color-text-muted)] bg-transparent border-none cursor-pointer p-0"
       >
         How this works {expanded ? '▴' : '▾'}
       </button>
       {expanded && (
-        <div style={{
-          marginTop: 8, padding: '10px 12px', background: C.gray50,
-          borderRadius: 8, fontFamily: 'DM Sans, sans-serif',
-          fontSize: 11, color: C.gray600, lineHeight: 1.6,
-        }}>
+        <div className="mt-2 p-3 bg-[var(--color-bg-elevated)] rounded-lg font-sans text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
           Score = 40% mileage jump + 40% ATL/CTL ratio + 20% consecutive
           hard days. 0-39: Low, 40-69: Moderate, 70+: High risk.
         </div>
