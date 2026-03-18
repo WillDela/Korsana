@@ -209,7 +209,7 @@ func (s *StravaService) RefreshAccessToken(ctx context.Context, conn *models.Str
 	}
 
 	// Refresh the token
-	tokenResp, err := s.stravaClient.RefreshToken(conn.RefreshToken)
+	tokenResp, err := s.stravaClient.RefreshToken(ctx, conn.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 
 	// Fetch the most recent 50 activities from Strava.
 	// Higher values cause excessive sequential DB round-trips on remote databases.
-	activities, err := s.stravaClient.GetActivities(conn.AccessToken, 1, 50)
+	activities, err := s.stravaClient.GetActivities(ctx, conn.AccessToken, 1, 50)
 	if err != nil {
 		return 0, err
 	}
@@ -384,21 +384,20 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 				synced_at = EXCLUDED.synced_at
 		`
 
-		_, err = s.db.NamedExecContext(ctx, query, activity)
+		// RETURNING id captures the real stored ID in one round-trip.
+		// ON CONFLICT DO UPDATE keeps the original row, so this avoids a
+		// separate SELECT that would otherwise double the DB calls per activity.
+		rows, err := s.db.NamedQueryContext(ctx, query+" RETURNING id", activity)
 		if err != nil {
 			continue
 		}
-
-		// ON CONFLICT DO UPDATE keeps the original row ID, so fetch the actual
-		// stored ID before passing to AutoMatchActivity. Using the new UUID
-		// would cause the duplicate check to miss existing calendar entries.
-		var storedID uuid.UUID
-		if idErr := s.db.GetContext(ctx, &storedID,
-			`SELECT id FROM activities WHERE user_id = $1 AND source = $2 AND source_activity_id = $3`,
-			userID, "strava", activity.SourceActivityID,
-		); idErr == nil {
-			activity.ID = storedID
+		if rows.Next() {
+			var storedID uuid.UUID
+			if scanErr := rows.Scan(&storedID); scanErr == nil {
+				activity.ID = storedID
+			}
 		}
+		rows.Close()
 
 		if s.calendarSvc != nil {
 			_ = s.calendarSvc.AutoMatchActivity(ctx, userID, activity)

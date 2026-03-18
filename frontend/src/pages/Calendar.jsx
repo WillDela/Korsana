@@ -210,7 +210,7 @@ const DayDetailModal = ({
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}
                         >
-                          {getBadgeLabel(entry.workout_type)}
+                          {entry.workout_type === 'cross_train' ? (entry.title || 'Cross Train').toUpperCase() : getBadgeLabel(entry.workout_type)}
                         </span>
                         <span
                           className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold ${isComplete
@@ -326,6 +326,7 @@ const Calendar = () => {
   const [modalMode, setModalMode] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState('');
 
   const [view, setView] = useState('month');
   const [filterType, setFilterType] = useState('all');
@@ -394,13 +395,25 @@ const Calendar = () => {
 
   const handleSync = async () => {
     setSyncing(true);
+    setSyncError('');
     try {
-      await stravaAPI.syncActivities();
+      const result = await stravaAPI.syncActivities();
       await fetchMonthEntries();
+      const count = result?.count || 0;
+      if (count === 0) setSyncError('Already up to date');
+      else setSyncError(`Synced ${count} activit${count === 1 ? 'y' : 'ies'}`);
     } catch (err) {
-      console.error('Strava sync failed:', err);
+      const status = err?.response?.status;
+      if (status === 404) {
+        setSyncError('Strava not connected — connect it in Settings');
+      } else if (err?.code === 'ECONNABORTED') {
+        setSyncError('Sync timed out — try again');
+      } else {
+        setSyncError(err?.response?.data?.error || 'Sync failed');
+      }
     } finally {
       setSyncing(false);
+      setTimeout(() => setSyncError(''), 5000);
     }
   };
 
@@ -553,6 +566,11 @@ const Calendar = () => {
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
+          {syncError && (
+            <span className={`text-xs font-medium ${syncError.startsWith('Synced') || syncError === 'Already up to date' ? 'text-green-600' : 'text-red-500'}`}>
+              {syncError}
+            </span>
+          )}
         </div>
 
         {/* Right Side: Filters */}

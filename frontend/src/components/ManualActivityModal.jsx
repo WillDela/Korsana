@@ -7,12 +7,12 @@ import { distanceLabel, toMeters } from '../utils/units';
 
 const ACTIVITY_TO_WORKOUT_TYPE = {
   run: 'easy',
-  cycling: 'cross_train',
-  swimming: 'cross_train',
+  cycling: 'cycling',
+  swimming: 'swimming',
   rowing: 'cross_train',
-  walking: 'easy',
+  walking: 'walking',
   hiking: 'easy',
-  weight_lifting: 'cross_train',
+  weight_lifting: 'lifting',
   elliptical: 'cross_train',
   stair_master: 'cross_train',
   workout: 'cross_train',

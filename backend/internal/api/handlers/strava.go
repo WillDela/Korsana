@@ -81,7 +81,7 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	}
 	userID := userIDVal.(uuid.UUID)
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 25*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 90*time.Second)
 	defer cancel()
 
 	count, err := h.stravaService.SyncActivities(ctx, userID)

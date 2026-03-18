@@ -1,10 +1,12 @@
 package strava
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -108,7 +110,7 @@ type Activity struct {
 }
 
 // GetActivities fetches recent activities for the authenticated athlete
-func (c *Client) GetActivities(accessToken string, page int, perPage int) ([]Activity, error) {
+func (c *Client) GetActivities(ctx context.Context, accessToken string, page int, perPage int) ([]Activity, error) {
 	if perPage == 0 {
 		perPage = 30
 	}
@@ -117,7 +119,7 @@ func (c *Client) GetActivities(accessToken string, page int, perPage int) ([]Act
 	}
 
 	url := fmt.Sprintf("%s/athlete/activities?page=%d&per_page=%d", baseURL, page, perPage)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -143,14 +145,19 @@ func (c *Client) GetActivities(accessToken string, page int, perPage int) ([]Act
 }
 
 // RefreshToken refreshes an expired access token
-func (c *Client) RefreshToken(refreshToken string) (*TokenResponse, error) {
+func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (*TokenResponse, error) {
 	params := url.Values{}
 	params.Add("client_id", c.ClientID)
 	params.Add("client_secret", c.ClientSecret)
 	params.Add("refresh_token", refreshToken)
 	params.Add("grant_type", "refresh_token")
 
-	resp, err := c.HTTPClient.PostForm(tokenURL, params)
+	req, err := http.NewRequestWithContext(ctx, "POST", tokenURL, strings.NewReader(params.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

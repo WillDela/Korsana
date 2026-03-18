@@ -38,14 +38,25 @@ const C = {
 };
 
 const WC = {
+  easy: { bg: "#E8F0FE", text: "#2A3A7C" },
   Easy: { bg: "#E8F0FE", text: "#2A3A7C" },
+  long: { bg: C.navy, text: "#FFFFFF" },
   "Long Run": { bg: C.navy, text: "#FFFFFF" },
   Long: { bg: C.navy, text: "#FFFFFF" },
+  tempo: { bg: "#FDE8E3", text: "#C0391B" },
   Tempo: { bg: "#FDE8E3", text: "#C0391B" },
+  interval: { bg: "#FFF3CD", text: "#856404" },
   Intervals: { bg: "#FFF3CD", text: "#856404" },
+  rest: { bg: C.gray100, text: C.gray400 },
   Rest: { bg: C.gray100, text: C.gray400 },
-  "Cross Train": { bg: "#F0FDE8", text: "#2A5A1B" },
-  Recovery: { bg: "#F0FDE8", text: "#2A5A1B" },
+  cross_train: { bg: "#F1F5F9", text: "#475569" },
+  "Cross Train": { bg: "#F1F5F9", text: "#475569" },
+  cycling: { bg: "#E0F2FE", text: "#0369A1" },
+  swimming: { bg: "#CFFAFE", text: "#0E7490" },
+  lifting: { bg: "#EDE9FE", text: "#6D28D9" },
+  walking: { bg: "#DCFCE7", text: "#15803D" },
+  recovery: { bg: "#F1F5F9", text: "#475569" },
+  Recovery: { bg: "#F1F5F9", text: "#475569" },
 };
 
 const PC = {
@@ -1194,7 +1205,7 @@ const Dashboard = () => {
                         <div style={{ marginBottom: 8 }}>
                           {d.type ? (
                             <span style={{ background: isT ? "rgba(255,255,255,0.12)" : s.bg, color: isT ? C.white : s.text, borderRadius: 5, padding: "3px 7px", fontSize: 9, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              {d.type}
+                              {d.type === 'cross_train' ? (d.title || 'Cross Train') : d.type}
                             </span>
                           ) : (
                             <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>Rest</span>
@@ -1237,11 +1248,12 @@ const Dashboard = () => {
                       ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
                       : null;
                     const entryType = entry.workout_type || null;
-                    const entryHeading = entryType === 'Rest' ? 'Rest Day'
-                      : entryType === 'Cross Train' ? 'Cross Training'
+                    const isCrossTrain = entryType === 'cross_train';
+                    const entryHeading = entryType === 'Rest' || entryType === 'rest' ? 'Rest Day'
+                      : isCrossTrain ? (entry.title || 'Cross Training')
                       : entryMiles ? `${entryMiles} mi ${entryType}`
-                      : (entryType || entry.title || 'Workout');
-                    const showSubtitle = entry.title && entryHeading !== entry.title;
+                      : (entry.title || entryType || 'Workout');
+                    const showSubtitle = !isCrossTrain && entry.title && entryHeading !== entry.title;
                     const segments = entryType ? getWorkoutSegments(entryType, entryMiles) : null;
                     return (
                       <div key={entry.id} style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>

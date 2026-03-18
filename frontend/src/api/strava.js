@@ -8,8 +8,10 @@ export const stravaAPI = {
   },
 
   // Sync activities from Strava
+  // Uses a longer timeout than the default 30s — syncing 50 activities
+  // against a remote DB can take up to 60s on first run.
   syncActivities: async () => {
-    const response = await api.post('/strava/sync');
+    const response = await api.post('/strava/sync', null, { timeout: 95000 });
     return response.data;
   },
 
