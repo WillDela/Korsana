@@ -3,6 +3,14 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { goalsAPI } from '../api/goals';
 
+const DISTANCES = [
+  { label: '5K', km: 5.0 },
+  { label: '10K', km: 10.0 },
+  { label: 'Half Marathon', km: 21.0975 },
+  { label: 'Marathon', km: 42.195 },
+  { label: 'Custom', km: null },
+];
+
 const EditGoal = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -10,6 +18,8 @@ const EditGoal = () => {
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedDist, setSelectedDist] = useState(null);
+  const [distError, setDistError] = useState('');
 
   const goalType = watch('goal_type', 'time');
 
@@ -21,9 +31,19 @@ const EditGoal = () => {
 
         setValue('race_name', goal.race_name);
         setValue('race_date', goal.race_date?.slice(0, 10));
-        const distKm = (goal.distance_meters || goal.race_distance_meters || 0) / 1000;
-        setValue('race_distance_km', distKm);
         setValue('goal_type', goal.goal_type || 'time');
+
+        const distKm = (goal.distance_meters || goal.race_distance_meters || 0) / 1000;
+        const preset = DISTANCES.find(
+          (d) => d.km !== null && Math.abs(d.km - distKm) < 0.1,
+        );
+        if (preset) {
+          setSelectedDist(preset.label);
+          setValue('race_distance_km', preset.km);
+        } else {
+          setSelectedDist('Custom');
+          setValue('race_distance_km', distKm);
+        }
 
         if (goal.target_time_seconds) {
           setValue('target_hours', Math.floor(goal.target_time_seconds / 3600));
@@ -41,7 +61,22 @@ const EditGoal = () => {
     fetchGoal();
   }, [id, setValue]);
 
+  const handleDistSelect = (dist) => {
+    setSelectedDist(dist.label);
+    setDistError('');
+    setValue('race_distance_km', dist.km ?? '');
+  };
+
   const onSubmit = async (data) => {
+    if (!selectedDist) {
+      setDistError('Please select a distance');
+      return;
+    }
+    if (selectedDist === 'Custom' && !parseFloat(data.race_distance_km)) {
+      setDistError('Please enter a valid distance');
+      return;
+    }
+
     setIsSubmitting(true);
     setServerError('');
 
@@ -51,9 +86,12 @@ const EditGoal = () => {
         race_date: data.race_date,
         race_distance_km: parseFloat(data.race_distance_km),
         goal_type: data.goal_type,
-        target_time_seconds: data.goal_type === 'time' && data.target_hours
-          ? (parseInt(data.target_hours) * 3600) + (parseInt(data.target_minutes) * 60) + parseInt(data.target_seconds || 0)
-          : null,
+        target_time_seconds:
+          (data.goal_type === 'time' || data.goal_type === 'pr') && data.target_hours
+            ? (parseInt(data.target_hours) * 3600)
+              + (parseInt(data.target_minutes) * 60)
+              + parseInt(data.target_seconds || 0)
+            : null,
       };
 
       await goalsAPI.updateGoal(id, goalData);
@@ -64,13 +102,6 @@ const EditGoal = () => {
       setIsSubmitting(false);
     }
   };
-
-  const commonDistances = [
-    { label: '5K', value: 5 },
-    { label: '10K', value: 10 },
-    { label: 'Half Marathon', value: 21.0975 },
-    { label: 'Marathon', value: 42.195 },
-  ];
 
   if (loading) {
     return (
@@ -86,15 +117,15 @@ const EditGoal = () => {
     <div className="max-w-[600px] mx-auto">
       <div className="card">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-text-primary mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Edit Goal</h1>
+          <h1 className="text-2xl font-semibold text-text-primary mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
+            Edit Goal
+          </h1>
           <p className="text-sm text-text-secondary">Update your race details</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           {serverError && (
-            <div className="alert alert-error mb-6">
-              {serverError}
-            </div>
+            <div className="alert alert-error mb-6">{serverError}</div>
           )}
 
           {/* Race Name */}
@@ -108,9 +139,7 @@ const EditGoal = () => {
               {...register('race_name', { required: 'Race name is required' })}
             />
             {errors.race_name && (
-              <p className="text-error text-sm mt-1">
-                {errors.race_name.message}
-              </p>
+              <p className="text-error text-sm mt-1">{errors.race_name.message}</p>
             )}
           </div>
 
@@ -124,42 +153,48 @@ const EditGoal = () => {
               {...register('race_date', { required: 'Race date is required' })}
             />
             {errors.race_date && (
-              <p className="text-error text-sm mt-1">
-                {errors.race_date.message}
-              </p>
+              <p className="text-error text-sm mt-1">{errors.race_date.message}</p>
             )}
           </div>
 
           {/* Distance */}
           <div className="mb-6">
-            <label className="label" htmlFor="race_distance_km">Distance</label>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {commonDistances.map((dist) => (
+            <label className="label">Distance</label>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {DISTANCES.map((dist) => (
                 <button
                   key={dist.label}
                   type="button"
-                  className="btn btn-outline py-3"
-                  onClick={() => setValue('race_distance_km', dist.value)}
+                  className={`rounded-lg border-2 p-3 text-left transition-all cursor-pointer
+                    ${selectedDist === dist.label
+                      ? 'ring-2 ring-navy bg-navy/5 border-navy'
+                      : 'border-border hover:border-navy/30'
+                    }`}
+                  onClick={() => handleDistSelect(dist)}
                 >
-                  {dist.label}
+                  <span className="block font-semibold text-text-primary font-heading">
+                    {dist.label}
+                  </span>
+                  {dist.km !== null && (
+                    <span className="block text-xs text-text-secondary mt-0.5">
+                      {dist.km} km
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
-            <input
-              id="race_distance_km"
-              type="number"
-              step="0.1"
-              className={`input ${errors.race_distance_km ? 'input-error' : ''}`}
-              placeholder="Custom distance (km)"
-              {...register('race_distance_km', {
-                required: 'Distance is required',
-                min: { value: 1, message: 'Distance must be at least 1km' },
-              })}
-            />
-            {errors.race_distance_km && (
-              <p className="text-error text-sm mt-1">
-                {errors.race_distance_km.message}
-              </p>
+            {selectedDist === 'Custom' && (
+              <input
+                id="race_distance_km"
+                type="number"
+                step="0.1"
+                className="input"
+                placeholder="Distance in km"
+                {...register('race_distance_km')}
+              />
+            )}
+            {distError && (
+              <p className="text-error text-sm mt-1">{distError}</p>
             )}
           </div>
 
@@ -167,37 +202,25 @@ const EditGoal = () => {
           <div className="mb-6">
             <label className="label">Goal Type</label>
             <div className="grid grid-cols-3 gap-2">
-              <label className="cursor-pointer flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  value="time"
-                  {...register('goal_type')}
-                />
-                Target Time
-              </label>
-              <label className="cursor-pointer flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  value="finish"
-                  {...register('goal_type')}
-                />
-                Just Finish
-              </label>
-              <label className="cursor-pointer flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  value="pr"
-                  {...register('goal_type')}
-                />
-                PR
-              </label>
+              {[
+                { value: 'time', label: 'Target Time' },
+                { value: 'finish', label: 'Just Finish' },
+                { value: 'pr', label: 'PR' },
+              ].map((opt) => (
+                <label key={opt.value} className="cursor-pointer flex items-center gap-2 text-sm">
+                  <input type="radio" value={opt.value} {...register('goal_type')} />
+                  {opt.label}
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* Target Time */}
+          {/* Target Time — shown for 'time' and 'pr' */}
           {(goalType === 'time' || goalType === 'pr') && (
             <div className="mb-6">
-              <label className="label">Target Time</label>
+              <label className="label">
+                {goalType === 'pr' ? 'PR to Beat' : 'Target Time'}
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 <input
                   type="number"
@@ -224,6 +247,11 @@ const EditGoal = () => {
                   {...register('target_seconds')}
                 />
               </div>
+              {goalType === 'pr' && (
+                <p className="text-xs text-text-secondary mt-1">
+                  Enter the time you're trying to beat
+                </p>
+              )}
             </div>
           )}
 

@@ -135,6 +135,26 @@ func (s *GoalsService) SetActiveGoal(ctx context.Context, userID uuid.UUID, goal
 	return s.GetGoalByID(ctx, userID, goalID)
 }
 
+// LogResult records the actual finish time for a completed race goal.
+func (s *GoalsService) LogResult(ctx context.Context, userID, goalID uuid.UUID, resultSecs int, isPR bool) (*models.RaceGoal, error) {
+	query := `
+		UPDATE race_goals
+		SET result_time_seconds = $1, is_pr = $2, is_completed = true, updated_at = $3
+		WHERE id = $4 AND user_id = $5
+	`
+	result, err := s.db.ExecContext(ctx, query, resultSecs, isPR, time.Now(), goalID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return nil, errors.New("goal not found")
+	}
+
+	return s.GetGoalByID(ctx, userID, goalID)
+}
+
 // DeleteGoal deletes a goal
 func (s *GoalsService) DeleteGoal(ctx context.Context, userID uuid.UUID, goalID uuid.UUID) error {
 	result, err := s.db.ExecContext(ctx, "DELETE FROM race_goals WHERE id = $1 AND user_id = $2", goalID, userID)

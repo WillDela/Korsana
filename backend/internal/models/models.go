@@ -36,6 +36,9 @@ type RaceGoal struct {
 	TargetTimeSeconds  *int      `json:"target_time_seconds" db:"target_time_seconds"` // nil if just "finish"
 	GoalType           string    `json:"goal_type" db:"goal_type"`                     // "finish", "time", "pr"
 	IsActive           bool      `json:"is_active" db:"is_active"`
+	ResultTimeSeconds  *int      `json:"result_time_seconds" db:"result_time_seconds"` // nil until race completed
+	IsPR               bool      `json:"is_pr" db:"is_pr"`
+	IsCompleted        bool      `json:"is_completed" db:"is_completed"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }

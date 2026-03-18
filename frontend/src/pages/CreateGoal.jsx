@@ -67,7 +67,7 @@ const CreateGoal = () => {
       race_distance_km: distKm,
       goal_type: data.goal_type,
       target_time_seconds:
-        data.goal_type === 'time' && data.target_hours
+        (data.goal_type === 'time' || data.goal_type === 'pr') && data.target_hours
           ? (parseInt(data.target_hours) * 3600)
             + (parseInt(data.target_minutes) * 60)
             + parseInt(data.target_seconds || 0)

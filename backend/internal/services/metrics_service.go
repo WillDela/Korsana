@@ -115,7 +115,7 @@ func (s *MetricsService) ComputeDashboard(ctx context.Context, userID uuid.UUID)
 		SELECT id, user_id, date, workout_type, title, description,
 			   planned_distance_meters, planned_duration_minutes, planned_pace_per_km,
 			   status, completed_activity_id, source, created_at, updated_at
-		FROM calendar_entries
+		FROM training_calendar
 		WHERE user_id = $1 AND date >= $2
 		ORDER BY date ASC
 	`, userID, calCutoff)
@@ -184,6 +184,52 @@ func (s *MetricsService) ComputeDashboard(ctx context.Context, userID uuid.UUID)
 	executionResult := metrics.ExecutionScores(activities, entries)
 
 	best := metrics.AutoDetectBestEfforts(activities)
+
+	// Layer completed race results on top of auto-detected efforts.
+	// Results within 180 days replace auto-detection for that distance.
+	// Manual overrides (below) still trump everything.
+	raceCutoff := time.Now().AddDate(0, 0, -180)
+	type completedGoalRow struct {
+		RaceDistanceMeters int       `db:"race_distance_meters"`
+		ResultTimeSeconds  int       `db:"result_time_seconds"`
+		RaceDate           time.Time `db:"race_date"`
+	}
+	var completedGoals []completedGoalRow
+	_ = s.db.SelectContext(ctx, &completedGoals, `
+		SELECT race_distance_meters, result_time_seconds, race_date
+		FROM race_goals
+		WHERE user_id = $1
+		  AND is_completed = true
+		  AND result_time_seconds IS NOT NULL
+		  AND race_date >= $2
+		ORDER BY race_date DESC
+	`, userID, raceCutoff)
+
+	distanceBands := []struct {
+		targetKm float64
+		field    **float64
+	}{
+		{5.0, &best.Dist5K},
+		{10.0, &best.Dist10K},
+		{21.0975, &best.DistHalf},
+		{42.195, &best.DistFull},
+	}
+	for _, cg := range completedGoals {
+		distKm := float64(cg.RaceDistanceMeters) / 1000.0
+		t := float64(cg.ResultTimeSeconds)
+		for _, band := range distanceBands {
+			ratio := distKm / band.targetKm
+			if ratio < 0.97 || ratio > 1.03 {
+				continue
+			}
+			// Most recent result per distance wins (query is ordered DESC).
+			if *band.field == nil {
+				*band.field = &t
+			}
+			break
+		}
+	}
+
 	if hasManual {
 		t := float64(manualEntry.TimeSeconds)
 		switch manualEntry.DistanceLabel {

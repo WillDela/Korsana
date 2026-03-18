@@ -121,6 +121,7 @@ func main() {
 				goals.GET("/:id", goalsHandler.GetGoal)
 				goals.PUT("/:id", goalsHandler.UpdateGoal)
 				goals.PUT("/:id/active", goalsHandler.SetActive)
+				goals.PUT("/:id/result", goalsHandler.LogResult)
 				goals.DELETE("/:id", goalsHandler.DeleteGoal)
 			}
 

@@ -37,6 +37,12 @@ export const goalsAPI = {
     return response.data;
   },
 
+  // Log a race result against a completed goal
+  logResult: async (goalId, data) => {
+    const response = await api.put(`/goals/${goalId}/result`, data);
+    return response.data;
+  },
+
   // Delete a goal
   deleteGoal: async (goalId) => {
     const response = await api.delete(`/goals/${goalId}`);

@@ -293,7 +293,7 @@ const Goals = () => {
       const secs = parts.length === 3
         ? parts[0] * 3600 + parts[1] * 60 + parts[2]
         : parts[0] * 60 + (parts[1] || 0);
-      await goalsAPI.updateGoal(logGoal.id, { result_time_seconds: secs, is_pr: pr, is_completed: true });
+      await goalsAPI.logResult(logGoal.id, { result_time_seconds: secs, is_pr: pr });
       setLogGoal(null);
       showToast('Result logged!');
       await fetchGoals();

@@ -60,12 +60,6 @@ func (h *GoalsHandler) CreateGoal(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "target time must be positive"})
 		return
 	}
-	// Race date should be in the future (for new goals)
-	if raceDate.Before(time.Now().Truncate(24 * time.Hour)) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "race date must be in the future"})
-		return
-	}
-
 	// Convert km to meters
 	distanceMeters := int(req.RaceDistanceKm * 1000)
 
@@ -230,6 +224,44 @@ func (h *GoalsHandler) SetActive(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"goal": goal,
 	})
+}
+
+type logResultRequest struct {
+	ResultTimeSeconds int  `json:"result_time_seconds" binding:"required,min=1"`
+	IsPR              bool `json:"is_pr"`
+}
+
+func (h *GoalsHandler) LogResult(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	goalID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+		return
+	}
+
+	var req logResultRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	goal, err := h.goalsService.LogResult(c.Request.Context(), userID, goalID, req.ResultTimeSeconds, req.IsPR)
+	if err != nil {
+		if err.Error() == "goal not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "goal not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"goal": goal})
 }
 
 func (h *GoalsHandler) DeleteGoal(c *gin.Context) {
