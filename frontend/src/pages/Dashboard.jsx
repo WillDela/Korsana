@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
@@ -28,42 +28,35 @@ import ShoeWidget from '../components/dashboard/widgets/ShoeWidget';
 import CardiacDriftWidget from '../components/dashboard/widgets/CardiacDriftWidget';
 import CaloriesWidget from '../components/dashboard/widgets/CaloriesWidget';
 
-// ─── Design tokens ────────────────────────────────────────────
-const C = {
-  navy: "#1B2559", navyLight: "#2A3A7C", coral: "#E8634A",
-  bg: "#F5F6FA", white: "#FFFFFF", gray50: "#F8F9FC",
-  gray100: "#ECEEF4", gray200: "#D4D8E8", gray400: "#8B93B0",
-  gray600: "#4A5173", green: "#2ECC8B", amber: "#F5A623",
-  red: "#E84A4A", blue: "#4A6CF7", purple: "#8B5CF6",
-};
-
+// ─── Workout type colors ───────────────────────────────────────
 const WC = {
-  easy: { bg: "#E8F0FE", text: "#2A3A7C" },
-  Easy: { bg: "#E8F0FE", text: "#2A3A7C" },
-  long: { bg: C.navy, text: "#FFFFFF" },
-  "Long Run": { bg: C.navy, text: "#FFFFFF" },
-  Long: { bg: C.navy, text: "#FFFFFF" },
-  tempo: { bg: "#FDE8E3", text: "#C0391B" },
-  Tempo: { bg: "#FDE8E3", text: "#C0391B" },
-  interval: { bg: "#FFF3CD", text: "#856404" },
-  Intervals: { bg: "#FFF3CD", text: "#856404" },
-  rest: { bg: C.gray100, text: C.gray400 },
-  Rest: { bg: C.gray100, text: C.gray400 },
-  cross_train: { bg: "#F1F5F9", text: "#475569" },
-  "Cross Train": { bg: "#F1F5F9", text: "#475569" },
-  cycling: { bg: "#E0F2FE", text: "#0369A1" },
-  swimming: { bg: "#CFFAFE", text: "#0E7490" },
-  lifting: { bg: "#EDE9FE", text: "#6D28D9" },
-  walking: { bg: "#DCFCE7", text: "#15803D" },
-  recovery: { bg: "#F1F5F9", text: "#475569" },
-  Recovery: { bg: "#F1F5F9", text: "#475569" },
+  easy:          { bg: '#E8F0FE', text: '#2A3A7C' },
+  Easy:          { bg: '#E8F0FE', text: '#2A3A7C' },
+  long:          { bg: '#1B2559', text: '#FFFFFF' },
+  'Long Run':    { bg: '#1B2559', text: '#FFFFFF' },
+  Long:          { bg: '#1B2559', text: '#FFFFFF' },
+  tempo:         { bg: '#FDE8E3', text: '#C0391B' },
+  Tempo:         { bg: '#FDE8E3', text: '#C0391B' },
+  interval:      { bg: '#FFF3CD', text: '#856404' },
+  Intervals:     { bg: '#FFF3CD', text: '#856404' },
+  rest:          { bg: '#ECEEF4', text: '#8B93B0' },
+  Rest:          { bg: '#ECEEF4', text: '#8B93B0' },
+  cross_train:   { bg: '#F1F5F9', text: '#475569' },
+  'Cross Train': { bg: '#F1F5F9', text: '#475569' },
+  cycling:       { bg: '#E0F2FE', text: '#0369A1' },
+  swimming:      { bg: '#CFFAFE', text: '#0E7490' },
+  lifting:       { bg: '#EDE9FE', text: '#6D28D9' },
+  walking:       { bg: '#DCFCE7', text: '#15803D' },
+  recovery:      { bg: '#F1F5F9', text: '#475569' },
+  Recovery:      { bg: '#F1F5F9', text: '#475569' },
 };
 
+// ─── Training phase config ─────────────────────────────────────
 const PC = {
-  Build: { accent: C.blue, label: "#2A3A7C", badge: "#E8F0FE" },
-  Peak: { accent: C.coral, label: "#C0391B", badge: "#FDE8E3" },
-  Taper: { accent: C.green, label: "#1A7A50", badge: "#E9FBF3" },
-  "Race Week": { accent: C.amber, label: "#856404", badge: "#FFF3CD" },
+  Build:       { accent: '#4A6CF7', label: '#2A3A7C', badge: '#E8F0FE' },
+  Peak:        { accent: '#E8634A', label: '#C0391B', badge: '#FDE8E3' },
+  Taper:       { accent: '#2ECC8B', label: '#1A7A50', badge: '#E9FBF3' },
+  'Race Week': { accent: '#F5A623', label: '#856404', badge: '#FFF3CD' },
 };
 
 const WIDGETS = [
@@ -84,6 +77,9 @@ const WIDGETS = [
 ];
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+const RUN_TABLE_COLS = '100px 100px 1fr 90px 90px 80px 80px';
+const RUN_TABLE_HEADERS = ['Date', 'Type', 'Distance', 'Pace', 'Time', 'HR', 'Elev'];
 
 // ─── Helpers ──────────────────────────────────────────────────
 const fmtDateISO = (d) => {
@@ -127,27 +123,27 @@ const getWorkoutSegments = (type, miles) => {
     case 'Long Run':
     case 'Long':
       return [
-        { name: 'Warm-up', detail: '2 mi easy · HR ramp to Z2' },
+        { name: 'Warm-up',  detail: '2 mi easy · HR ramp to Z2' },
         { name: 'Main Set', detail: `${Math.max(1, m - 4)} mi @ Z2 · feel conversational` },
         { name: 'Cool-down', detail: '2 mi easy walk/jog' },
       ];
     case 'Tempo':
       return [
-        { name: 'Warm-up', detail: '1 mi easy' },
+        { name: 'Warm-up',  detail: '1 mi easy' },
         { name: 'Main Set', detail: `${Math.max(1, m - 2)} mi @ Z3–Z4 · comfortably hard` },
         { name: 'Cool-down', detail: '1 mi easy' },
       ];
     case 'Intervals':
       return [
-        { name: 'Warm-up', detail: '1 mi easy + strides' },
+        { name: 'Warm-up',  detail: '1 mi easy + strides' },
         { name: 'Main Set', detail: 'Repeats @ Z4–Z5 · full recovery' },
         { name: 'Cool-down', detail: '1 mi easy jog' },
       ];
     default:
       return [
-        { name: 'Effort', detail: 'Z1–Z2 · conversational pace' },
+        { name: 'Effort',   detail: 'Z1–Z2 · conversational pace' },
         { name: 'Duration', detail: `${m > 0 ? `${m} mi target` : 'Easy effort'}` },
-        { name: 'Focus', detail: 'Keep HR below Z3' },
+        { name: 'Focus',    detail: 'Keep HR below Z3' },
       ];
   }
 };
@@ -156,65 +152,56 @@ const getWorkoutSegments = (type, miles) => {
 const Pill = ({ type, sm = false }) => {
   const s = WC[type] || WC.Easy;
   return (
-    <span style={{
-      background: s.bg, color: s.text,
-      borderRadius: 5,
-      padding: sm ? "2px 7px" : "3px 9px",
-      fontSize: sm ? 9 : 11,
-      fontFamily: "DM Sans, sans-serif",
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: "0.05em",
-      whiteSpace: "nowrap",
-    }}>{type}</span>
+    <span
+      className={`font-sans font-bold uppercase tracking-[0.05em] whitespace-nowrap rounded-[5px] ${sm ? 'text-[9px] px-[7px] py-[2px]' : 'text-[11px] px-[9px] py-[3px]'}`}
+      style={{ background: s.bg, color: s.text }}
+    >
+      {type}
+    </span>
   );
 };
 
 const Card = ({ children, style = {} }) => (
-  <div style={{
-    background: C.white,
-    borderRadius: 16,
-    padding: "20px 22px",
-    boxShadow: "0 1px 2px rgba(27,37,89,0.05), 0 2px 12px rgba(27,37,89,0.04)",
-    ...style
-  }}>{children}</div>
+  <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '20px 22px', ...style }}>
+    {children}
+  </div>
 );
 
 const SLabel = ({ children, action }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+  <div className="flex justify-between items-center mb-[14px]">
+    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
       {children}
     </div>
     {action}
   </div>
 );
 
-const Tip = ({ active, payload, label, unit = "" }) => {
+const Tip = ({ active, payload, label, unit = '' }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: C.navy, borderRadius: 10, padding: "8px 12px" }}>
-      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 2 }}>{label}</div>
-      <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: "#fff" }}>
-        {payload[0]?.value}{unit}
-      </div>
+    <div className="bg-navy rounded-[10px] px-3 py-2">
+      <div className="font-sans text-[10px] text-white/45 mb-[2px]">{label}</div>
+      <div className="font-mono text-[13px] font-bold text-white">{payload[0]?.value}{unit}</div>
     </div>
   );
 };
 
 const Gauge = ({ score }) => {
-  const color = score >= 70 ? C.green : score >= 40 ? C.amber : C.red;
+  const color = score >= 70 ? '#2ECC8B' : score >= 40 ? '#F5A623' : '#E84A4A';
   const r = 48, circ = 2 * Math.PI * r;
   return (
-    <div style={{ position: "relative", width: 120, height: 120, flexShrink: 0 }}>
+    <div className="relative w-[120px] h-[120px] shrink-0">
       <svg width="120" height="120" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={r} fill="none" stroke={C.gray100} strokeWidth="10" />
-        <circle cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
+        <circle cx="60" cy="60" r={r} fill="none" stroke="#ECEEF4" strokeWidth="10" />
+        <circle
+          cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
           strokeDasharray={`${(score / 100) * circ} ${circ}`}
-          strokeLinecap="round" transform="rotate(-90 60 60)" />
+          strokeLinecap="round" transform="rotate(-90 60 60)"
+        />
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 28, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400 }}>/ 100</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="font-mono text-[28px] font-bold text-navy leading-none">{score}</span>
+        <span className="font-sans text-[10px] text-[var(--color-text-muted)]">/ 100</span>
       </div>
     </div>
   );
@@ -223,87 +210,86 @@ const Gauge = ({ score }) => {
 // ─── SyncDropdown ─────────────────────────────────────────────
 const SOURCES = [
   { id: 'strava', label: 'Strava', status: 'connected', color: '#FC4C02' },
-  { id: 'garmin', label: 'Garmin', status: 'coming', color: '#007DC5' },
-  { id: 'coros', label: 'Coros', status: 'coming', color: '#1B2559' },
+  { id: 'garmin', label: 'Garmin', status: 'coming',    color: '#007DC5' },
+  { id: 'coros',  label: 'Coros',  status: 'coming',    color: '#1B2559' },
 ];
-
 
 const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: open ? C.gray100 : C.gray50,
-          border: `1px solid ${C.gray200}`, borderRadius: 8,
-          padding: '5px 12px', fontFamily: 'DM Sans, sans-serif',
-          fontSize: 11, fontWeight: 700, color: C.navy, cursor: 'pointer',
-          transition: 'all 0.15s',
-        }}
+        className="flex items-center gap-[6px] border border-[#D4D8E8] rounded-lg px-3 py-[5px] font-sans text-[11px] font-bold text-navy cursor-pointer transition-all"
+        style={{ background: open ? '#ECEEF4' : '#F8F9FC' }}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          stroke={isSyncing ? C.coral : C.navy} strokeWidth="2.5"
+        <svg
+          width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke={isSyncing ? '#E8634A' : '#1B2559'} strokeWidth="2.5"
           strokeLinecap="round" strokeLinejoin="round"
-          style={{ animation: isSyncing ? 'krs-spin 0.8s linear infinite' : 'none' }}>
+          style={{ animation: isSyncing ? 'krs-spin 0.8s linear infinite' : 'none' }}
+        >
           <polyline points="1 4 1 10 7 10" />
           <path d="M3.51 15a9 9 0 1 0 .49-4.5" />
         </svg>
         {isSyncing ? 'Syncing…' : 'Sync'}
-        <span style={{ fontSize: 11, color: C.gray400, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
+        <span
+          className="text-[11px] text-[var(--color-text-muted)] inline-block transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+        >▾</span>
       </button>
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-            background: C.white, borderRadius: 14, width: 220,
-            boxShadow: '0 4px 32px rgba(27,37,89,0.16)', border: `1px solid ${C.gray100}`,
-            padding: '12px', zIndex: 300,
-          }}>
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Data Sources</div>
+          <div className="fixed inset-0 z-[299]" onClick={() => setOpen(false)} />
+          <div className="absolute top-[calc(100%+8px)] right-0 bg-white rounded-[14px] w-[220px] border border-[var(--color-border-light)] p-3 z-[300] shadow-[0_4px_32px_rgba(27,37,89,0.16)]">
+            <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[10px]">
+              Data Sources
+            </div>
             {SOURCES.map(s => (
-              <div key={s.id} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '9px 10px', borderRadius: 9, marginBottom: 4,
-                background: s.status === 'connected' ? C.gray50 : 'transparent',
-                border: `1px solid ${s.status === 'connected' ? C.gray100 : 'transparent'}`,
-                cursor: s.status === 'coming' ? 'pointer' : 'default',
-              }}
+              <div
+                key={s.id}
+                className="flex items-center gap-[10px] px-[10px] py-[9px] rounded-[9px] mb-1"
+                style={{
+                  background: s.status === 'connected' ? '#F8F9FC' : 'transparent',
+                  border: `1px solid ${s.status === 'connected' ? '#ECEEF4' : 'transparent'}`,
+                  cursor: s.status === 'coming' ? 'pointer' : 'default',
+                }}
                 onClick={s.status === 'coming' ? () => { onSync(s.id); setOpen(false); } : undefined}
               >
-                <div style={{
-                  width: 30, height: 30, borderRadius: 7,
-                  background: C.white, border: `1px solid ${C.gray200}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, overflow: 'hidden',
-                }}>
+                <div className="w-[30px] h-[30px] rounded-[7px] bg-white border border-[#D4D8E8] flex items-center justify-center shrink-0 overflow-hidden">
                   <BrandIcon brand={s.id} size={18} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: 600, color: s.status === 'connected' ? C.navy : C.gray400 }}>{s.label}</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: s.status === 'connected' ? (stravaConnected === false ? C.coral : C.green) : C.gray400, marginTop: 1 }}>
-                    {s.status === 'connected' ? (stravaConnected === false ? '○ Not connected' : '● Connected') : 'Coming soon'}
+                <div className="flex-1">
+                  <div
+                    className="font-sans text-[12px] font-semibold"
+                    style={{ color: s.status === 'connected' ? '#1B2559' : '#8B93B0' }}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    className="font-sans text-[10px] mt-[1px]"
+                    style={{
+                      color: s.status === 'connected'
+                        ? (stravaConnected === false ? '#E8634A' : '#2ECC8B')
+                        : '#8B93B0',
+                    }}
+                  >
+                    {s.status === 'connected'
+                      ? (stravaConnected === false ? '○ Not connected' : '● Connected')
+                      : 'Coming soon'}
                   </div>
                 </div>
                 {s.status === 'connected' && (
                   stravaConnected === false ? (
                     <button
                       onClick={() => { onConnect(); setOpen(false); }}
-                      style={{
-                        background: C.coral, border: 'none', borderRadius: 7,
-                        padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
-                        fontSize: 11, fontWeight: 700, color: C.white,
-                        cursor: 'pointer', whiteSpace: 'nowrap',
-                      }}
+                      className="bg-coral border-0 rounded-[7px] px-[10px] py-[5px] font-sans text-[11px] font-bold text-white cursor-pointer whitespace-nowrap"
                     >Connect</button>
                   ) : (
-                    <button onClick={() => { onSync('strava'); setOpen(false); }} style={{
-                      background: C.navy, border: 'none', borderRadius: 7,
-                      padding: '5px 10px', fontFamily: 'DM Sans, sans-serif',
-                      fontSize: 11, fontWeight: 700, color: C.white, cursor: 'pointer',
-                    }}>Sync</button>
+                    <button
+                      onClick={() => { onSync('strava'); setOpen(false); }}
+                      className="bg-navy border-0 rounded-[7px] px-[10px] py-[5px] font-sans text-[11px] font-bold text-white cursor-pointer"
+                    >Sync</button>
                   )
                 )}
               </div>
@@ -319,65 +305,62 @@ const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
 const WidgetSelector = ({ active, toggle }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       <button
         onClick={() => setOpen(!open)}
+        className="flex items-center gap-[6px] border rounded-lg px-3 py-[5px] font-sans text-[11px] font-bold text-navy cursor-pointer transition-all"
         style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: open ? 'rgba(27,37,89,0.08)' : C.gray50,
-          border: `1px solid ${open ? C.navy : C.gray200}`,
-          borderRadius: 8, padding: '5px 12px',
-          fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700,
-          color: C.navy, cursor: 'pointer', transition: 'all 0.15s',
+          background: open ? 'rgba(27,37,89,0.08)' : '#F8F9FC',
+          borderColor: open ? '#1B2559' : '#D4D8E8',
         }}
       >
         Customize
-        <span style={{
-          fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
-          background: C.coral, color: C.white, borderRadius: 99, padding: '1px 6px',
-        }}>{active.length}</span>
-        <span style={{ fontSize: 11, color: C.gray400, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▾</span>
+        <span className="font-mono text-[10px] bg-coral text-white rounded-full px-[6px] py-[1px]">
+          {active.length}
+        </span>
+        <span
+          className="text-[11px] text-[var(--color-text-muted)] inline-block transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+        >▾</span>
       </button>
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 299 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-            background: C.white, borderRadius: 14, width: 320,
-            boxShadow: '0 4px 32px rgba(27,37,89,0.16)', border: `1px solid ${C.gray100}`,
-            padding: '14px 14px 10px', zIndex: 300,
-          }}>
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+          <div className="fixed inset-0 z-[299]" onClick={() => setOpen(false)} />
+          <div className="absolute top-[calc(100%+8px)] right-0 bg-white rounded-[14px] w-[320px] border border-[var(--color-border-light)] px-[14px] pt-[14px] pb-[10px] z-[300] shadow-[0_4px_32px_rgba(27,37,89,0.16)]">
+            <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[10px]">
               Customize your widgets
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+            <div className="grid grid-cols-3 gap-[6px]">
               {WIDGETS.map(w => {
                 const on = active.includes(w.id);
                 return (
-                  <button key={w.id} onClick={() => toggle(w.id)} style={{
-                    background: on ? C.navy : C.gray50,
-                    border: `1.5px solid ${on ? C.navy : C.gray100}`,
-                    borderRadius: 9, padding: '8px 6px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                    cursor: 'pointer', transition: 'all 0.15s',
-                  }}>
+                  <button
+                    key={w.id}
+                    onClick={() => toggle(w.id)}
+                    className="rounded-[9px] px-[6px] py-2 flex flex-col items-center gap-[3px] cursor-pointer transition-all border-[1.5px]"
+                    style={{
+                      background: on ? '#1B2559' : '#F8F9FC',
+                      borderColor: on ? '#1B2559' : '#ECEEF4',
+                    }}
+                  >
                     <span style={{ fontSize: 14 }}>{w.icon}</span>
-                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, color: on ? C.white : C.gray600 }}>{w.label}</span>
+                    <span
+                      className="font-sans text-[10px] font-bold"
+                      style={{ color: on ? '#ffffff' : '#4A5173' }}
+                    >{w.label}</span>
                   </button>
                 );
               })}
             </div>
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.gray100}`, display: 'flex', justifyContent: 'space-between' }}>
+            <div className="mt-[10px] pt-[10px] border-t border-[var(--color-border-light)] flex justify-between">
               <button
                 onClick={() => WIDGETS.forEach(w => !active.includes(w.id) && toggle(w.id))}
-                style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: C.navy, background: 'none', border: 'none', cursor: 'pointer' }}>
-                Show all
-              </button>
+                className="font-sans text-[11px] font-semibold text-navy bg-transparent border-0 cursor-pointer"
+              >Show all</button>
               <button
                 onClick={() => [...active].forEach(id => toggle(id))}
-                style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: C.gray400, background: 'none', border: 'none', cursor: 'pointer' }}>
-                Clear
-              </button>
+                className="font-sans text-[11px] font-semibold text-[var(--color-text-muted)] bg-transparent border-0 cursor-pointer"
+              >Clear</button>
             </div>
           </div>
         </>
@@ -386,53 +369,45 @@ const WidgetSelector = ({ active, toggle }) => {
   );
 };
 
-
-
 // ─── WidgetGrid ───────────────────────────────────────────────
-const WidgetGrid = ({ active, dashboardData, computedData, onRefresh }) => {
+const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh }) => {
   if (!active.length) return null;
   const has = (id) => active.includes(id);
-  const wide = { gridColumn: '1 / -1' };
   return (
-    <div>
+    <div className="px-6 pb-6">
       <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
-        {has('load') && <div style={wide}><TrainingLoadWidget data={dashboardData?.training_load} /></div>}
-        {has('predictor') && <div style={wide}><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} /></div>}
-        {has('longrun') && <LongRunConfidenceWidget data={dashboardData?.long_run} />}
-        {has('recovery') && <RecoveryWidget data={dashboardData?.recovery} />}
-        {has('injuryrisk') && <InjuryRiskWidget data={dashboardData?.injury_risk} />}
-        {has('hrzones') && <HRZonesWidget data={dashboardData?.hr_zones} />}
-        {has('elevation') && <ElevationWidget data={computedData?.elevation} />}
-        {has('cadence') && <CadenceWidget data={computedData?.cadence} />}
-        {has('streak') && <StreakWidget data={computedData?.streak} />}
-        {has('crosstraining') && <div style={wide}><CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} /></div>}
-        {has('execution') && <ExecutionScoreWidget data={dashboardData?.execution} />}
-        {has('shoes') && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
-        {has('cardiac') && <CardiacDriftWidget />}
-        {has('calories') && <CaloriesWidget data={computedData?.calories} />}
+      <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+        {has('load')          && <div className="col-span-full"><TrainingLoadWidget data={dashboardData?.training_load} /></div>}
+        {has('predictor')     && <div className="col-span-full"><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} /></div>}
+        {has('longrun')       && <LongRunConfidenceWidget data={dashboardData?.long_run} />}
+        {has('recovery')      && <RecoveryWidget data={dashboardData?.recovery} />}
+        {has('injuryrisk')    && <InjuryRiskWidget data={dashboardData?.injury_risk} />}
+        {has('hrzones')       && <HRZonesWidget data={dashboardData?.hr_zones} />}
+        {has('elevation')     && <ElevationWidget data={computedData?.elevation} />}
+        {has('cadence')       && <CadenceWidget data={computedData?.cadence} />}
+        {has('streak')        && <StreakWidget data={computedData?.streak} />}
+        {has('crosstraining') && <div className="col-span-full"><CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} /></div>}
+        {has('execution')     && <ExecutionScoreWidget data={dashboardData?.execution} />}
+        {has('shoes')         && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
+        {has('cardiac')       && <CardiacDriftWidget />}
+        {has('calories')      && <CaloriesWidget data={computedData?.calories} />}
       </div>
     </div>
   );
-};
+});
 
 // ─── Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
 
-  // Core state
   const [activeGoal, setActiveGoal] = useState(null);
   const [activities, setActivities] = useState([]);
   const [weekEntries, setWeekEntries] = useState([]);
-  const [coachInsight, setCoachInsight] = useState('');
-
-  // Loading/sync state
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState({ text: '', type: '' });
   const [lastSynced, setLastSynced] = useState(null);
-  const [stravaConnected, setStravaConnected] = useState(null); // null = unknown
+  const [stravaConnected, setStravaConnected] = useState(null);
 
-  // UI state
   const [showFactors, setShowFactors] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState(() => {
@@ -450,7 +425,6 @@ const Dashboard = () => {
 
   const [dashboardData, setDashboardData] = useState(null);
 
-  // ─── Fetches ────────────────────────────────────────────────
   const fetchActiveGoal = useCallback(async () => {
     try {
       const res = await goalsAPI.getActiveGoal();
@@ -539,7 +513,6 @@ const Dashboard = () => {
         type: 'success',
       });
       setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
-      // Refresh data in background — don't block the spinner on these
       fetchActivities();
       fetchDashboardData();
     } catch (error) {
@@ -570,25 +543,23 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // ─── Date helpers ────────────────────────────────────────────
   const today = new Date();
-  const todayISO = fmtDateISO(today);
+  const todayISO = useMemo(() => fmtDateISO(new Date()), []);
 
-  // ─── Goal computations ───────────────────────────────────────
   const daysToRace = activeGoal?.race_date
     ? Math.max(0, Math.ceil((new Date(activeGoal.race_date) - today) / 86400000))
     : null;
   const weeksOut = daysToRace !== null ? Math.floor(daysToRace / 7) : null;
-  const daysRem = daysToRace !== null ? daysToRace % 7 : null;
+  const daysRem  = daysToRace !== null ? daysToRace % 7 : null;
   const trainingPhase = weeksOut !== null ? getTrainingPhase(weeksOut) : 'Build';
   const pc = PC[trainingPhase];
 
   const trainingProgress = useMemo(() => {
     if (!activeGoal?.race_date) return 0;
     const raceDate = new Date(activeGoal.race_date);
-    const created = new Date(activeGoal.created_at || Date.now());
-    const total = raceDate - created;
-    const elapsed = today - created;
+    const created  = new Date(activeGoal.created_at || Date.now());
+    const total    = raceDate - created;
+    const elapsed  = today - created;
     if (total <= 0) return 100;
     return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
   }, [activeGoal]);
@@ -599,7 +570,6 @@ const Dashboard = () => {
     return fmtPace(secPerKm);
   }, [activeGoal]);
 
-  // ─── Activity computations ───────────────────────────────────
   const startOfWeek = useMemo(() => {
     const d = new Date(today);
     d.setDate(d.getDate() - d.getDay());
@@ -617,7 +587,7 @@ const Dashboard = () => {
 
   const weeklyTarget = useMemo(() => {
     if (!activeGoal) return 30;
-    const raceDist = (activeGoal.race_distance_meters || 42195) * 0.000621371;
+    const raceDist  = (activeGoal.race_distance_meters || 42195) * 0.000621371;
     const peakMileage = Math.min(raceDist * 3, 60);
     const ramp = Math.min(1, trainingProgress / 80);
     return Math.round(Math.max(10, peakMileage * (0.5 + 0.5 * ramp)));
@@ -684,7 +654,6 @@ const Dashboard = () => {
     return parseFloat(pctChange.toFixed(1));
   }, [aerobicEffData]);
 
-  // Readiness factors
   const consistency = useMemo(() => {
     if (!activities.length) return 0;
     let count = 0;
@@ -763,9 +732,8 @@ const Dashboard = () => {
 
   const readinessScore = readinessFactors.composite;
   const readinessLabel = readinessScore >= 70 ? 'Race Ready' : readinessScore >= 50 ? 'On Track' : 'Building Base';
-  const readinessColor = readinessScore >= 70 ? C.green : readinessScore >= 50 ? C.amber : C.red;
+  const readinessColor = readinessScore >= 70 ? '#2ECC8B' : readinessScore >= 50 ? '#F5A623' : '#E84A4A';
 
-  // Weekly mileage chart data (8 weeks)
   const weeklyChartData = useMemo(() => {
     const weeks = {};
     for (let i = 7; i >= 0; i--) {
@@ -789,14 +757,13 @@ const Dashboard = () => {
     return Object.values(weeks).map(w => ({ ...w, miles: parseFloat(w.miles.toFixed(1)) }));
   }, [activities]);
 
-  // Effort distribution from avg HR (approximated)
   const effortDist = useMemo(() => {
     const zones = [
-      { zone: 'Z1 Easy', label: '< 130 bpm', color: '#5CC8FF', min: 0, max: 130, mins: 0 },
-      { zone: 'Z2 Aerobic', label: '130–148', color: C.green, min: 130, max: 148, mins: 0 },
-      { zone: 'Z3 Tempo', label: '148–162', color: C.amber, min: 148, max: 162, mins: 0 },
-      { zone: 'Z4 Hard', label: '162–174', color: C.coral, min: 162, max: 174, mins: 0 },
-      { zone: 'Z5 Max', label: '174+', color: C.red, min: 174, max: 999, mins: 0 },
+      { zone: 'Z1 Easy',    label: '< 130 bpm', color: '#5CC8FF', min: 0,   max: 130, mins: 0 },
+      { zone: 'Z2 Aerobic', label: '130–148',   color: '#2ECC8B', min: 130, max: 148, mins: 0 },
+      { zone: 'Z3 Tempo',   label: '148–162',   color: '#F5A623', min: 148, max: 162, mins: 0 },
+      { zone: 'Z4 Hard',    label: '162–174',   color: '#E8634A', min: 162, max: 174, mins: 0 },
+      { zone: 'Z5 Max',     label: '174+',      color: '#E84A4A', min: 174, max: 999, mins: 0 },
     ];
     const sevenAgo = new Date(today);
     sevenAgo.setDate(sevenAgo.getDate() - 7);
@@ -811,17 +778,14 @@ const Dashboard = () => {
     return zones.map(z => ({ ...z, pct: Math.round((z.mins / total) * 100) }));
   }, [activities]);
 
-  // Today's calendar entries (all of them)
   const todayEntries = useMemo(() =>
     weekEntries.filter(e => e.date === todayISO),
     [weekEntries, todayISO]);
 
-  // Primary entry (first planned, or first completed, or null)
   const todayEntry = useMemo(() =>
     todayEntries.find(e => e.status === 'planned') || todayEntries[0] || null,
     [todayEntries]);
 
-  // Additional entries to show below the main card
   const todayExtraEntries = useMemo(() =>
     todayEntries.filter(e => e !== todayEntry),
     [todayEntries, todayEntry]);
@@ -836,52 +800,39 @@ const Dashboard = () => {
     }
   }, [todayEntry, fetchWeekEntries]);
 
-  // Calendar strip: Mon-Sun with entries
   const calendarStrip = useMemo(() => {
     const result = [];
     const now = new Date();
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const dayOfWeek = now.getDay();
-    // Find Monday
     const monday = new Date(todayMidnight);
     monday.setDate(todayMidnight.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const iso = fmtDateISO(d);
-      // Prefer calendar entries (planned/completed) over raw activities
       const calEntries = weekEntries.filter(e => e.date === iso);
       const entry = calEntries[0] || null;
       const isToday = iso === todayISO;
-
-      const type = entry?.workout_type || null;
+      const type  = entry?.workout_type || null;
       const title = entry?.title || null;
       const miles = entry?.planned_distance_meters
         ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
         : null;
-
       result.push({
-        day: DAY_LABELS[d.getDay()],
-        date: String(d.getDate()),
-        iso,
-        type,
-        title,
-        miles,
+        day: DAY_LABELS[d.getDay()], date: String(d.getDate()), iso,
+        type, title, miles,
         done: entry?.status === 'completed',
-        today: isToday,
-        count: calEntries.length,
+        today: isToday, count: calEntries.length,
       });
     }
     return result;
   }, [weekEntries, todayISO]);
 
-  // Up next: future entries this week
   const upNextEntries = useMemo(() =>
     calendarStrip.filter(d => !d.today && !d.done && d.type && d.type !== 'Rest').slice(0, 3),
     [calendarStrip]);
 
-  // Recent runs
   const recentRuns = useMemo(() =>
     activities
       .filter(a => a.activity_type === 'run')
@@ -889,9 +840,7 @@ const Dashboard = () => {
       .slice(0, 6),
     [activities]);
 
-  // ─── Widget data computations ─────────────────────────────────
   const widgetData = useMemo(() => {
-    // Elevation per week
     const elevWeeks = {};
     for (let i = 7; i >= 0; i--) {
       const d = new Date(today);
@@ -918,14 +867,12 @@ const Dashboard = () => {
       }
     });
 
-    // Cadence
     const cadenceRuns = activities.filter(a => a.activity_type === 'run' && (a.average_cadence || a.cadence));
-    const avgCadence = cadenceRuns.length
+    const avgCadence  = cadenceRuns.length
       ? Math.round(cadenceRuns.reduce((s, a) => s + (a.average_cadence || a.cadence || 0), 0) / cadenceRuns.length)
       : 0;
     const cadWeeks = Object.values(elevWeeks).map((w, i) => ({ week: w.week, spm: avgCadence > 0 ? avgCadence + (i - 4) : 170 + (i - 4) }));
 
-    // Calories — compute per-week from activities
     const calWeeks = Object.entries(elevWeeks).map(([key, w]) => {
       const ws = new Date(key);
       const we = new Date(ws);
@@ -937,28 +884,6 @@ const Dashboard = () => {
     });
     const weekCals = calWeeks[calWeeks.length - 1]?.kcal || 0;
 
-    // HR zones
-    const hrZones = [
-      { zone: 'Z1 Easy', pct: effortDist[0].pct, color: '#5CC8FF', bpm: '<130' },
-      { zone: 'Z2 Aerobic', pct: effortDist[1].pct, color: C.green, bpm: '130–148' },
-      { zone: 'Z3 Tempo', pct: effortDist[2].pct, color: C.amber, bpm: '148–162' },
-      { zone: 'Z4 Threshold', pct: effortDist[3].pct, color: C.coral, bpm: '162–174' },
-      { zone: 'Z5 Max', pct: effortDist[4].pct, color: C.red, bpm: '174+' },
-    ];
-
-    // Volume by type
-    const typeMap = {};
-    activities.filter(a => a.activity_type === 'run').forEach(a => {
-      const t = a.workout_type || 'Easy';
-      typeMap[t] = (typeMap[t] || 0) + (a.distance_meters || 0) * 0.000621371;
-    });
-    const typeColors = { Easy: C.blue, 'Long Run': C.navy, Tempo: C.coral, Intervals: C.amber, Recovery: C.green };
-    const volumeByType = Object.entries(typeMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([type, miles]) => ({ type, miles: parseFloat(miles.toFixed(1)), color: typeColors[type] || C.gray400 }));
-
-    // Streak
     const allWeeks = [];
     for (let w = 7; w >= 0; w--) {
       const start = new Date(today);
@@ -974,53 +899,6 @@ const Dashboard = () => {
       if (w.runs >= 3) { cur++; streak = cur; longest = Math.max(longest, cur); }
       else cur = 0;
     }
-
-    // Monthly
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthName = today.toLocaleDateString('en-US', { month: 'long' });
-    const monthActual = parseFloat((activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= monthStart).reduce((s, a) => s + (a.distance_meters || 0) * 0.000621371, 0)).toFixed(1));
-    const monthTarget = weeklyTarget * 4;
-    const byWeek = ['W1', 'W2', 'W3', 'W4'].map((wk, i) => {
-      const ws = new Date(monthStart);
-      ws.setDate(monthStart.getDate() + i * 7);
-      const we = new Date(ws);
-      we.setDate(ws.getDate() + 7);
-      const actual = parseFloat((activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= ws && new Date(a.start_time) < we).reduce((s, a) => s + (a.distance_meters || 0) * 0.000621371, 0)).toFixed(1));
-      return { week: wk, planned: weeklyTarget, actual };
-    });
-
-    // PRs — best estimated time for each standard distance (±15% tolerance)
-    const PR_DISTS = [
-      { label: '5K', km: 5.0 },
-      { label: '10K', km: 10.0 },
-      { label: 'Half', km: 21.1 },
-      { label: 'Marathon', km: 42.2 },
-    ];
-    const prs = PR_DISTS.map(d => {
-      const candidates = activities.filter(a => {
-        if (a.activity_type !== 'run' || !a.average_pace_seconds_per_km) return false;
-        const km = (a.distance_meters || 0) / 1000;
-        return Math.abs(km - d.km) / d.km <= 0.15;
-      });
-      if (!candidates.length) return { label: d.label, pr: null };
-      const best = candidates.reduce((b, a) => {
-        const est = a.average_pace_seconds_per_km * d.km;
-        return !b || est < b.est ? { est, date: a.start_time } : b;
-      }, null);
-      return { label: d.label, pr: best ? { time: Math.round(best.est), date: best.date } : null };
-    });
-
-    // Recent paces — last 8 runs
-    const recentPaces = activities
-      .filter(a => a.activity_type === 'run' && a.average_pace_seconds_per_km && (a.distance_meters || 0) > 500)
-      .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
-      .slice(0, 8)
-      .reverse()
-      .map(a => ({
-        date: new Date(a.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        pace: a.average_pace_seconds_per_km,
-        miles: parseFloat(((a.distance_meters || 0) * 0.000621371).toFixed(1)),
-      }));
 
     const weekRunCount = activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= startOfWeek).length;
     const lastRunWithElev = activities
@@ -1038,13 +916,12 @@ const Dashboard = () => {
         trend: Object.values(elevWeeks).map(w => ({ week: w.week, ft: w.ft })),
       },
       cadence: {
-        avg_spm: avgCadence || 174,
-        goal_spm: 180,
+        avg_spm: avgCadence || 174, goal_spm: 180,
         trend: cadWeeks.map(w => ({ week: w.week, spm: w.spm })),
         by_activity: [
-          { type: 'Easy', spm: avgCadence || 170 },
-          { type: 'Tempo', spm: (avgCadence || 170) + 6 },
-          { type: 'Long', spm: avgCadence || 172 },
+          { type: 'Easy',      spm: avgCadence || 170 },
+          { type: 'Tempo',     spm: (avgCadence || 170) + 6 },
+          { type: 'Long',      spm: avgCadence || 172 },
           { type: 'Intervals', spm: (avgCadence || 170) + 10 },
         ],
       },
@@ -1055,8 +932,7 @@ const Dashboard = () => {
         trend: calWeeks.slice(-8).map(w => ({ week: w.week, kcal: w.kcal })),
       },
       streak: {
-        current_streak: streak,
-        longest_streak: longest,
+        current_streak: streak, longest_streak: longest,
         weekly_target: 3,
         weeks: allWeeks.slice(-8).map(w => ({ week: w.week, runs: w.runs, hit: w.runs >= 3 })),
       },
@@ -1065,33 +941,24 @@ const Dashboard = () => {
 
   // ─── Render ──────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "DM Sans, sans-serif", background: C.bg, minHeight: "100vh" }}>
+    <div className="font-sans bg-[#F5F6FA] min-h-screen">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
         button{cursor:pointer;transition:opacity 0.15s}
-        .nb:hover{color:white!important;background:rgba(255,255,255,0.1)!important}
         @keyframes krs-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        .krs-rr:hover { background: ${C.gray50} !important; cursor: pointer }
-        .krs-cal:hover { background: ${C.gray50} !important }
+        .krs-rr:hover { background: var(--color-bg-elevated) !important; cursor: pointer }
+        .krs-cal:hover { background: var(--color-bg-elevated) !important }
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: ${C.gray200}; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #D4D8E8; border-radius: 3px; }
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.gray100}`, padding: '14px 24px' }}>
-        <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-6 py-[14px]">
+        <div className="max-w-[1280px] w-full mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                background: C.coral, border: 'none',
-                borderRadius: 10, padding: '9px 18px',
-                fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 700,
-                color: C.white, cursor: 'pointer',
-                boxShadow: '0 3px 10px rgba(232,99,74,0.35)',
-              }}
+              className="flex items-center gap-[7px] bg-coral border-0 rounded-[10px] px-[18px] py-[9px] font-sans text-[13px] font-bold text-white cursor-pointer shadow-[0_3px_10px_rgba(232,99,74,0.35)]"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -1099,13 +966,13 @@ const Dashboard = () => {
               Plan Activity
             </button>
             {syncMsg.text && (
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600,
-                color: syncMsg.type === 'success' ? C.green : C.red,
-              }}>{syncMsg.text}</span>
+              <span
+                className="font-sans text-[11px] font-semibold"
+                style={{ color: syncMsg.type === 'success' ? '#2ECC8B' : '#E84A4A' }}
+              >{syncMsg.text}</span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} onConnect={handleConnectStrava} stravaConnected={stravaConnected} />
             <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
           </div>
@@ -1113,507 +980,612 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ width: '100%', padding: '24px 24px' }}>
-        <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <div className="w-full p-6">
+        <div className="max-w-[1280px] w-full mx-auto flex flex-col gap-[22px]">
 
-        {/* ── GOAL HERO CARD ── */}
-        <Card style={{ padding: "18px 24px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {activeGoal ? (
-            <>
-              {/* Left: race identity */}
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 4, height: 50, background: C.coral, borderRadius: 99, flexShrink: 0 }} />
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
-                    <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 22, color: C.navy, letterSpacing: "-0.02em", lineHeight: 1 }}>{activeGoal.race_name}</span>
-                    <div style={{ background: pc.badge, borderRadius: 6, padding: "3px 10px", display: "flex", alignItems: "center", gap: 5 }}>
-                      <div style={{ width: 4, height: 4, borderRadius: "50%", background: pc.accent }} />
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: pc.label }}>{trainingPhase} Phase</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>
-                      {activeGoal.race_date ? new Date(activeGoal.race_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
-                    </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div style={{ width: 110, height: 3, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
-                        <div style={{ width: `${trainingProgress}%`, height: "100%", background: `linear-gradient(90deg,${C.coral},#f2a040)`, borderRadius: 99 }} />
+          {/* ── GOAL HERO CARD ── */}
+          <Card style={{ padding: '18px 24px' }}>
+            <div className="flex items-center justify-between">
+              {activeGoal ? (
+                <>
+                  {/* Left: race identity */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-1 h-[50px] bg-coral rounded-full shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-[10px] mb-[5px]">
+                        <span className="font-heading font-bold text-[22px] text-navy tracking-[-0.02em] leading-none">
+                          {activeGoal.race_name}
+                        </span>
+                        <div
+                          className="rounded-[6px] px-[10px] py-[3px] flex items-center gap-[5px]"
+                          style={{ background: pc.badge }}
+                        >
+                          <div className="w-1 h-1 rounded-full" style={{ background: pc.accent }} />
+                          <span className="font-sans text-[10px] font-bold" style={{ color: pc.label }}>
+                            {trainingPhase} Phase
+                          </span>
+                        </div>
                       </div>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{trainingProgress}% done</span>
+                      <div className="flex items-center gap-[14px]">
+                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">
+                          {activeGoal.race_date
+                            ? new Date(activeGoal.race_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                            : '—'}
+                        </span>
+                        <div className="flex items-center gap-[7px]">
+                          <div className="w-[110px] h-[3px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${trainingProgress}%`, background: 'linear-gradient(90deg,#E8634A,#f2a040)' }}
+                            />
+                          </div>
+                          <span className="font-sans text-[11px] text-[var(--color-text-muted)]">{trainingProgress}% done</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Center: target + goal pace */}
-              <div style={{ display: "flex", gap: 0, alignItems: "stretch" }}>
-                {[
-                  { label: "TARGET TIME", value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : "—", sub: "finish goal" },
-                  { label: "GOAL PACE", value: targetPaceDisplay || "—", sub: "avg per mile" },
-                ].map((stat, i) => (
-                  <div key={i} style={{ padding: "0 24px", borderLeft: i > 0 ? `1px solid ${C.gray100}` : undefined, textAlign: "center" }}>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{stat.label}</div>
-                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 22, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{stat.value}</div>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400, marginTop: 3 }}>{stat.sub}</div>
+                  {/* Center: target + goal pace */}
+                  <div className="flex items-stretch">
+                    {[
+                      { label: 'TARGET TIME', value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : '—', sub: 'finish goal' },
+                      { label: 'GOAL PACE',   value: targetPaceDisplay || '—', sub: 'avg per mile' },
+                    ].map((stat, i) => (
+                      <div
+                        key={i}
+                        className={`px-6 text-center ${i > 0 ? 'border-l border-[var(--color-border-light)]' : ''}`}
+                      >
+                        <div className="font-sans text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.12em] mb-[5px]">
+                          {stat.label}
+                        </div>
+                        <div className="font-mono text-[22px] font-bold text-navy leading-none">{stat.value}</div>
+                        <div className="font-sans text-[10px] text-[var(--color-text-muted)] mt-[3px]">{stat.sub}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Right: countdown */}
-              {daysToRace !== null && (
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 3, justifyContent: "flex-end" }}>
-                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 32, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeksOut}</span>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>w</span>
-                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 22, fontWeight: 700, color: C.gray400, lineHeight: 1 }}>{daysRem}</span>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>d</span>
+                  {/* Right: countdown */}
+                  {daysToRace !== null && (
+                    <div className="text-right">
+                      <div className="flex items-baseline gap-[3px] justify-end">
+                        <span className="font-mono text-[32px] font-bold text-navy leading-none">{weeksOut}</span>
+                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">w</span>
+                        <span className="font-mono text-[22px] font-bold text-[var(--color-text-muted)] leading-none">{daysRem}</span>
+                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">d</span>
+                      </div>
+                      <div className="font-sans text-[10px] text-[var(--color-text-muted)] text-right mt-[1px]">to race day</div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="w-1 h-[50px] bg-[#D4D8E8] rounded-full" />
+                  <div>
+                    <div className="font-heading text-[18px] font-bold text-[var(--color-text-muted)] mb-1">No active goal</div>
+                    <Link to="/goals" className="font-sans text-[12px] text-coral font-semibold no-underline">Set a race goal →</Link>
                   </div>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400, textAlign: "right", marginTop: 1 }}>to race day</div>
                 </div>
               )}
-            </>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 4, height: 50, background: C.gray200, borderRadius: 99 }} />
+            </div>
+          </Card>
+
+          {/* ── GRID ── */}
+          <div className="grid gap-[22px]" style={{ gridTemplateColumns: '1fr 316px' }}>
+
+            {/* ── LEFT COLUMN ── */}
+            <div className="flex flex-col gap-6 min-w-0">
+
+              {/* ① WEEK CALENDAR STRIP */}
               <div>
-                <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700, color: C.gray400, marginBottom: 4 }}>No active goal</div>
-                <Link to="/goals" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: C.coral, fontWeight: 600, textDecoration: 'none' }}>Set a race goal →</Link>
-              </div>
-            </div>
-          )}
-          </div>
-        </Card>
-
-        {/* ── GRID ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 316px', gap: 22 }}>
-
-          {/* ── LEFT COLUMN ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, minWidth: 0 }}>
-
-            {/* ① WEEK CALENDAR STRIP */}
-            <div>
-              <SLabel action={
-                <Link to="/calendar" style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.coral, background: "none", border: "none", textDecoration: "none", cursor: "pointer" }}>
-                  Full Calendar →
-                </Link>
-              }>This Week's Plan</SLabel>
-              <Card style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
-                  {calendarStrip.map((d, i) => {
-                    const s = WC[d.type] || WC.Easy;
-                    const isT = d.today;
-                    return (
-                      <div key={i} className={isT ? "" : "krs-cal"} style={{
-                        padding: "18px 8px 16px", textAlign: "center",
-                        background: isT ? C.navy : "transparent",
-                        borderRight: i < 6 ? `1px solid ${C.gray100}` : "none",
-                        position: "relative", cursor: "default", transition: "background 0.15s",
-                      }}>
-                        <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: isT ? "rgba(255,255,255,0.4)" : C.gray400, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>{d.day}</div>
-                        {/* Big date number */}
-                        <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 28, fontWeight: 700, color: isT ? C.white : C.navy, lineHeight: 1, marginBottom: 10 }}>{d.date}</div>
-                        {/* Workout pill */}
-                        <div style={{ marginBottom: 8 }}>
-                          {d.type ? (
-                            <span style={{ background: isT ? "rgba(255,255,255,0.12)" : s.bg, color: isT ? C.white : s.text, borderRadius: 5, padding: "3px 7px", fontSize: 9, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              {d.type === 'cross_train' ? (d.title || 'Cross Train') : d.type}
-                            </span>
+                <SLabel action={
+                  <Link to="/calendar" className="font-sans text-[12px] font-semibold text-coral no-underline cursor-pointer">
+                    Full Calendar →
+                  </Link>
+                }>This Week's Plan</SLabel>
+                <Card style={{ padding: 0, overflow: 'hidden' }}>
+                  <div className="grid grid-cols-7">
+                    {calendarStrip.map((d, i) => {
+                      const s = WC[d.type] || WC.Easy;
+                      const isT = d.today;
+                      return (
+                        <div
+                          key={i}
+                          className={`py-[18px] px-2 pb-4 text-center relative cursor-default transition-colors ${i < 6 ? 'border-r border-[var(--color-border-light)]' : ''} ${isT ? 'bg-navy' : 'krs-cal'}`}
+                        >
+                          <div className={`font-sans text-[9px] font-bold uppercase tracking-[0.07em] mb-[5px] ${isT ? 'text-white/40' : 'text-[var(--color-text-muted)]'}`}>
+                            {d.day}
+                          </div>
+                          <div className={`font-mono text-[28px] font-bold leading-none mb-[10px] ${isT ? 'text-white' : 'text-navy'}`}>
+                            {d.date}
+                          </div>
+                          <div className="mb-2">
+                            {d.type ? (
+                              <span
+                                className="rounded-[5px] px-[7px] py-[3px] text-[9px] font-sans font-bold uppercase tracking-[0.05em]"
+                                style={isT
+                                  ? { background: 'rgba(255,255,255,0.12)', color: '#ffffff' }
+                                  : { background: s.bg, color: s.text }}
+                              >
+                                {d.type === 'cross_train' ? (d.title || 'Cross Train') : d.type}
+                              </span>
+                            ) : (
+                              <span className={`font-sans text-[11px] ${isT ? 'text-white/20' : 'text-[#D4D8E8]'}`}>Rest</span>
+                            )}
+                          </div>
+                          {d.miles ? (
+                            <div className={`font-mono text-[16px] font-semibold ${isT ? 'text-coral' : 'text-navy'}`}>
+                              {d.miles}<span className={`font-sans text-[10px] ${isT ? 'text-white/30' : 'text-[var(--color-text-muted)]'}`}> mi</span>
+                            </div>
                           ) : (
-                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>Rest</span>
+                            <div className={`font-sans text-[12px] ${isT ? 'text-white/20' : 'text-[#D4D8E8]'}`}>
+                              {d.type ? '—' : 'Rest'}
+                            </div>
                           )}
+                          {d.count > 1 && (
+                            <div className={`font-sans text-[9px] font-bold mt-1 ${isT ? 'text-white/50' : 'text-[var(--color-text-muted)]'}`}>
+                              +{d.count - 1} more
+                            </div>
+                          )}
+                          {d.done && <div className="absolute top-[10px] right-[10px] w-[7px] h-[7px] rounded-full bg-[#2ECC8B]" />}
+                          {isT && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[2px] bg-coral rounded-full" />}
                         </div>
-                        {/* Miles */}
-                        {d.miles ? (
-                          <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 16, fontWeight: 600, color: isT ? C.coral : C.navy }}>
-                            {d.miles}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: isT ? "rgba(255,255,255,0.3)" : C.gray400 }}> mi</span>
-                          </div>
-                        ) : (
-                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: isT ? "rgba(255,255,255,0.2)" : C.gray200 }}>
-                            {d.type ? "—" : "Rest"}
-                          </div>
-                        )}
-                        {/* Activity count badge */}
-                        {d.count > 1 && (
-                          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, fontWeight: 700, color: isT ? "rgba(255,255,255,0.5)" : C.gray400, marginTop: 4 }}>
-                            +{d.count - 1} more
-                          </div>
-                        )}
-                        {/* Done dot */}
-                        {d.done && <div style={{ position: "absolute", top: 10, right: 10, width: 7, height: 7, borderRadius: "50%", background: C.green }} />}
-                        {/* Today indicator */}
-                        {isT && <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 20, height: 2, background: C.coral, borderRadius: 99 }} />}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              </div>
 
-            {/* ② TODAY'S WORKOUT */}
-            <div>
-              <SLabel>Today's Workout</SLabel>
-              {todayEntries.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {todayEntries.map(entry => {
-                    const entryMiles = entry.distance_km
-                      ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
-                      : null;
-                    const entryType = entry.workout_type || null;
-                    const isCrossTrain = entryType === 'cross_train';
-                    const entryHeading = entryType === 'Rest' || entryType === 'rest' ? 'Rest Day'
-                      : isCrossTrain ? (entry.title || 'Cross Training')
-                      : entryMiles ? `${entryMiles} mi ${entryType}`
-                      : (entry.title || entryType || 'Workout');
-                    const showSubtitle = !isCrossTrain && entry.title && entryHeading !== entry.title;
-                    const segments = entryType ? getWorkoutSegments(entryType, entryMiles) : null;
-                    return (
-                      <div key={entry.id} style={{ background: C.navy, borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 6px 24px rgba(27,37,89,0.15)" }}>
-                        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 6, background: C.coral }} />
-                        <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.05, pointerEvents: "none" }}>
-                          <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" /></svg>
-                        </div>
-                        <div style={{ padding: "24px 24px 24px 30px", position: "relative", zIndex: 1 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: segments ? 20 : 0 }}>
-                            <div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                                  {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
-                                </span>
-                                {entry.status === 'completed' && (
-                                  <span style={{ background: "rgba(46,204,139,0.15)", color: C.green, borderRadius: 5, padding: "3px 8px", fontSize: 10, fontFamily: "DM Sans, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Done</span>
+              {/* ② TODAY'S WORKOUT */}
+              <div>
+                <SLabel>Today's Workout</SLabel>
+                {todayEntries.length > 0 ? (
+                  <div className="flex flex-col gap-4">
+                    {todayEntries.map(entry => {
+                      const entryMiles = entry.distance_km
+                        ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
+                        : null;
+                      const entryType  = entry.workout_type || null;
+                      const isCrossTrain = entryType === 'cross_train';
+                      const entryHeading = entryType === 'Rest' || entryType === 'rest' ? 'Rest Day'
+                        : isCrossTrain ? (entry.title || 'Cross Training')
+                        : entryMiles ? `${entryMiles} mi ${entryType}`
+                        : (entry.title || entryType || 'Workout');
+                      const showSubtitle = !isCrossTrain && entry.title && entryHeading !== entry.title;
+                      const segments = entryType ? getWorkoutSegments(entryType, entryMiles) : null;
+                      return (
+                        <div key={entry.id} className="bg-navy rounded-2xl overflow-hidden relative shadow-[0_6px_24px_rgba(27,37,89,0.15)]">
+                          <div className="absolute left-0 top-0 bottom-0 w-[6px] bg-coral" />
+                          <div className="absolute right-[-20px] top-[-20px] opacity-5 pointer-events-none">
+                            <svg width="200" height="200" viewBox="0 0 100 100">
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="20" />
+                            </svg>
+                          </div>
+                          <div className="p-6 pl-[30px] relative z-[1]">
+                            <div className={`flex justify-between items-start ${segments ? 'mb-5' : ''}`}>
+                              <div>
+                                <div className="flex items-center gap-[10px] mb-2">
+                                  <span className="font-sans text-[13px] font-bold text-white/60 uppercase tracking-[0.1em]">
+                                    {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                                  </span>
+                                  {entry.status === 'completed' && (
+                                    <span className="bg-[rgba(46,204,139,0.15)] text-[#2ECC8B] rounded-[5px] px-2 py-[3px] text-[10px] font-sans font-bold uppercase tracking-[0.05em]">
+                                      Done
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="font-heading text-[26px] font-bold text-white leading-[1.1]">
+                                  {entryHeading}
+                                </div>
+                                {showSubtitle && (
+                                  <div className="font-sans text-[14px] text-white/70 leading-relaxed mt-[10px]">
+                                    {entry.title}
+                                  </div>
                                 )}
                               </div>
-                              <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 26, fontWeight: 700, color: C.white, lineHeight: 1.1 }}>
-                                {entryHeading}
-                              </div>
-                              {showSubtitle && (
-                                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, marginTop: 10 }}>
-                                  {entry.title}
+                              {entry.status !== 'completed' && (
+                                <div className="flex flex-col gap-2 items-end">
+                                  <button
+                                    onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
+                                    className="bg-[#2ECC8B] text-white border-0 rounded-lg px-4 py-2 font-sans text-[13px] font-semibold cursor-pointer flex items-center gap-[6px]"
+                                  >
+                                    <span>✓</span> Mark Done
+                                  </button>
+                                  <button
+                                    onClick={handlePlanWorkout}
+                                    className="bg-white/10 text-white border border-white/20 rounded-lg px-4 py-2 font-sans text-[13px] font-semibold cursor-pointer"
+                                  >
+                                    Plan Activity
+                                  </button>
                                 </div>
                               )}
                             </div>
-                            {entry.status !== 'completed' && (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                <button
-                                  onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
-                                  style={{ background: C.green, color: C.white, border: "none", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-                                >
-                                  <span>✓</span> Mark Done
-                                </button>
-                                <button onClick={handlePlanWorkout} style={{ background: "rgba(255,255,255,0.1)", color: C.white, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "8px 16px", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                                  Plan Activity
-                                </button>
+                            {segments && segments.length > 0 && (
+                              <div className="bg-white/[0.06] rounded-xl p-4 border border-white/[0.08]">
+                                <div className="font-sans text-[11px] font-bold text-white/40 uppercase tracking-[0.05em] mb-3">
+                                  Workout Structure
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  {segments.map((seg, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                      <div
+                                        className="w-2 h-2 rounded-full"
+                                        style={{ background: seg.name === 'Warm-up' || seg.name === 'Cool-down' ? 'rgba(255,255,255,0.2)' : '#E8634A' }}
+                                      />
+                                      <div className="font-mono text-[14px] font-bold text-white w-[60px]">{seg.name}</div>
+                                      <div className="font-sans text-[13px] text-white/70">{seg.detail}</div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>
-                          {segments && segments.length > 0 && (
-                            <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Workout Structure</div>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {segments.map((seg, i) => (
-                                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: seg.name === 'Warm-up' || seg.name === 'Cool-down' ? "rgba(255,255,255,0.2)" : C.coral }} />
-                                    <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, fontWeight: 700, color: C.white, width: 60 }}>{seg.name}</div>
-                                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{seg.detail}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Card style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, background: "rgba(255,255,255,0.5)", border: `1px dashed ${C.gray200}`, boxShadow: "none" }}>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>No workout scheduled for today</div>
-                </Card>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-white/50 rounded-2xl border border-dashed border-[#D4D8E8] h-[140px] flex items-center justify-center">
+                    <div className="font-sans text-[14px] text-[var(--color-text-muted)]">No workout scheduled for today</div>
+                  </div>
+                )}
+              </div>
 
-            {/* ③ METRIC CARDS */}
-            <div>
-              <SLabel>This Week</SLabel>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-                {/* Weekly Mileage */}
-                <Card>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Weekly Mileage</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{weeklyMileage}</span>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400, fontWeight: 600 }}>mi</span>
-                  </div>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>of {weeklyTarget} mi planned</div>
-                  <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
-                    <div style={{ width: `${Math.min(100, (weeklyMileage / weeklyTarget) * 100)}%`, height: "100%", background: C.navy, borderRadius: 99 }} />
-                  </div>
-                  {weeklyMilageDelta !== 0 && (
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: weeklyMilageDelta > 0 ? C.green : C.amber }}>
-                      {weeklyMilageDelta > 0 ? "▲" : "▼"} {Math.abs(weeklyMilageDelta)} mi vs last week
+              {/* ③ METRIC CARDS */}
+              <div>
+                <SLabel>This Week</SLabel>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Weekly Mileage */}
+                  <Card>
+                    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[14px]">
+                      Weekly Mileage
+                    </div>
+                    <div className="flex items-baseline gap-[6px] mb-1">
+                      <span className="font-mono text-[42px] font-bold text-navy leading-none">{weeklyMileage}</span>
+                      <span className="font-sans text-[14px] text-[var(--color-text-muted)] font-semibold">mi</span>
+                    </div>
+                    <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-4">
+                      of {weeklyTarget} mi planned
+                    </div>
+                    <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden mb-3">
+                      <div
+                        className="h-full bg-navy rounded-full"
+                        style={{ width: `${Math.min(100, (weeklyMileage / weeklyTarget) * 100)}%` }}
+                      />
+                    </div>
+                    {weeklyMilageDelta !== 0 && (
+                      <span
+                        className="font-sans text-[12px] font-semibold"
+                        style={{ color: weeklyMilageDelta > 0 ? '#2ECC8B' : '#F5A623' }}
+                      >
+                        {weeklyMilageDelta > 0 ? '▲' : '▼'} {Math.abs(weeklyMilageDelta)} mi vs last week
+                      </span>
+                    )}
+                  </Card>
+
+                  {/* Aerobic Efficiency */}
+                  <Card>
+                    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[14px]">
+                      Aerobic Efficiency
+                    </div>
+                    {aerobicEffImprovement !== null ? (
+                      <>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span
+                            className="font-mono text-[42px] font-bold leading-none"
+                            style={{ color: aerobicEffImprovement >= 0 ? '#1B2559' : '#F5A623' }}
+                          >
+                            {aerobicEffImprovement > 0 ? '+' : ''}{aerobicEffImprovement}
+                            <span className="text-[22px]">%</span>
+                          </span>
+                        </div>
+                        <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-[14px]">
+                          faster at same HR vs 8 weeks ago
+                        </div>
+                        <ResponsiveContainer width="100%" height={36} style={{ marginBottom: 12 }}>
+                          <LineChart data={aerobicEffData.filter(w => w.eff !== null)}>
+                            <YAxis domain={['dataMin - 0.001', 'dataMax + 0.001']} hide />
+                            <Line
+                              type="monotone" dataKey="eff"
+                              stroke={aerobicEffImprovement >= 0 ? '#2ECC8B' : '#F5A623'}
+                              strokeWidth={2.5} dot={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <span
+                          className="font-sans text-[12px] font-semibold"
+                          style={{ color: aerobicEffImprovement >= 0 ? '#2ECC8B' : '#F5A623' }}
+                        >
+                          {aerobicEffImprovement >= 0 ? '▲ Aerobic engine improving' : '▼ Monitor training stress'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-mono text-[42px] font-bold text-[#D4D8E8] leading-none mb-[10px]">—</div>
+                        <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
+                          Sync HR data to track aerobic efficiency
+                        </div>
+                      </>
+                    )}
+                  </Card>
+
+                  {/* Training Load */}
+                  <Card>
+                    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[14px]">
+                      Training Load
+                    </div>
+                    <div className="flex items-baseline gap-[10px] mb-1">
+                      <span className="font-mono text-[42px] font-bold text-navy leading-none">{trainingLoadScore}</span>
+                      <span
+                        className="font-sans text-[16px] font-bold"
+                        style={{ color: trainingLoadScore >= 85 ? '#E8634A' : trainingLoadScore >= 60 ? '#F5A623' : '#2ECC8B' }}
+                      >{trainingLoadLabel}</span>
+                    </div>
+                    <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-4">
+                      Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week
+                    </div>
+                    <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden mb-3">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${trainingLoadScore}%`, background: 'linear-gradient(90deg,#2ECC8B,#F5A623)' }}
+                      />
+                    </div>
+                    <span className="font-sans text-[12px] font-semibold text-[#2ECC8B]">
+                      {trainingLoadScore >= 60 ? '▲ Trending up' : '— Building volume'}
                     </span>
-                  )}
-                </Card>
+                  </Card>
+                </div>
+              </div>
 
-                {/* Aerobic Efficiency */}
-                <Card>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Aerobic Efficiency</div>
-                  {aerobicEffImprovement !== null ? (
-                    <>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: aerobicEffImprovement >= 0 ? C.navy : C.amber, lineHeight: 1 }}>
-                          {aerobicEffImprovement > 0 ? "+" : ""}{aerobicEffImprovement}<span style={{ fontSize: 22 }}>%</span>
+              {/* ④ TRAINING TRENDS */}
+              <div>
+                <SLabel>Training Trends</SLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Weekly Mileage chart */}
+                  <Card>
+                    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[2px]">
+                      Weekly Mileage
+                    </div>
+                    <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-5">8-week history</div>
+                    {weeklyChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={160}>
+                        <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
+                          <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fill: '#8B93B0' }} axisLine={false} tickLine={false} tickMargin={8} />
+                          <YAxis hide />
+                          <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: 'rgba(27,37,89,0.02)' }} />
+                          <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
+                            {weeklyChartData.map((_, idx) => (
+                              <Cell key={idx} fill={idx === weeklyChartData.length - 1 ? '#E8634A' : '#1B2559'} fillOpacity={idx === weeklyChartData.length - 1 ? 1 : 0.4} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[160px] flex items-center justify-center font-sans text-[13px] text-[var(--color-text-muted)]">
+                        No data — sync your activities
+                      </div>
+                    )}
+                  </Card>
+
+                  {/* Effort Distribution */}
+                  <Card>
+                    <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[2px]">
+                      Effort Distribution
+                    </div>
+                    <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-5">
+                      Time in zone this week ·{' '}
+                      {effortDist.reduce((s, z) => s + z.mins, 0) > 0
+                        ? `${Math.round(effortDist.reduce((s, z) => s + z.mins, 0))} min total`
+                        : 'No data yet'}
+                    </div>
+                    {effortDist.map((z, i) => {
+                      const onTarget = z.pct >= 10;
+                      return (
+                        <div key={i} className={i < effortDist.length - 1 ? 'mb-[14px]' : ''}>
+                          <div className="flex justify-between items-center mb-[6px]">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: z.color }} />
+                              <span className="font-sans text-[13px] font-semibold text-[var(--color-text-secondary)]">{z.zone}</span>
+                              <span className="font-sans text-[11px] text-[var(--color-text-muted)]">{z.label}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {z.mins > 0 && <span className="font-sans text-[11px] text-[var(--color-text-muted)]">{Math.round(z.mins)}m</span>}
+                              <span className="font-mono text-[13px] font-bold text-navy">{z.pct}%</span>
+                              {onTarget && <span className="text-[12px] font-bold text-[#2ECC8B] ml-[2px]">✓</span>}
+                            </div>
+                          </div>
+                          <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${z.pct}%`, background: z.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {effortDist.length > 0 && effortDist[0].pct + effortDist[1].pct > 0 && (
+                      <div className="mt-4 px-3 py-[10px] bg-[var(--color-bg-elevated)] rounded-lg">
+                        <span className="font-sans text-[12px] text-[var(--color-text-secondary)]">
+                          💡 Z1+Z2 = <span className="font-bold text-[#2ECC8B]">{effortDist[0].pct + effortDist[1].pct}%</span>
+                          {effortDist[0].pct + effortDist[1].pct >= 70 ? ' — precise aerobic base building' : ' — aim for 70%+ in Z1–Z2'}
                         </span>
                       </div>
-                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 14 }}>faster at same HR vs 8 weeks ago</div>
-                      <ResponsiveContainer width="100%" height={36} style={{ marginBottom: 12 }}>
-                        <LineChart data={aerobicEffData.filter(w => w.eff !== null)}>
-                          <YAxis domain={['dataMin - 0.001', 'dataMax + 0.001']} hide />
-                          <Line type="monotone" dataKey="eff" stroke={aerobicEffImprovement >= 0 ? C.green : C.amber} strokeWidth={2.5} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: aerobicEffImprovement >= 0 ? C.green : C.amber }}>
-                        {aerobicEffImprovement >= 0 ? "▲ Aerobic engine improving" : "▼ Monitor training stress"}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.gray200, lineHeight: 1, marginBottom: 10 }}>—</div>
-                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400 }}>Sync HR data to track aerobic efficiency</div>
-                    </>
-                  )}
-                </Card>
-
-                {/* Training Load */}
-                <Card>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>Training Load</div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-                    <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 42, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{trainingLoadScore}</span>
-                    <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 16, fontWeight: 700, color: trainingLoadScore >= 85 ? C.coral : trainingLoadScore >= 60 ? C.amber : C.green }}>{trainingLoadLabel}</span>
-                  </div>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 16 }}>Volume vs target · {weeklyRunCount} run{weeklyRunCount !== 1 ? 's' : ''} this week</div>
-                  <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
-                    <div style={{ width: `${trainingLoadScore}%`, height: "100%", background: `linear-gradient(90deg,${C.green},${C.amber})`, borderRadius: 99 }} />
-                  </div>
-                  <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.green }}>
-                    {trainingLoadScore >= 60 ? "▲ Trending up" : "— Building volume"}
-                  </span>
-                </Card>
+                    )}
+                  </Card>
+                </div>
               </div>
+
+              {/* ⑤ RECENT RUNS */}
+              <div>
+                <SLabel action={<span className="font-sans text-[11px] text-[var(--color-text-muted)]">via Strava</span>}>
+                  Recent Runs
+                </SLabel>
+                {recentRuns.length > 0 ? (
+                  <Card style={{ padding: 0 }}>
+                    <div
+                      className="grid px-6 py-3 border-b border-[var(--color-border-light)]"
+                      style={{ gridTemplateColumns: RUN_TABLE_COLS }}
+                    >
+                      {RUN_TABLE_HEADERS.map((h, i) => (
+                        <span
+                          key={h}
+                          className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.09em]"
+                          style={{ textAlign: i >= 2 ? 'right' : 'left' }}
+                        >{h}</span>
+                      ))}
+                    </div>
+                    {recentRuns.map((r, i) => {
+                      const hr      = r.average_heart_rate;
+                      const hrColor = hr >= 165 ? '#E84A4A' : hr <= 145 ? '#2ECC8B' : '#F5A623';
+                      const distMi  = parseFloat(((r.distance_meters || 0) * 0.000621371).toFixed(1));
+                      const elevFt  = Math.round((r.elevation_gain || 0) * 3.28084);
+                      const runType = r.workout_type || 'Easy';
+                      return (
+                        <div
+                          key={i}
+                          className="krs-rr grid px-6 py-4 items-center transition-colors"
+                          style={{
+                            gridTemplateColumns: RUN_TABLE_COLS,
+                            background: 'transparent',
+                            borderBottom: i < recentRuns.length - 1 ? '1px solid #F8F9FC' : 'none',
+                          }}
+                        >
+                          <span className="font-sans text-[13px] font-medium text-[var(--color-text-secondary)]">
+                            {new Date(r.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                          <span><Pill type={runType} /></span>
+                          <span className="font-mono text-[20px] font-bold text-navy text-right">
+                            {distMi}<span className="text-[12px] font-medium text-[var(--color-text-muted)]"> mi</span>
+                          </span>
+                          <span className="font-mono text-[14px] text-navy text-right">
+                            {fmtPace(r.average_pace_seconds_per_km)}
+                          </span>
+                          <span className="font-mono text-[13px] text-[var(--color-text-secondary)] text-right">
+                            {r.duration_seconds ? fmtTime(r.duration_seconds) : r.moving_time_seconds ? fmtTime(r.moving_time_seconds) : '—'}
+                          </span>
+                          <span
+                            className="font-mono text-[13px] font-semibold text-right"
+                            style={{ color: hr ? hrColor : '#8B93B0' }}
+                          >
+                            {hr ? <>{hr}<span className="font-sans text-[10px] font-medium text-[var(--color-text-muted)]"> bpm</span></> : '—'}
+                          </span>
+                          <span className="font-mono text-[13px] text-[#4A6CF7] text-right">
+                            {elevFt > 0 ? <>↑{elevFt}<span className="font-sans text-[10px] text-[var(--color-text-muted)]"> ft</span></> : '—'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </Card>
+                ) : (
+                  <Card>
+                    <div className="text-center py-6 font-sans text-[14px] text-[var(--color-text-muted)]">
+                      No runs yet — sync your Strava activities to see them here
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* ⑥ OPTIONAL WIDGET GRID */}
+              <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
             </div>
 
-            {/* ④ TRAINING TRENDS */}
-            <div>
-              <SLabel>Training Trends</SLabel>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {/* Weekly Mileage chart */}
-                <Card>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Weekly Mileage</div>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>8-week history</div>
-                  {weeklyChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
-                        <XAxis dataKey="week" tick={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 9, fill: C.gray400 }} axisLine={false} tickLine={false} tickMargin={8} />
-                        <YAxis hide />
-                        <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: "rgba(27,37,89,0.02)" }} />
-                        <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
-                          {weeklyChartData.map((_, idx) => (
-                            <Cell key={idx} fill={idx === weeklyChartData.length - 1 ? C.coral : C.navy} fillOpacity={idx === weeklyChartData.length - 1 ? 1 : 0.4} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray400 }}>
-                      No data — sync your activities
-                    </div>
-                  )}
-                </Card>
+            {/* ── RIGHT SIDEBAR ── */}
+            <div className="flex flex-col gap-4">
 
-                {/* Effort Distribution */}
-                <Card>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Effort Distribution</div>
-                  <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray400, marginBottom: 20 }}>
-                    Time in zone this week · {effortDist.reduce((s, z) => s + z.mins, 0) > 0 ? `${Math.round(effortDist.reduce((s, z) => s + z.mins, 0))} min total` : "No data yet"}
+              {/* Race Readiness */}
+              <Card>
+                <SLabel>Race Readiness</SLabel>
+                <div className="flex items-center gap-4 mb-4">
+                  <Gauge score={readinessScore} />
+                  <div>
+                    <div
+                      className="font-heading text-[22px] font-bold mb-1 tracking-[-0.01em] leading-[1.1]"
+                      style={{ color: readinessColor }}
+                    >{readinessLabel}</div>
+                    <p className="font-sans text-[13px] text-[var(--color-text-secondary)] leading-relaxed">
+                      {readinessScore >= 70
+                        ? 'Strong base. Stay consistent and taper well.'
+                        : readinessScore >= 50
+                          ? 'Good progress. Keep building your long run and weekly volume.'
+                          : 'Focus on consistency and gradual mileage increases.'}
+                    </p>
                   </div>
-                  {effortDist.map((z, i) => {
-                    const onTarget = z.pct >= 10;
-                    return (
-                      <div key={i} style={{ marginBottom: i < effortDist.length - 1 ? 14 : 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: z.color, flexShrink: 0 }} />
-                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: C.gray600 }}>{z.zone}</span>
-                            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{z.label}</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {z.mins > 0 && <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>{Math.round(z.mins)}m</span>}
-                            <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: C.navy }}>{z.pct}%</span>
-                            {onTarget && <span style={{ fontSize: 12, color: C.green, fontWeight: 700, marginLeft: 2 }}>✓</span>}
-                          </div>
+                </div>
+                <button
+                  onClick={() => setShowFactors(!showFactors)}
+                  className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border-light)] rounded-[10px] py-[10px] font-sans text-[12px] font-bold text-[var(--color-text-secondary)] cursor-pointer flex items-center justify-center gap-[6px]"
+                >
+                  {showFactors ? 'Hide' : 'Show'} breakdown
+                  <span
+                    className="inline-block transition-transform duration-300"
+                    style={{ transform: showFactors ? 'rotate(180deg)' : 'none' }}
+                  >▾</span>
+                </button>
+                {showFactors && (
+                  <div className="mt-[14px] flex flex-col gap-[10px]">
+                    {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
+                      <div key={name}>
+                        <div className="flex justify-between mb-[5px]">
+                          <span className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)]">{name}</span>
+                          <span
+                            className="font-mono text-[13px] font-bold"
+                            style={{ color: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A' }}
+                          >{score}</span>
                         </div>
-                        <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
-                          <div style={{ width: `${z.pct}%`, height: "100%", background: z.color, borderRadius: 99 }} />
+                        <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${score}%`,
+                              background: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A',
+                            }}
+                          />
                         </div>
                       </div>
-                    );
-                  })}
-                  {effortDist.length > 0 && effortDist[0].pct + effortDist[1].pct > 0 && (
-                    <div style={{ marginTop: 16, padding: "10px 12px", background: C.gray50, borderRadius: 8 }}>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, color: C.gray600 }}>
-                        💡 Z1+Z2 = <span style={{ fontWeight: 700, color: C.green }}>{effortDist[0].pct + effortDist[1].pct}%</span>
-                        {effortDist[0].pct + effortDist[1].pct >= 70 ? " — precise aerobic base building" : " — aim for 70%+ in Z1–Z2"}
-                      </span>
-                    </div>
-                  )}
-                </Card>
-              </div>
-            </div>
-
-            {/* ⑤ RECENT RUNS */}
-            <div>
-              <SLabel action={<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: C.gray400 }}>via Strava</span>}>Recent Runs</SLabel>
-              {recentRuns.length > 0 ? (
-                <Card style={{ padding: 0 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px", padding: "12px 24px", borderBottom: `1px solid ${C.gray100}` }}>
-                    {["Date", "Type", "Distance", "Pace", "Time", "HR", "Elev"].map((h, i) => (
-                      <span key={h} style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: C.gray400, textTransform: "uppercase", letterSpacing: "0.09em", textAlign: i >= 2 ? "right" : "left" }}>{h}</span>
                     ))}
                   </div>
-                  {recentRuns.map((r, i) => {
-                    const hr = r.average_heart_rate;
-                    const hrColor = hr >= 165 ? C.red : hr <= 145 ? C.green : C.amber;
-                    const distMi = parseFloat(((r.distance_meters || 0) * 0.000621371).toFixed(1));
-                    const elevFt = Math.round((r.elevation_gain || 0) * 3.28084);
-                    const runType = r.workout_type || 'Easy';
-                    return (
-                      <div key={i} className="krs-rr" style={{
-                        display: "grid", gridTemplateColumns: "100px 100px 1fr 90px 90px 80px 80px",
-                        padding: "16px 24px", alignItems: "center",
-                        background: "transparent",
-                        borderBottom: i < recentRuns.length - 1 ? `1px solid ${C.gray50}` : "none",
-                        transition: "background 0.12s",
-                      }}>
-                        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, color: C.gray600 }}>
-                          {new Date(r.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                        <span><Pill type={runType} /></span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 20, fontWeight: 700, color: C.navy, textAlign: "right" }}>
-                          {distMi}<span style={{ fontSize: 12, fontWeight: 500, color: C.gray400 }}> mi</span>
-                        </span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 14, color: C.navy, textAlign: "right" }}>
-                          {fmtPace(r.average_pace_seconds_per_km)}
-                        </span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.gray600, textAlign: "right" }}>
-                          {r.duration_seconds ? fmtTime(r.duration_seconds) : r.moving_time_seconds ? fmtTime(r.moving_time_seconds) : "—"}
-                        </span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 600, color: hr ? hrColor : C.gray400, textAlign: "right" }}>
-                          {hr ? <>{hr}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 500, color: C.gray400 }}> bpm</span></> : "—"}
-                        </span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, color: C.blue, textAlign: "right" }}>
-                          {elevFt > 0 ? <>↑{elevFt}<span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, color: C.gray400 }}> ft</span></> : "—"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </Card>
-              ) : (
-                <Card>
-                  <div style={{ textAlign: "center", padding: "24px 0", fontFamily: "DM Sans, sans-serif", fontSize: 14, color: C.gray400 }}>
-                    No runs yet — sync your Strava activities to see them here
-                  </div>
-                </Card>
-              )}
-            </div>
+                )}
+              </Card>
 
-            {/* ⑥ OPTIONAL WIDGET GRID */}
-            <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
-          </div >
-
-          {/* ── RIGHT SIDEBAR ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* Race Readiness */}
-            <Card>
-              <SLabel>Race Readiness</SLabel>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-                <Gauge score={readinessScore} />
-                <div>
-                  <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 22, fontWeight: 700, color: readinessColor, marginBottom: 4, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{readinessLabel}</div>
-                  <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.gray600, lineHeight: 1.5 }}>
-                    {readinessScore >= 70
-                      ? 'Strong base. Stay consistent and taper well.'
-                      : readinessScore >= 50
-                        ? 'Good progress. Keep building your long run and weekly volume.'
-                        : 'Focus on consistency and gradual mileage increases.'}
-                  </p>
+              {/* Coach Insight */}
+              <div className="bg-navy rounded-2xl px-6 py-5 shadow-[0_6px_24px_rgba(27,37,89,0.15)] border-l-[6px] border-coral">
+                <div className="flex items-center gap-[10px] mb-[14px]">
+                  <div className="w-7 h-7 rounded-lg bg-coral flex items-center justify-center text-[14px] shrink-0">✦</div>
+                  <span className="font-sans text-[11px] font-bold text-white/60 uppercase tracking-[0.1em]">Coach Insight</span>
                 </div>
+                <p className="font-sans text-[14px] text-white/80 leading-relaxed mb-4">
+                  Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.
+                </p>
+                <Link
+                  to="/coach"
+                  className="block w-full text-center bg-white/10 border border-white/15 rounded-[10px] py-[10px] font-sans text-[13px] font-semibold text-white no-underline"
+                >
+                  Ask Coach →
+                </Link>
               </div>
-              <button onClick={() => setShowFactors(!showFactors)} style={{
-                width: "100%", background: C.gray50, border: `1px solid ${C.gray100}`,
-                borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
-                fontSize: 12, fontWeight: 700, color: C.gray600, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}>
-                {showFactors ? 'Hide' : 'Show'} breakdown
-                <span style={{ display: "inline-block", transform: showFactors ? "rotate(180deg)" : "none", transition: "transform 0.25s" }}>▾</span>
-              </button>
-              {showFactors && (
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
-                    <div key={name}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                        <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600 }}>{name}</span>
-                        <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 13, fontWeight: 700, color: score >= 70 ? C.green : score >= 50 ? C.amber : C.red }}>{score}</span>
+
+              {/* Up Next */}
+              {upNextEntries.length > 0 && (
+                <Card>
+                  <SLabel>Up Next</SLabel>
+                  {upNextEntries.map((d, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-[14px] py-3"
+                      style={{ borderBottom: i < upNextEntries.length - 1 ? '1px solid var(--color-border-light)' : 'none' }}
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-[var(--color-bg-elevated)] flex flex-col items-center justify-center shrink-0">
+                        <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase font-bold leading-none mb-[2px]">{d.day}</span>
+                        <span className="font-mono text-[18px] font-bold text-navy leading-none">{d.date}</span>
                       </div>
-                      <div style={{ height: 6, background: C.gray100, borderRadius: 99, overflow: "hidden" }}>
-                        <div style={{ width: `${score}%`, height: "100%", background: score >= 70 ? C.green : score >= 50 ? C.amber : C.red, borderRadius: 99 }} />
+                      <div>
+                        {d.type && <Pill type={d.type} sm />}
+                        {d.miles && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.miles} miles</div>}
+                        {!d.miles && d.title && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.title}</div>}
                       </div>
                     </div>
                   ))}
-                </div>
+                </Card>
               )}
-            </Card>
 
-            {/* Coach Insight */}
-            <div style={{ background: C.navy, borderRadius: 16, padding: "20px 24px", boxShadow: "0 6px 24px rgba(27,37,89,0.15)", borderLeft: `6px solid ${C.coral}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: C.coral, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>✦</div>
-                <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Coach Insight</span>
-              </div>
-              <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: 14, color: "rgba(255,255,255,0.8)", lineHeight: 1.6, marginBottom: 16 }}>
-                {coachInsight || 'Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.'}
-              </p>
-              <Link to="/coach" style={{
-                display: "block", width: "100%", textAlign: "center",
-                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 10, padding: "10px", fontFamily: "DM Sans, sans-serif",
-                fontSize: 13, fontWeight: 600, color: C.white, textDecoration: "none",
-              }}>Ask Coach →</Link>
             </div>
-
-            {/* Up Next */}
-            {upNextEntries.length > 0 && (
-              <Card>
-                <SLabel>Up Next</SLabel>
-                {upNextEntries.map((d, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: i < upNextEntries.length - 1 ? `1px solid ${C.gray100}` : "none" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: C.gray50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 9, color: C.gray400, textTransform: "uppercase", fontWeight: 700, lineHeight: 1, marginBottom: 2 }}>{d.day}</span>
-                      <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 18, fontWeight: 700, color: C.navy, lineHeight: 1 }}>{d.date}</span>
-                    </div>
-                    <div>
-                      {d.type && <Pill type={d.type} sm />}
-                      {d.miles && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.miles} miles</div>}
-                      {!d.miles && d.title && <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12, fontWeight: 600, color: C.gray600, marginTop: 4 }}>{d.title}</div>}
-                    </div>
-                  </div>
-                ))}
-              </Card>
-            )}
-
           </div>
-        </div>
         </div>
       </div>
 
