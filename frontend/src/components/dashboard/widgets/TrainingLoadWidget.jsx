@@ -4,128 +4,71 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 
-const C = {
-  navy: "#1B2559", coral: "#E8634A", gray50: "#F8F9FC",
-  gray100: "#ECEEF4", gray200: "#D4D8E8", gray400: "#8B93B0",
-  gray600: "#4A5173", white: "#FFFFFF", green: "#2ECC8B",
-  amber: "#F5A623", red: "#E84A4A",
-};
-
 export default function TrainingLoadWidget({ data }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!data) {
     return (
-      <div style={{
-        background: C.white, borderRadius: 16, padding: '20px 22px',
-        boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-      }}>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          marginBottom: 14,
-        }}>
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-            fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-          }}>Training Load</span>
-          <span style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-            fontWeight: 700, color: C.coral,
-          }}>✦ Korsana</span>
+      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+        <div className="flex justify-between mb-[14px]">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
+            Training Load
+          </span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
         </div>
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '24px 0', gap: 8,
-        }}>
+        <div className="flex flex-col items-center py-6 gap-2">
           <span style={{ fontSize: 28 }}>📭</span>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-            color: C.gray400,
-          }}>Sync activities to see training load</div>
+          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
+            Sync activities to see training load
+          </div>
         </div>
       </div>
     );
   }
 
   const tsbColor = data.tsb > 10
-    ? C.green
+    ? '#2ECC8B'
     : data.tsb >= -10
-      ? C.navy
-      : data.tsb >= -30 ? C.amber : C.red;
+      ? '#1B2559'
+      : data.tsb >= -30 ? '#F5A623' : '#E84A4A';
 
   return (
-    <div style={{
-      background: C.white, borderRadius: 16, padding: '20px 22px',
-      boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-    }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        marginBottom: 16,
-      }}>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-          fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-        }}>Training Load</span>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-          fontWeight: 700, color: C.coral,
-        }}>✦ Korsana</span>
+    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="flex justify-between mb-4">
+        <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
+          Training Load
+        </span>
+        <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
       </div>
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
-        gap: 20, alignItems: 'center', marginBottom: 16,
-      }}>
+      <div className="grid gap-5 items-center mb-4" style={{ gridTemplateColumns: '1fr 1fr 2fr' }}>
         <div>
-          <div style={{
-            fontFamily: 'IBM Plex Mono, monospace', fontSize: 48,
-            fontWeight: 700, color: tsbColor, lineHeight: 1,
-          }}>
+          <div className="font-mono text-[48px] font-bold leading-none" style={{ color: tsbColor }}>
             {data.tsb > 0 ? '+' : ''}{Math.round(data.tsb)}
           </div>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-            fontWeight: 600, color: C.navy, marginTop: 4,
-          }}>{data.form_label}</div>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-            color: C.gray400, marginTop: 2,
-          }}>Form (TSB)</div>
+          <div className="font-sans text-[11px] font-semibold text-navy mt-1">{data.form_label}</div>
+          <div className="font-sans text-[10px] text-[var(--color-text-muted)] mt-[2px]">Form (TSB)</div>
         </div>
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 12,
-        }}>
+        <div className="flex flex-col gap-3">
           <div>
-            <div style={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 32,
-              fontWeight: 700, color: C.coral, lineHeight: 1,
-            }}>{Math.round(data.atl)}</div>
-            <div style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-              color: C.gray400,
-            }}>Fatigue (ATL)</div>
+            <div className="font-mono text-[32px] font-bold text-coral leading-none">
+              {Math.round(data.atl)}
+            </div>
+            <div className="font-sans text-[10px] text-[var(--color-text-muted)]">Fatigue (ATL)</div>
           </div>
           <div>
-            <div style={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 32,
-              fontWeight: 700, color: C.navy, lineHeight: 1,
-            }}>{Math.round(data.ctl)}</div>
-            <div style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-              color: C.gray400,
-            }}>Fitness (CTL)</div>
+            <div className="font-mono text-[32px] font-bold text-navy leading-none">
+              {Math.round(data.ctl)}
+            </div>
+            <div className="font-sans text-[10px] text-[var(--color-text-muted)]">Fitness (CTL)</div>
           </div>
-          <div style={{
-            display: 'inline-block',
-            background: data.load_ratio > 1.3 ? '#FDE8E3' : '#E8F4EC',
-            borderRadius: 99, padding: '2px 8px',
-          }}>
-            <span style={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
-              fontWeight: 700,
-              color: data.load_ratio > 1.3 ? C.coral : C.green,
-            }}>
+          <div
+            className="inline-block rounded-full px-2 py-[2px]"
+            style={{ background: data.load_ratio > 1.3 ? '#FDE8E3' : '#E8F4EC' }}
+          >
+            <span
+              className="font-mono text-[10px] font-bold"
+              style={{ color: data.load_ratio > 1.3 ? '#E8634A' : '#2ECC8B' }}
+            >
               {data.load_ratio?.toFixed(2)} ratio
             </span>
           </div>
@@ -134,50 +77,40 @@ export default function TrainingLoadWidget({ data }) {
           <AreaChart data={data.history || []}>
             <defs>
               <linearGradient id="atlGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={C.coral} stopOpacity={0.15} />
-                <stop offset="100%" stopColor={C.coral} stopOpacity={0} />
+                <stop offset="0%" stopColor="#E8634A" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="#E8634A" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="ctlGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={C.navy} stopOpacity={0.1} />
-                <stop offset="100%" stopColor={C.navy} stopOpacity={0} />
+                <stop offset="0%" stopColor="#1B2559" stopOpacity={0.1} />
+                <stop offset="100%" stopColor="#1B2559" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="date" hide />
             <YAxis hide />
             <Tooltip contentStyle={{
               fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-              background: C.navy, border: 'none', borderRadius: 8,
-              color: '#fff',
+              background: '#1B2559', border: 'none', borderRadius: 8, color: '#fff',
             }} />
             <Area
-              type="monotone" dataKey="atl" stroke={C.coral}
+              type="monotone" dataKey="atl" stroke="#E8634A"
               strokeWidth={1.5} strokeDasharray="4 2"
               fill="url(#atlGrad)" dot={false} name="Fatigue"
             />
             <Area
-              type="monotone" dataKey="ctl" stroke={C.navy}
-              strokeWidth={2} fill="url(#ctlGrad)" dot={false}
-              name="Fitness"
+              type="monotone" dataKey="ctl" stroke="#1B2559"
+              strokeWidth={2} fill="url(#ctlGrad)" dot={false} name="Fitness"
             />
           </AreaChart>
         </ResponsiveContainer>
       </div>
       <button
         onClick={() => setExpanded(!expanded)}
-        style={{
-          background: 'none', border: 'none',
-          fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-          color: C.gray400, cursor: 'pointer', padding: 0,
-        }}
+        className="bg-transparent border-0 font-sans text-[11px] text-[var(--color-text-muted)] cursor-pointer p-0"
       >
         How this works {expanded ? '▴' : '▾'}
       </button>
       {expanded && (
-        <div style={{
-          marginTop: 10, padding: '12px 14px', background: C.gray50,
-          borderRadius: 10, fontFamily: 'DM Sans, sans-serif',
-          fontSize: 11, color: C.gray600, lineHeight: 1.6,
-        }}>
+        <div className="mt-[10px] p-[12px_14px] bg-[var(--color-bg-elevated)] rounded-[10px] font-sans text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
           <strong>ATL</strong> (Acute Training Load) = 7-day avg fatigue.{' '}
           <strong>CTL</strong> (Chronic Training Load) = 42-day fitness base.
           <strong> TSB</strong> = CTL - ATL. Positive = fresh, negative = tired.

@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { crossTrainingAPI } from '../../../api/dashboard';
 
-const C = {
-  navy: "#1B2559", coral: "#E8634A", gray50: "#F8F9FC",
-  gray100: "#ECEEF4", gray200: "#D4D8E8", gray400: "#8B93B0",
-  gray600: "#4A5173", white: "#FFFFFF", green: "#2ECC8B",
-  amber: "#F5A623",
-};
-
 const TYPE_CONFIG = {
   weight_lifting: { icon: '🏋', label: 'Weight Training' },
   cycling:        { icon: '🚴', label: 'Cycling' },
   swimming:       { icon: '🏊', label: 'Swimming' },
   elliptical:     { icon: '🔄', label: 'Elliptical' },
 };
+
+const inputClass = 'w-full px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
 export default function CrossTrainingWidget({ data, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
@@ -38,10 +33,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
       if (form.type === 'weight_lifting' && form.intensity) {
         payload.intensity = form.intensity;
       }
-      if (
-        ['cycling', 'swimming'].includes(form.type) &&
-        form.distance_meters
-      ) {
+      if (['cycling', 'swimming'].includes(form.type) && form.distance_meters) {
         payload.distance_meters = parseFloat(form.distance_meters);
       }
       if (form.notes) payload.notes = form.notes;
@@ -59,283 +51,179 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
   const counts = data?.monthly_counts || {};
 
   return (
-    <div style={{
-      background: C.white, borderRadius: 16, padding: '20px 22px',
-      boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-    }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: 16,
-      }}>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-          fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-        }}>Cross-Training</span>
+    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
+          Cross-Training
+        </span>
         <button
           onClick={() => setShowModal(true)}
-          style={{
-            background: C.coral, border: 'none', borderRadius: 8,
-            padding: '6px 14px', fontFamily: 'DM Sans, sans-serif',
-            fontSize: 11, fontWeight: 700, color: C.white,
-            cursor: 'pointer',
-          }}
-        >+ Add Session</button>
+          className="bg-coral border-0 rounded-lg px-[14px] py-[6px] font-sans text-[11px] font-bold text-white cursor-pointer"
+        >
+          + Add Session
+        </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div className="flex gap-3 mb-4">
         {Object.entries(TYPE_CONFIG).map(([type, cfg]) => (
-          <div key={type} style={{
-            flex: 1, textAlign: 'center', background: C.gray50,
-            borderRadius: 10, padding: '10px 4px',
-          }}>
+          <div key={type} className="flex-1 text-center bg-[var(--color-bg-elevated)] rounded-[10px] py-[10px] px-1">
             <div style={{ fontSize: 20 }}>{cfg.icon}</div>
-            <div style={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 16,
-              fontWeight: 700, color: C.navy, marginTop: 4,
-            }}>{counts[type] || 0}</div>
-            <div style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-              color: C.gray400, marginTop: 2,
-            }}>{cfg.label}</div>
+            <div className="font-mono text-[16px] font-bold text-navy mt-1">{counts[type] || 0}</div>
+            <div className="font-sans text-[9px] text-[var(--color-text-muted)] mt-[2px]">{cfg.label}</div>
           </div>
         ))}
       </div>
 
       {sessions.length === 0 ? (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '16px 0', gap: 6,
-        }}>
+        <div className="flex flex-col items-center py-4 gap-[6px]">
           <span style={{ fontSize: 24 }}>📭</span>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-            color: C.gray400,
-          }}>No sessions in the last 4 weeks</div>
+          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
+            No sessions in the last 4 weeks
+          </div>
         </div>
       ) : (
         <div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '80px 1fr 70px 80px 24px',
-            gap: 8, padding: '6px 8px', marginBottom: 4,
-          }}>
+          <div
+            className="grid gap-2 px-2 mb-1"
+            style={{ gridTemplateColumns: '80px 1fr 70px 80px 24px' }}
+          >
             {['Date', 'Type', 'Duration', 'Details', 'Src'].map(h => (
-              <div key={h} style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 9,
-                fontWeight: 700, color: C.gray400,
-                textTransform: 'uppercase', letterSpacing: '0.05em',
-              }}>{h}</div>
+              <div key={h} className="font-sans text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.05em]">
+                {h}
+              </div>
             ))}
           </div>
           {sessions.slice(0, 8).map((s, i) => (
-            <div key={s.id || i} style={{
-              display: 'grid',
-              gridTemplateColumns: '80px 1fr 70px 80px 24px',
-              gap: 8, padding: '8px 8px', borderRadius: 8,
-              background: i % 2 === 0 ? C.gray50 : C.white,
-              alignItems: 'center',
-            }}>
-              <span style={{
-                fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-                color: C.gray600,
-              }}>
+            <div
+              key={s.id || i}
+              className="grid gap-2 px-2 py-2 rounded-lg items-center"
+              style={{
+                gridTemplateColumns: '80px 1fr 70px 80px 24px',
+                background: i % 2 === 0 ? 'var(--color-bg-elevated)' : 'transparent',
+              }}
+            >
+              <span className="font-mono text-[11px] text-[var(--color-text-secondary)]">
                 {s.date
-                  ? new Date(s.date).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric',
-                    })
+                  ? new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   : '--'}
               </span>
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                color: C.navy,
-              }}>{TYPE_CONFIG[s.type]?.label || TYPE_CONFIG[s.type === 'weightlifting' ? 'weight_lifting' : s.type]?.label || s.type}</span>
-              <span style={{
-                fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-                color: C.gray600,
-              }}>{s.duration_minutes}min</span>
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-                color: C.gray400,
-              }}>
-                {s.intensity ||
-                  (s.distance_meters
-                    ? `${(s.distance_meters / 1000).toFixed(1)}km`
-                    : '—')}
+              <span className="font-sans text-[11px] text-navy">
+                {TYPE_CONFIG[s.type]?.label ||
+                  TYPE_CONFIG[s.type === 'weightlifting' ? 'weight_lifting' : s.type]?.label ||
+                  s.type}
               </span>
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-                color: s.source === 'strava' ? '#FC4C02' : C.gray400,
-              }}>{s.source === 'strava' ? 'S' : '✎'}</span>
+              <span className="font-mono text-[11px] text-[var(--color-text-secondary)]">
+                {s.duration_minutes}min
+              </span>
+              <span className="font-sans text-[10px] text-[var(--color-text-muted)]">
+                {s.intensity || (s.distance_meters ? `${(s.distance_meters / 1000).toFixed(1)}km` : '—')}
+              </span>
+              <span
+                className="font-sans text-[10px]"
+                style={{ color: s.source === 'strava' ? '#FC4C02' : 'var(--color-text-muted)' }}
+              >
+                {s.source === 'strava' ? 'S' : '✎'}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{
-        marginTop: 12, fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-        color: C.gray400,
-      }}>
-        Note: Heavy lifting sessions may add fatigue — log them to track
-        load accurately.
+      <div className="mt-3 font-sans text-[10px] text-[var(--color-text-muted)]">
+        Note: Heavy lifting sessions may add fatigue — log them to track load accurately.
       </div>
 
       {showModal && (
         <>
           <div
-            style={{
-              position: 'fixed', inset: 0,
-              background: 'rgba(0,0,0,0.35)', zIndex: 1000,
-            }}
+            className="fixed inset-0 bg-black/35 z-[1000]"
             onClick={() => setShowModal(false)}
           />
-          <div style={{
-            position: 'fixed', top: '50%', left: '50%',
-            transform: 'translate(-50%,-50%)', background: C.white,
-            borderRadius: 18, padding: '28px 32px', zIndex: 1001,
-            width: 380,
-            boxShadow: '0 8px 40px rgba(27,37,89,0.2)',
-          }}>
-            <div style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 14,
-              fontWeight: 700, color: C.navy, marginBottom: 20,
-            }}>Log Cross-Training Session</div>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-[18px] px-8 py-7 z-[1001] w-[380px] shadow-[0_8px_40px_rgba(27,37,89,0.2)]">
+            <div className="font-sans text-[14px] font-bold text-navy mb-5">
+              Log Cross-Training Session
+            </div>
             {[
-              {
-                label: 'Activity Type', field: 'type', type: 'select',
-                options: Object.keys(TYPE_CONFIG),
-              },
+              { label: 'Activity Type', field: 'type', type: 'select', options: Object.keys(TYPE_CONFIG) },
               { label: 'Date', field: 'date', type: 'date' },
-              {
-                label: 'Duration (minutes)', field: 'duration_minutes',
-                type: 'number',
-              },
+              { label: 'Duration (minutes)', field: 'duration_minutes', type: 'number' },
             ].map(({ label, field, type, options }) => (
-              <div key={field} style={{ marginBottom: 14 }}>
-                <label style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                  color: C.gray400, display: 'block', marginBottom: 4,
-                }}>{label}</label>
+              <div key={field} className="mb-[14px]">
+                <label className="font-sans text-[11px] text-[var(--color-text-muted)] block mb-1">
+                  {label}
+                </label>
                 {type === 'select' ? (
                   <select
                     value={form[field]}
-                    onChange={e =>
-                      setForm(f => ({ ...f, [field]: e.target.value }))
-                    }
-                    style={{
-                      width: '100%', padding: '8px 10px', borderRadius: 8,
-                      border: `1px solid ${C.gray200}`,
-                      fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                      boxSizing: 'border-box',
-                    }}
+                    onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                    className={inputClass}
                   >
                     {options.map(o => (
-                      <option key={o} value={o}>
-                        {TYPE_CONFIG[o]?.label || o}
-                      </option>
+                      <option key={o} value={o}>{TYPE_CONFIG[o]?.label || o}</option>
                     ))}
                   </select>
                 ) : (
                   <input
-                    type={type} value={form[field]}
-                    onChange={e =>
-                      setForm(f => ({ ...f, [field]: e.target.value }))
-                    }
-                    style={{
-                      width: '100%', padding: '8px 10px', borderRadius: 8,
-                      border: `1px solid ${C.gray200}`,
-                      fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                      boxSizing: 'border-box',
-                    }}
+                    type={type}
+                    value={form[field]}
+                    onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                    className={inputClass}
                   />
                 )}
               </div>
             ))}
             {form.type === 'weight_lifting' && (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                  color: C.gray400, display: 'block', marginBottom: 4,
-                }}>Intensity</label>
+              <div className="mb-[14px]">
+                <label className="font-sans text-[11px] text-[var(--color-text-muted)] block mb-1">
+                  Intensity
+                </label>
                 <select
                   value={form.intensity}
-                  onChange={e =>
-                    setForm(f => ({ ...f, intensity: e.target.value }))
-                  }
-                  style={{
-                    width: '100%', padding: '8px 10px', borderRadius: 8,
-                    border: `1px solid ${C.gray200}`,
-                    fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                    boxSizing: 'border-box',
-                  }}
+                  onChange={e => setForm(f => ({ ...f, intensity: e.target.value }))}
+                  className={inputClass}
                 >
-                  {['light', 'moderate', 'heavy'].map(i => (
-                    <option key={i}>{i}</option>
-                  ))}
+                  {['light', 'moderate', 'heavy'].map(i => <option key={i}>{i}</option>)}
                 </select>
               </div>
             )}
             {['cycling', 'swimming'].includes(form.type) && (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                  color: C.gray400, display: 'block', marginBottom: 4,
-                }}>Distance (meters)</label>
+              <div className="mb-[14px]">
+                <label className="font-sans text-[11px] text-[var(--color-text-muted)] block mb-1">
+                  Distance (meters)
+                </label>
                 <input
-                  type="number" value={form.distance_meters}
-                  onChange={e =>
-                    setForm(f => ({
-                      ...f, distance_meters: e.target.value,
-                    }))
-                  }
-                  style={{
-                    width: '100%', padding: '8px 10px', borderRadius: 8,
-                    border: `1px solid ${C.gray200}`,
-                    fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                    boxSizing: 'border-box',
-                  }}
+                  type="number"
+                  value={form.distance_meters}
+                  onChange={e => setForm(f => ({ ...f, distance_meters: e.target.value }))}
+                  className={inputClass}
                 />
               </div>
             )}
-            <div style={{ marginBottom: 20 }}>
-              <label style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                color: C.gray400, display: 'block', marginBottom: 4,
-              }}>Notes (optional)</label>
+            <div className="mb-5">
+              <label className="font-sans text-[11px] text-[var(--color-text-muted)] block mb-1">
+                Notes (optional)
+              </label>
               <textarea
                 value={form.notes}
-                onChange={e =>
-                  setForm(f => ({ ...f, notes: e.target.value }))
-                }
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 rows={2}
-                style={{
-                  width: '100%', padding: '8px 10px', borderRadius: 8,
-                  border: `1px solid ${C.gray200}`,
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                  boxSizing: 'border-box', resize: 'none',
-                }}
+                className={`${inputClass} resize-none`}
               />
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="flex gap-[10px]">
               <button
                 onClick={() => setShowModal(false)}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10,
-                  border: `1px solid ${C.gray200}`,
-                  background: C.gray50,
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                  fontWeight: 600, color: C.gray600, cursor: 'pointer',
-                }}
-              >Cancel</button>
+                className="flex-1 py-[10px] rounded-[10px] border border-[var(--color-border-light)] bg-[var(--color-bg-elevated)] font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
-                onClick={handleSave} disabled={saving}
-                style={{
-                  flex: 2, padding: '10px', borderRadius: 10,
-                  border: 'none', background: C.navy,
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                  fontWeight: 700, color: C.white, cursor: 'pointer',
-                }}
-              >{saving ? 'Saving...' : 'Save Session'}</button>
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-[2] py-[10px] rounded-[10px] border-0 bg-navy font-sans text-[12px] font-bold text-white cursor-pointer"
+              >
+                {saving ? 'Saving...' : 'Save Session'}
+              </button>
             </div>
           </div>
         </>

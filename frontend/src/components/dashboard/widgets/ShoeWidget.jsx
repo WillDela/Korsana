@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { gearAPI } from '../../../api/dashboard';
 
-const C = {
-  navy: "#1B2559", coral: "#E8634A", gray50: "#F8F9FC",
-  gray100: "#ECEEF4", gray200: "#D4D8E8", gray400: "#8B93B0",
-  gray600: "#4A5173", white: "#FFFFFF", green: "#2ECC8B",
-  amber: "#F5A623", red: "#E84A4A",
-};
+const inputClass = 'w-full px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
 export default function ShoeWidget({ data, onRefresh }) {
   const [showModal, setShowModal] = useState(false);
@@ -32,10 +27,7 @@ export default function ShoeWidget({ data, onRefresh }) {
       if (form.usage_label) payload.usage_label = form.usage_label;
       await gearAPI.addShoe(payload);
       setShowModal(false);
-      setForm({
-        name: '', brand: '', max_miles: '450',
-        date_purchased: '', usage_label: '', is_primary: false,
-      });
+      setForm({ name: '', brand: '', max_miles: '450', date_purchased: '', usage_label: '', is_primary: false });
       if (onRefresh) onRefresh();
     } catch (e) {
       console.error(e);
@@ -45,108 +37,72 @@ export default function ShoeWidget({ data, onRefresh }) {
   };
 
   return (
-    <div style={{
-      background: C.white, borderRadius: 16, padding: '20px 22px',
-      boxShadow: '0 1px 2px rgba(27,37,89,0.05)',
-    }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: 16,
-      }}>
-        <span style={{
-          fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-          fontWeight: 700, color: C.gray400, textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-        }}>Shoe Mileage</span>
+    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
+          Shoe Mileage
+        </span>
         <button
           onClick={() => setShowModal(true)}
-          style={{
-            background: 'none', border: `1px solid ${C.gray200}`,
-            borderRadius: 8, padding: '5px 10px',
-            fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-            fontWeight: 600, color: C.navy, cursor: 'pointer',
-          }}
-        >+ Add Shoe</button>
+          className="bg-transparent border border-[var(--color-border-light)] rounded-lg px-[10px] py-[5px] font-sans text-[11px] font-semibold text-navy cursor-pointer"
+        >
+          + Add Shoe
+        </button>
       </div>
+
       {shoes.length === 0 ? (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '24px 0', gap: 8,
-        }}>
+        <div className="flex flex-col items-center py-6 gap-2">
           <span style={{ fontSize: 28 }}>👟</span>
-          <div style={{
-            fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-            color: C.gray400,
-          }}>Add your running shoes to track mileage</div>
+          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
+            Add your running shoes to track mileage
+          </div>
         </div>
       ) : (
-        <div style={{
-          display: 'flex', flexDirection: 'column', gap: 14,
-        }}>
+        <div className="flex flex-col gap-[14px]">
           {shoes.map((shoe, i) => {
             const pct = Math.min(
               100,
-              Math.round(
-                ((shoe.current_miles || 0) / (shoe.max_miles || 450)) * 100
-              )
+              Math.round(((shoe.current_miles || 0) / (shoe.max_miles || 450)) * 100)
             );
             const nearLimit = pct >= 80;
             return (
               <div key={shoe.id || i}>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  alignItems: 'center', marginBottom: 5,
-                }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                  }}>
-                    <span style={{
-                      fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                      fontWeight: 600, color: C.navy,
-                    }}>{shoe.name}</span>
+                <div className="flex justify-between items-center mb-[5px]">
+                  <div className="flex items-center gap-[7px]">
+                    <span className="font-sans text-[12px] font-semibold text-navy">{shoe.name}</span>
                     {shoe.is_primary && (
-                      <span style={{
-                        background: C.navy, color: C.white,
-                        fontFamily: 'DM Sans, sans-serif', fontSize: 8,
-                        fontWeight: 700, borderRadius: 99,
-                        padding: '2px 6px',
-                      }}>PRIMARY</span>
+                      <span className="bg-navy text-white font-sans text-[8px] font-bold rounded-full px-[6px] py-[2px]">
+                        PRIMARY
+                      </span>
                     )}
                   </div>
                   {nearLimit && (
-                    <span style={{
-                      fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-                      color: C.red,
-                    }}>Replace soon ⚠</span>
+                    <span className="font-sans text-[10px]" style={{ color: '#E84A4A' }}>
+                      Replace soon ⚠
+                    </span>
                   )}
                 </div>
                 {shoe.usage_label && (
-                  <div style={{
-                    fontFamily: 'DM Sans, sans-serif', fontSize: 10,
-                    color: C.gray400, marginBottom: 5,
-                  }}>{shoe.usage_label}</div>
+                  <div className="font-sans text-[10px] text-[var(--color-text-muted)] mb-[5px]">
+                    {shoe.usage_label}
+                  </div>
                 )}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between',
-                  marginBottom: 4,
-                }}>
-                  <span style={{
-                    fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-                    color: C.gray600,
-                  }}>{Math.round(shoe.current_miles || 0)} mi</span>
-                  <span style={{
-                    fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-                    color: C.gray400,
-                  }}>/ {shoe.max_miles || 450} mi</span>
+                <div className="flex justify-between mb-1">
+                  <span className="font-mono text-[11px] text-[var(--color-text-secondary)]">
+                    {Math.round(shoe.current_miles || 0)} mi
+                  </span>
+                  <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
+                    / {shoe.max_miles || 450} mi
+                  </span>
                 </div>
-                <div style={{
-                  height: 7, background: C.gray100, borderRadius: 99,
-                }}>
-                  <div style={{
-                    width: `${pct}%`, height: '100%',
-                    background: nearLimit ? C.red : C.green,
-                    borderRadius: 99, transition: 'width 0.3s',
-                  }} />
+                <div className="h-[7px] bg-[var(--color-border-light)] rounded-full">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-300"
+                    style={{
+                      width: `${pct}%`,
+                      background: nearLimit ? '#E84A4A' : '#2ECC8B',
+                    }}
+                  />
                 </div>
               </div>
             );
@@ -157,103 +113,53 @@ export default function ShoeWidget({ data, onRefresh }) {
       {showModal && (
         <>
           <div
-            style={{
-              position: 'fixed', inset: 0,
-              background: 'rgba(0,0,0,0.35)', zIndex: 1000,
-            }}
+            className="fixed inset-0 bg-black/35 z-[1000]"
             onClick={() => setShowModal(false)}
           />
-          <div style={{
-            position: 'fixed', top: '50%', left: '50%',
-            transform: 'translate(-50%,-50%)', background: C.white,
-            borderRadius: 18, padding: '28px 32px', zIndex: 1001,
-            width: 360,
-            boxShadow: '0 8px 40px rgba(27,37,89,0.2)',
-          }}>
-            <div style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 14,
-              fontWeight: 700, color: C.navy, marginBottom: 20,
-            }}>Add Running Shoe</div>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-[18px] px-8 py-7 z-[1001] w-[360px] shadow-[0_8px_40px_rgba(27,37,89,0.2)]">
+            <div className="font-sans text-[14px] font-bold text-navy mb-5">Add Running Shoe</div>
             {[
-              {
-                label: 'Shoe Name *', field: 'name', type: 'text',
-                placeholder: 'e.g. Pegasus 41',
-              },
-              {
-                label: 'Brand', field: 'brand', type: 'text',
-                placeholder: 'e.g. Nike',
-              },
-              {
-                label: 'Max Mileage', field: 'max_miles', type: 'number',
-                placeholder: '450',
-              },
-              {
-                label: 'Date Purchased', field: 'date_purchased',
-                type: 'date',
-              },
-              {
-                label: 'Usage Label', field: 'usage_label', type: 'text',
-                placeholder: 'e.g. Easy & Long',
-              },
+              { label: 'Shoe Name *', field: 'name', type: 'text', placeholder: 'e.g. Pegasus 41' },
+              { label: 'Brand', field: 'brand', type: 'text', placeholder: 'e.g. Nike' },
+              { label: 'Max Mileage', field: 'max_miles', type: 'number', placeholder: '450' },
+              { label: 'Date Purchased', field: 'date_purchased', type: 'date' },
+              { label: 'Usage Label', field: 'usage_label', type: 'text', placeholder: 'e.g. Easy & Long' },
             ].map(({ label, field, type, placeholder }) => (
-              <div key={field} style={{ marginBottom: 12 }}>
-                <label style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 11,
-                  color: C.gray400, display: 'block', marginBottom: 3,
-                }}>{label}</label>
+              <div key={field} className="mb-3">
+                <label className="font-sans text-[11px] text-[var(--color-text-muted)] block mb-[3px]">
+                  {label}
+                </label>
                 <input
-                  type={type} value={form[field]}
-                  onChange={e =>
-                    setForm(f => ({ ...f, [field]: e.target.value }))
-                  }
+                  type={type}
+                  value={form[field]}
+                  onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                   placeholder={placeholder}
-                  style={{
-                    width: '100%', padding: '8px 10px', borderRadius: 8,
-                    border: `1px solid ${C.gray200}`,
-                    fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                    boxSizing: 'border-box',
-                  }}
+                  className={inputClass}
                 />
               </div>
             ))}
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              marginBottom: 20, cursor: 'pointer',
-            }}>
+            <label className="flex items-center gap-2 mb-5 cursor-pointer">
               <input
-                type="checkbox" checked={form.is_primary}
-                onChange={e =>
-                  setForm(f => ({ ...f, is_primary: e.target.checked }))
-                }
+                type="checkbox"
+                checked={form.is_primary}
+                onChange={e => setForm(f => ({ ...f, is_primary: e.target.checked }))}
               />
-              <span style={{
-                fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                color: C.navy,
-              }}>Set as primary shoe</span>
+              <span className="font-sans text-[12px] text-navy">Set as primary shoe</span>
             </label>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="flex gap-[10px]">
               <button
                 onClick={() => setShowModal(false)}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10,
-                  border: `1px solid ${C.gray200}`,
-                  background: C.gray50,
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                  fontWeight: 600, color: C.gray600, cursor: 'pointer',
-                }}
-              >Cancel</button>
+                className="flex-1 py-[10px] rounded-[10px] border border-[var(--color-border-light)] bg-[var(--color-bg-elevated)] font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                style={{
-                  flex: 2, padding: '10px', borderRadius: 10,
-                  border: 'none', background: C.navy,
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 12,
-                  fontWeight: 700, color: C.white,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  opacity: !form.name.trim() ? 0.6 : 1,
-                }}
-              >{saving ? 'Saving...' : 'Add Shoe'}</button>
+                className="flex-[2] py-[10px] rounded-[10px] border-0 bg-navy font-sans text-[12px] font-bold text-white cursor-pointer disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : 'Add Shoe'}
+              </button>
             </div>
           </div>
         </>
