@@ -3,7 +3,7 @@ const ZONE_COLORS = ['#5CC8FF', '#2ECC8B', '#F5A623', '#E8634A', '#E84A4A'];
 export default function HRZonesWidget({ data }) {
   if (!data || !data.zones?.length) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="flex justify-between mb-[14px]">
           <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
             HR Zones · This Week
@@ -19,7 +19,7 @@ export default function HRZonesWidget({ data }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="flex justify-between mb-[14px]">
         <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
           HR Zones · This Week

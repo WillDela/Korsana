@@ -6,7 +6,7 @@ import {
 export default function CadenceWidget({ data }) {
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="mb-[14px] font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
           Cadence
         </div>
@@ -22,7 +22,7 @@ export default function CadenceWidget({ data }) {
   const gapColor = gap > 5 ? '#F5A623' : '#2ECC8B';
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="mb-[10px] font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
         Cadence
       </div>
@@ -46,7 +46,7 @@ export default function CadenceWidget({ data }) {
           ))}
         </div>
       )}
-      <ResponsiveContainer width="100%" height={70}>
+      <ResponsiveContainer width="100%" height={100}>
         <LineChart data={data.trend || []}>
           <XAxis
             dataKey="week"

@@ -8,7 +8,7 @@ const BLUE = '#4A6CF7';
 export default function ElevationWidget({ data }) {
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-3.5">
           Elevation
         </div>
@@ -21,7 +21,7 @@ export default function ElevationWidget({ data }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-3.5">
         Elevation
       </div>
@@ -41,7 +41,7 @@ export default function ElevationWidget({ data }) {
           </div>
         )}
       </div>
-      <ResponsiveContainer width="100%" height={90}>
+      <ResponsiveContainer width="100%" height={120}>
         <AreaChart data={data.trend || []}>
           <defs>
             <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">

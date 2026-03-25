@@ -22,7 +22,7 @@ export default function RacePredictorWidget({ data, onRefresh }) {
 
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="flex justify-between mb-[14px]">
           <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
             Race Predictor
@@ -63,14 +63,14 @@ export default function RacePredictorWidget({ data, onRefresh }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="flex justify-between mb-4">
         <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
           Race Predictor
         </span>
         <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
       </div>
-      <div className="grid gap-5 items-start" style={{ gridTemplateColumns: '1fr 2fr 1.5fr' }}>
+      <div className="grid gap-5 items-start" style={{ gridTemplateColumns: '1.2fr 2fr 1.2fr' }}>
         <div>
           <div className="font-sans text-[10px] text-[var(--color-text-muted)] mb-1">Based on</div>
           <div className="font-mono text-[14px] font-bold text-navy">{data.source_distance}</div>

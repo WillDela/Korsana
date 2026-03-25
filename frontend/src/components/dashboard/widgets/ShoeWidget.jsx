@@ -37,7 +37,7 @@ export default function ShoeWidget({ data, onRefresh }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="flex justify-between items-center mb-4">
         <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
           Shoe Mileage

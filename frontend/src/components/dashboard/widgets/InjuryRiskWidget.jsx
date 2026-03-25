@@ -5,7 +5,7 @@ export default function InjuryRiskWidget({ data }) {
 
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="flex justify-between mb-3.5">
           <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Injury Risk</span>
           <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>
@@ -27,7 +27,7 @@ export default function InjuryRiskWidget({ data }) {
   ];
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="flex justify-between mb-3.5">
         <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Injury Risk</span>
         <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>

@@ -1,7 +1,7 @@
 export default function RecoveryWidget({ data }) {
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="flex justify-between mb-3.5">
           <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Recovery</span>
           <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>
@@ -19,7 +19,7 @@ export default function RecoveryWidget({ data }) {
   const r = 48, circ = 2 * Math.PI * r;
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="flex justify-between mb-3.5">
         <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Recovery Status</span>
         <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>

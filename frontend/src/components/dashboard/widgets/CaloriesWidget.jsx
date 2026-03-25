@@ -6,7 +6,7 @@ import {
 export default function CaloriesWidget({ data }) {
   if (!data) {
     return (
-      <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+      <div className="widget-card">
         <div className="mb-[14px] font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
           Calories Burned
         </div>
@@ -24,7 +24,7 @@ export default function CaloriesWidget({ data }) {
   );
 
   return (
-    <div className="bg-white rounded-2xl p-[22px] shadow-sm">
+    <div className="widget-card">
       <div className="mb-3 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
         Calories Burned
       </div>

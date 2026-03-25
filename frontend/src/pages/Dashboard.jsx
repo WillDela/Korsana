@@ -78,7 +78,7 @@ const WIDGETS = [
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-const RUN_TABLE_COLS = '100px 100px 1fr 90px 90px 80px 80px';
+const RUN_TABLE_COLS = '100px 100px 2fr 1fr 1fr 1fr 1fr';
 const RUN_TABLE_HEADERS = ['Date', 'Type', 'Distance', 'Pace', 'Time', 'HR', 'Elev'];
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -953,8 +953,8 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-8 py-[14px]">
-        <div className="max-w-[1080px] w-full mx-auto flex items-center justify-between gap-2">
+      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)]" style={{ padding: '14px 48px' }}>
+        <div className="flex items-center justify-between gap-2" style={{ maxWidth: 1060, margin: '0 auto' }}>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
@@ -980,8 +980,8 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div className="w-full px-8 py-10">
-        <div className="max-w-[1080px] w-full mx-auto flex flex-col gap-8">
+      <div style={{ padding: '40px 48px' }}>
+        <div style={{ maxWidth: 1060, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
@@ -1509,7 +1509,7 @@ const Dashboard = () => {
                 {recentRuns.length > 0 ? (
                   <Card style={{ padding: 0 }}>
                     <div
-                      className="grid px-6 py-3 border-b border-[var(--color-border-light)]"
+                      className="grid gap-4 px-6 py-3 border-b border-[var(--color-border-light)]"
                       style={{ gridTemplateColumns: RUN_TABLE_COLS }}
                     >
                       {RUN_TABLE_HEADERS.map((h, i) => (
@@ -1529,7 +1529,7 @@ const Dashboard = () => {
                       return (
                         <div
                           key={i}
-                          className="krs-rr grid px-6 py-4 items-center transition-colors"
+                          className="krs-rr grid gap-4 px-6 py-4 items-center transition-colors"
                           style={{
                             gridTemplateColumns: RUN_TABLE_COLS,
                             background: 'transparent',
