@@ -374,9 +374,9 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh }) => 
   if (!active.length) return null;
   const has = (id) => active.includes(id);
   return (
-    <div className="px-6 pb-6">
+    <div>
       <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
-      <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+      <div className="grid grid-cols-2 gap-5">
         {has('load')          && <div className="col-span-full"><TrainingLoadWidget data={dashboardData?.training_load} /></div>}
         {has('predictor')     && <div className="col-span-full"><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} /></div>}
         {has('longrun')       && <LongRunConfidenceWidget data={dashboardData?.long_run} />}
@@ -953,7 +953,7 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-6 py-[14px]">
+      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-8 py-[14px]">
         <div className="max-w-[1280px] w-full mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
@@ -980,8 +980,8 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div className="w-full p-6">
-        <div className="max-w-[1280px] w-full mx-auto flex flex-col gap-[22px]">
+      <div className="w-full px-8 py-8">
+        <div className="max-w-[1280px] w-full mx-auto flex flex-col gap-7">
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
@@ -1070,10 +1070,10 @@ const Dashboard = () => {
           </Card>
 
           {/* ── GRID ── */}
-          <div className="grid gap-[22px]" style={{ gridTemplateColumns: '1fr 316px' }}>
+          <div className="grid gap-7" style={{ gridTemplateColumns: '1fr 316px' }}>
 
             {/* ── LEFT COLUMN ── */}
-            <div className="flex flex-col gap-6 min-w-0">
+            <div className="flex flex-col gap-7 min-w-0">
 
               {/* ① WEEK CALENDAR STRIP */}
               <div>
@@ -1486,7 +1486,7 @@ const Dashboard = () => {
             </div>
 
             {/* ── RIGHT SIDEBAR ── */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
 
               {/* Race Readiness */}
               <Card>
