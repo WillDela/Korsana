@@ -162,7 +162,7 @@ const Pill = ({ type, sm = false }) => {
 };
 
 const Card = ({ children, style = {} }) => (
-  <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '20px 22px', ...style }}>
+  <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '24px 28px', ...style }}>
     {children}
   </div>
 );
@@ -954,7 +954,7 @@ const Dashboard = () => {
 
       {/* ── TOOLBAR ── */}
       <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-8 py-[14px]">
-        <div className="max-w-[1280px] w-full mx-auto flex items-center justify-between gap-2">
+        <div className="max-w-[1080px] w-full mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
@@ -980,8 +980,8 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div className="w-full px-8 py-8">
-        <div className="max-w-[1280px] w-full mx-auto flex flex-col gap-7">
+      <div className="w-full px-8 py-10">
+        <div className="max-w-[1080px] w-full mx-auto flex flex-col gap-8">
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
@@ -1069,13 +1069,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          {/* ── GRID ── */}
-          <div className="grid gap-7" style={{ gridTemplateColumns: '1fr 316px' }}>
-
-            {/* ── LEFT COLUMN ── */}
-            <div className="flex flex-col gap-7 min-w-0">
-
-              {/* ① WEEK CALENDAR STRIP */}
+          {/* ① WEEK CALENDAR STRIP */}
               <div>
                 <SLabel action={
                   <Link to="/calendar" className="font-sans text-[12px] font-semibold text-coral no-underline cursor-pointer">
@@ -1230,10 +1224,106 @@ const Dashboard = () => {
                 )}
               </div>
 
+              {/* Race Readiness + Coach Insight */}
+              <div className="grid grid-cols-2 gap-5">
+                <Card>
+                  <SLabel>Race Readiness</SLabel>
+                  <div className="flex items-center gap-4 mb-4">
+                    <Gauge score={readinessScore} />
+                    <div>
+                      <div
+                        className="font-heading text-[22px] font-bold mb-1 tracking-[-0.01em] leading-[1.1]"
+                        style={{ color: readinessColor }}
+                      >{readinessLabel}</div>
+                      <p className="font-sans text-[13px] text-[var(--color-text-secondary)] leading-relaxed">
+                        {readinessScore >= 70
+                          ? 'Strong base. Stay consistent and taper well.'
+                          : readinessScore >= 50
+                            ? 'Good progress. Keep building your long run and weekly volume.'
+                            : 'Focus on consistency and gradual mileage increases.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowFactors(!showFactors)}
+                    className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border-light)] rounded-[10px] py-[10px] font-sans text-[12px] font-bold text-[var(--color-text-secondary)] cursor-pointer flex items-center justify-center gap-[6px]"
+                  >
+                    {showFactors ? 'Hide' : 'Show'} breakdown
+                    <span
+                      className="inline-block transition-transform duration-300"
+                      style={{ transform: showFactors ? 'rotate(180deg)' : 'none' }}
+                    >▾</span>
+                  </button>
+                  {showFactors && (
+                    <div className="mt-[14px] flex flex-col gap-[10px]">
+                      {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
+                        <div key={name}>
+                          <div className="flex justify-between mb-[5px]">
+                            <span className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)]">{name}</span>
+                            <span
+                              className="font-mono text-[13px] font-bold"
+                              style={{ color: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A' }}
+                            >{score}</span>
+                          </div>
+                          <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${score}%`,
+                                background: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+                <div className="bg-navy rounded-2xl px-6 py-5 shadow-[0_6px_24px_rgba(27,37,89,0.15)] border-l-[6px] border-coral flex flex-col">
+                  <div className="flex items-center gap-[10px] mb-[14px]">
+                    <div className="w-7 h-7 rounded-lg bg-coral flex items-center justify-center text-[14px] shrink-0">✦</div>
+                    <span className="font-sans text-[11px] font-bold text-white/60 uppercase tracking-[0.1em]">Coach Insight</span>
+                  </div>
+                  <p className="font-sans text-[14px] text-white/80 leading-relaxed mb-4 flex-1">
+                    Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.
+                  </p>
+                  <Link
+                    to="/coach"
+                    className="block w-full text-center bg-white/10 border border-white/15 rounded-[10px] py-[10px] font-sans text-[13px] font-semibold text-white no-underline"
+                  >
+                    Ask Coach →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Up Next */}
+              {upNextEntries.length > 0 && (
+                <Card>
+                  <SLabel>Up Next</SLabel>
+                  {upNextEntries.map((d, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-[14px] py-3"
+                      style={{ borderBottom: i < upNextEntries.length - 1 ? '1px solid var(--color-border-light)' : 'none' }}
+                    >
+                      <div className="w-11 h-11 rounded-xl bg-[var(--color-bg-elevated)] flex flex-col items-center justify-center shrink-0">
+                        <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase font-bold leading-none mb-[2px]">{d.day}</span>
+                        <span className="font-mono text-[18px] font-bold text-navy leading-none">{d.date}</span>
+                      </div>
+                      <div>
+                        {d.type && <Pill type={d.type} sm />}
+                        {d.miles && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.miles} miles</div>}
+                        {!d.miles && d.title && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.title}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
               {/* ③ METRIC CARDS */}
               <div>
                 <SLabel>This Week</SLabel>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-5">
                   {/* Weekly Mileage */}
                   <Card>
                     <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[14px]">
@@ -1339,7 +1429,7 @@ const Dashboard = () => {
               {/* ④ TRAINING TRENDS */}
               <div>
                 <SLabel>Training Trends</SLabel>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-5">
                   {/* Weekly Mileage chart */}
                   <Card>
                     <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[2px]">
@@ -1483,109 +1573,6 @@ const Dashboard = () => {
 
               {/* ⑥ OPTIONAL WIDGET GRID */}
               <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
-            </div>
-
-            {/* ── RIGHT SIDEBAR ── */}
-            <div className="flex flex-col gap-6">
-
-              {/* Race Readiness */}
-              <Card>
-                <SLabel>Race Readiness</SLabel>
-                <div className="flex items-center gap-4 mb-4">
-                  <Gauge score={readinessScore} />
-                  <div>
-                    <div
-                      className="font-heading text-[22px] font-bold mb-1 tracking-[-0.01em] leading-[1.1]"
-                      style={{ color: readinessColor }}
-                    >{readinessLabel}</div>
-                    <p className="font-sans text-[13px] text-[var(--color-text-secondary)] leading-relaxed">
-                      {readinessScore >= 70
-                        ? 'Strong base. Stay consistent and taper well.'
-                        : readinessScore >= 50
-                          ? 'Good progress. Keep building your long run and weekly volume.'
-                          : 'Focus on consistency and gradual mileage increases.'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowFactors(!showFactors)}
-                  className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border-light)] rounded-[10px] py-[10px] font-sans text-[12px] font-bold text-[var(--color-text-secondary)] cursor-pointer flex items-center justify-center gap-[6px]"
-                >
-                  {showFactors ? 'Hide' : 'Show'} breakdown
-                  <span
-                    className="inline-block transition-transform duration-300"
-                    style={{ transform: showFactors ? 'rotate(180deg)' : 'none' }}
-                  >▾</span>
-                </button>
-                {showFactors && (
-                  <div className="mt-[14px] flex flex-col gap-[10px]">
-                    {Object.entries(readinessFactors).filter(([k]) => k !== 'composite').map(([name, score]) => (
-                      <div key={name}>
-                        <div className="flex justify-between mb-[5px]">
-                          <span className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)]">{name}</span>
-                          <span
-                            className="font-mono text-[13px] font-bold"
-                            style={{ color: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A' }}
-                          >{score}</span>
-                        </div>
-                        <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${score}%`,
-                              background: score >= 70 ? '#2ECC8B' : score >= 50 ? '#F5A623' : '#E84A4A',
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-
-              {/* Coach Insight */}
-              <div className="bg-navy rounded-2xl px-6 py-5 shadow-[0_6px_24px_rgba(27,37,89,0.15)] border-l-[6px] border-coral">
-                <div className="flex items-center gap-[10px] mb-[14px]">
-                  <div className="w-7 h-7 rounded-lg bg-coral flex items-center justify-center text-[14px] shrink-0">✦</div>
-                  <span className="font-sans text-[11px] font-bold text-white/60 uppercase tracking-[0.1em]">Coach Insight</span>
-                </div>
-                <p className="font-sans text-[14px] text-white/80 leading-relaxed mb-4">
-                  Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.
-                </p>
-                <Link
-                  to="/coach"
-                  className="block w-full text-center bg-white/10 border border-white/15 rounded-[10px] py-[10px] font-sans text-[13px] font-semibold text-white no-underline"
-                >
-                  Ask Coach →
-                </Link>
-              </div>
-
-              {/* Up Next */}
-              {upNextEntries.length > 0 && (
-                <Card>
-                  <SLabel>Up Next</SLabel>
-                  {upNextEntries.map((d, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-[14px] py-3"
-                      style={{ borderBottom: i < upNextEntries.length - 1 ? '1px solid var(--color-border-light)' : 'none' }}
-                    >
-                      <div className="w-11 h-11 rounded-xl bg-[var(--color-bg-elevated)] flex flex-col items-center justify-center shrink-0">
-                        <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase font-bold leading-none mb-[2px]">{d.day}</span>
-                        <span className="font-mono text-[18px] font-bold text-navy leading-none">{d.date}</span>
-                      </div>
-                      <div>
-                        {d.type && <Pill type={d.type} sm />}
-                        {d.miles && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.miles} miles</div>}
-                        {!d.miles && d.title && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.title}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </Card>
-              )}
-
-            </div>
-          </div>
         </div>
       </div>
 
