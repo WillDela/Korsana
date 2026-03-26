@@ -161,6 +161,12 @@ const Pill = ({ type, sm = false }) => {
   );
 };
 
+const PageContainer = ({ children, className = '', style = {} }) => (
+  <div className={className} style={{ maxWidth: 1060, width: '100%', margin: '0 auto', ...style }}>
+    {children}
+  </div>
+);
+
 const Card = ({ children, style = {} }) => (
   <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '24px', ...style }}>
     {children}
@@ -954,7 +960,7 @@ const Dashboard = () => {
 
       {/* ── TOOLBAR ── */}
       <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-4 sm:px-6 lg:px-8 py-[14px]">
-        <div className="flex items-center justify-between gap-2" style={{ maxWidth: 1060, width: '100%', margin: '0 auto' }}>
+        <PageContainer className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
@@ -976,12 +982,12 @@ const Dashboard = () => {
             <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} onConnect={handleConnectStrava} stravaConnected={stravaConnected} />
             <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
           </div>
-        </div>
+        </PageContainer>
       </div>
 
       {/* ── BODY ── */}
       <div className="px-4 sm:px-6 lg:px-8 py-10">
-        <div style={{ maxWidth: 1060, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <PageContainer style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
@@ -1573,7 +1579,7 @@ const Dashboard = () => {
 
               {/* ⑥ OPTIONAL WIDGET GRID */}
               <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
-        </div>
+        </PageContainer>
       </div>
 
       <SessionDetailsModal
