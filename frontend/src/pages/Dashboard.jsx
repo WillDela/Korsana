@@ -148,6 +148,20 @@ const getWorkoutSegments = (type, miles) => {
   }
 };
 
+const DIST_LABELS = [
+  { label: 'Marathon',      meters: 42195, tolerance: 500 },
+  { label: 'Half Marathon', meters: 21097, tolerance: 300 },
+  { label: '10K',           meters: 10000, tolerance: 200 },
+  { label: '5K',            meters: 5000,  tolerance: 200 },
+];
+const distanceLabel = (meters) => {
+  if (!meters) return '—';
+  for (const { label, meters: m, tolerance } of DIST_LABELS) {
+    if (Math.abs(meters - m) < tolerance) return label;
+  }
+  return `${(meters / 1000).toFixed(1)} km`;
+};
+
 // ─── Atom components ──────────────────────────────────────────
 const Pill = ({ type, sm = false }) => {
   const s = WC[type] || WC.Easy;
@@ -986,90 +1000,82 @@ const Dashboard = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* ── GOAL HERO CARD ── */}
-          <Card style={{ padding: '18px 24px' }}>
-            <div className="flex items-center justify-between">
-              {activeGoal ? (
-                <>
-                  {/* Left: race identity */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-1 h-[50px] bg-coral rounded-full shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-[10px] mb-[5px]">
-                        <span className="font-heading font-bold text-[22px] text-navy tracking-[-0.02em] leading-none">
-                          {activeGoal.race_name}
-                        </span>
-                        <div
-                          className="rounded-[6px] px-[10px] py-[3px] flex items-center gap-[5px]"
-                          style={{ background: pc.badge }}
-                        >
-                          <div className="w-1 h-1 rounded-full" style={{ background: pc.accent }} />
-                          <span className="font-sans text-[10px] font-bold" style={{ color: pc.label }}>
-                            {trainingPhase} Phase
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-[14px]">
-                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">
-                          {activeGoal.race_date
-                            ? new Date(activeGoal.race_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                            : '—'}
-                        </span>
-                        <div className="flex items-center gap-[7px]">
-                          <div className="w-[110px] h-[3px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${trainingProgress}%`, background: 'linear-gradient(90deg,#E8634A,#f2a040)' }}
-                            />
-                          </div>
-                          <span className="font-sans text-[11px] text-[var(--color-text-muted)]">{trainingProgress}% done</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          {activeGoal ? (
+            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 32px', boxShadow: '0 1px 2px rgba(27,37,89,0.05), 0 2px 12px rgba(27,37,89,0.04)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 5, height: '100%', background: 'var(--color-coral)' }} />
 
-                  {/* Center: target + goal pace */}
-                  <div className="flex items-stretch">
-                    {[
-                      { label: 'TARGET TIME', value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : '—', sub: 'finish goal' },
-                      { label: 'GOAL PACE',   value: targetPaceDisplay || '—', sub: 'avg per mile' },
-                    ].map((stat, i) => (
-                      <div
-                        key={i}
-                        className={`px-6 text-center ${i > 0 ? 'border-l border-[var(--color-border-light)]' : ''}`}
-                      >
-                        <div className="font-sans text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.12em] mb-[5px]">
-                          {stat.label}
-                        </div>
-                        <div className="font-mono text-[22px] font-bold text-navy leading-none">{stat.value}</div>
-                        <div className="font-sans text-[10px] text-[var(--color-text-muted)] mt-[3px]">{stat.sub}</div>
-                      </div>
-                    ))}
+              {/* Top row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 24 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span style={{ background: 'var(--color-coral)', color: '#fff', borderRadius: 5, padding: '3px 10px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                      {distanceLabel(activeGoal.race_distance_meters)}
+                    </span>
+                    <span style={{ background: pc.badge, color: pc.label, borderRadius: 5, padding: '3px 9px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                      {trainingPhase} Phase
+                    </span>
                   </div>
-
-                  {/* Right: countdown */}
-                  {daysToRace !== null && (
-                    <div className="text-right">
-                      <div className="flex items-baseline gap-[3px] justify-end">
-                        <span className="font-mono text-[32px] font-bold text-navy leading-none">{weeksOut}</span>
-                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">w</span>
-                        <span className="font-mono text-[22px] font-bold text-[var(--color-text-muted)] leading-none">{daysRem}</span>
-                        <span className="font-sans text-[12px] text-[var(--color-text-muted)]">d</span>
-                      </div>
-                      <div className="font-sans text-[10px] text-[var(--color-text-muted)] text-right mt-[1px]">to race day</div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="w-1 h-[50px] bg-[#D4D8E8] rounded-full" />
-                  <div>
-                    <div className="font-heading text-[18px] font-bold text-[var(--color-text-muted)] mb-1">No active goal</div>
-                    <Link to="/goals" className="font-sans text-[12px] text-coral font-semibold no-underline">Set a race goal →</Link>
-                  </div>
+                  <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1, marginBottom: 7 }}>
+                    {activeGoal.race_name}
+                  </h2>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+                    {activeGoal.race_date
+                      ? new Date(activeGoal.race_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'}
+                  </p>
                 </div>
-              )}
+
+                {/* Stats */}
+                <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0 }}>
+                  {[
+                    { value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : 'Just finish', label: 'Target Time', size: 26, color: 'var(--color-navy)' },
+                    { value: targetPaceDisplay || '—', label: 'Goal Pace', size: 20, color: 'var(--color-navy)' },
+                    { value: `${weeksOut ?? 0}w`, label: 'To Race Day', size: 30, color: 'var(--color-coral)' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                      {i > 0 && <div style={{ width: 1, height: 50, background: 'var(--color-border-light)', margin: '0 20px' }} />}
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: s.size, fontWeight: 700, color: s.color, lineHeight: 1 }}>
+                          {s.value}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 5 }}>
+                          {s.label}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, borderTop: '1px solid var(--color-border-light)', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 130, height: 4, background: 'var(--color-border-light)', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${trainingProgress}%`, background: 'linear-gradient(90deg,#E8634A,#f2a040)', borderRadius: 2 }} />
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    {trainingProgress}% of training done
+                  </span>
+                </div>
+                <Link
+                  to="/goals"
+                  style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-light)', borderRadius: 9, padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--color-navy)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                >
+                  View Goals →
+                </Link>
+              </div>
             </div>
-          </Card>
+          ) : (
+            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 32px', boxShadow: '0 1px 2px rgba(27,37,89,0.05), 0 2px 12px rgba(27,37,89,0.04)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 5, height: '100%', background: '#D4D8E8' }} />
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+                No active goal
+              </div>
+              <Link to="/goals/new" style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-coral)', fontWeight: 600, textDecoration: 'none' }}>
+                Set a race goal →
+              </Link>
+            </div>
+          )}
 
           {/* ① WEEK CALENDAR STRIP */}
               <div>
