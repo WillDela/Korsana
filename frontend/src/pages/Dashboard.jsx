@@ -960,7 +960,7 @@ const Dashboard = () => {
 
       {/* ── TOOLBAR ── */}
       <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-4 sm:px-6 lg:px-8 py-[14px]">
-        <PageContainer className="flex items-center justify-between gap-2">
+        <PageContainer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
