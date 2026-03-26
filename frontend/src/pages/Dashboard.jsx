@@ -162,7 +162,7 @@ const Pill = ({ type, sm = false }) => {
 };
 
 const Card = ({ children, style = {} }) => (
-  <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '24px 28px', ...style }}>
+  <div className="bg-white rounded-2xl shadow-sm" style={{ padding: '24px', ...style }}>
     {children}
   </div>
 );
@@ -953,8 +953,8 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)]" style={{ padding: '14px 48px' }}>
-        <div className="flex items-center justify-between gap-2" style={{ maxWidth: 1060, margin: '0 auto' }}>
+      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-4 sm:px-6 lg:px-8 py-[14px]">
+        <div className="flex items-center justify-between gap-2" style={{ maxWidth: 1060, width: '100%', margin: '0 auto' }}>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePlanWorkout}
@@ -980,8 +980,8 @@ const Dashboard = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ padding: '40px 48px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div className="px-4 sm:px-6 lg:px-8 py-10">
+        <div style={{ maxWidth: 1060, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
