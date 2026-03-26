@@ -947,9 +947,8 @@ const Dashboard = () => {
 
   // ─── Render ──────────────────────────────────────────────────
   return (
-    <div className="font-sans bg-[#F5F6FA] min-h-screen">
+    <div>
       <style>{`
-        *{box-sizing:border-box;margin:0;padding:0}
         button{cursor:pointer;transition:opacity 0.15s}
         @keyframes krs-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
         .krs-rr:hover { background: var(--color-bg-elevated) !important; cursor: pointer }
@@ -959,9 +958,8 @@ const Dashboard = () => {
       `}</style>
 
       {/* ── TOOLBAR ── */}
-      <div className="bg-[#F5F6FA] border-b border-[var(--color-border-light)] px-4 sm:px-6 lg:px-8 py-[14px]">
-        <PageContainer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <div className="flex items-center gap-2">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={handlePlanWorkout}
               className="flex items-center gap-[7px] bg-coral border-0 rounded-[10px] px-[18px] py-[9px] font-sans text-[13px] font-bold text-white cursor-pointer shadow-[0_3px_10px_rgba(232,99,74,0.35)]"
@@ -978,16 +976,14 @@ const Dashboard = () => {
               >{syncMsg.text}</span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} onConnect={handleConnectStrava} stravaConnected={stravaConnected} />
             <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
           </div>
-        </PageContainer>
-      </div>
+        </div>
 
       {/* ── BODY ── */}
-      <div className="px-4 sm:px-6 lg:px-8 py-10">
-        <PageContainer style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* ── GOAL HERO CARD ── */}
           <Card style={{ padding: '18px 24px' }}>
@@ -1579,7 +1575,6 @@ const Dashboard = () => {
 
               {/* ⑥ OPTIONAL WIDGET GRID */}
               <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
-        </PageContainer>
       </div>
 
       <SessionDetailsModal
