@@ -271,6 +271,19 @@ func (s *CalendarService) DeleteEntry(ctx context.Context, userID uuid.UUID, ent
 	return nil
 }
 
+// MarkMissedEntries sets status='missed' on all past planned entries for a user.
+// Call this before returning calendar data so stale 'planned' entries never surface.
+func (s *CalendarService) MarkMissedEntries(ctx context.Context, userID uuid.UUID) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE training_calendar
+		SET status = 'missed', updated_at = NOW()
+		WHERE user_id = $1
+		  AND status = 'planned'
+		  AND date < CURRENT_DATE
+	`, userID)
+	return err
+}
+
 // UpdateStatus updates the status of a calendar entry
 func (s *CalendarService) UpdateStatus(ctx context.Context, userID uuid.UUID, entryID uuid.UUID, status string, activityID *uuid.UUID) (*models.CalendarEntry, error) {
 	// Validate status

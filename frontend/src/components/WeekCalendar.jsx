@@ -77,7 +77,10 @@ const WeekCalendar = ({ compact = false }) => {
 
   const handleStatusToggle = async (e, entry) => {
     e.stopPropagation();
-    const nextStatus = entry.status === 'completed' ? 'planned' : 'completed';
+    // missed → planned (restore), completed → planned, planned → completed
+    const nextStatus = entry.status === 'completed' ? 'planned'
+      : entry.status === 'missed' ? 'planned'
+      : 'completed';
     try {
       await calendarAPI.updateStatus(entry.id, nextStatus, entry.completed_activity_id);
       await fetchWeek();
@@ -104,6 +107,7 @@ const WeekCalendar = ({ compact = false }) => {
   // Weekly stats
   const planned = entries.length;
   const completed = entries.filter((e) => e.status === 'completed').length;
+  const missed = entries.filter((e) => e.status === 'missed').length;
   const totalDistance = entries.reduce((sum, e) => sum + (e.planned_distance_meters || 0), 0);
 
   return (
@@ -224,8 +228,12 @@ const WeekCalendar = ({ compact = false }) => {
                               width: '14px',
                               height: '14px',
                               borderRadius: '50%',
-                              border: entry.status === 'completed' ? 'none' : `2px solid ${typeInfo?.color || '#D1D5DB'}`,
-                              background: entry.status === 'completed' ? '#10B981' : 'transparent',
+                              border: entry.status === 'completed' ? 'none'
+                                : entry.status === 'missed' ? 'none'
+                                : `2px solid ${typeInfo?.color || '#D1D5DB'}`,
+                              background: entry.status === 'completed' ? '#10B981'
+                                : entry.status === 'missed' ? '#DC2626'
+                                : 'transparent',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -235,21 +243,28 @@ const WeekCalendar = ({ compact = false }) => {
                               flexShrink: 0,
                               padding: 0,
                             }}
-                            title={entry.status === 'completed' ? 'Mark as planned' : 'Mark as done'}
+                            title={entry.status === 'completed' ? 'Mark as planned'
+                              : entry.status === 'missed' ? 'Restore to planned'
+                              : 'Mark as done'}
                           >
                             {entry.status === 'completed' && '✓'}
+                            {entry.status === 'missed' && '✕'}
                           </button>
                         )}
                         {compact && entry.status === 'completed' && (
                           <span style={{ fontSize: '0.5rem', color: '#10B981' }}>✓</span>
                         )}
+                        {compact && entry.status === 'missed' && (
+                          <span style={{ fontSize: '0.5rem', color: '#DC2626' }}>✕</span>
+                        )}
                         <span style={{
                           fontSize: compact ? '0.5625rem' : '0.6875rem',
                           fontWeight: 600,
-                          color: typeInfo?.color || '#374151',
+                          color: entry.status === 'missed' ? '#9CA3AF' : (typeInfo?.color || '#374151'),
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
+                          textDecoration: entry.status === 'missed' ? 'line-through' : 'none',
                         }}>
                           {entry.title}
                         </span>
@@ -329,6 +344,14 @@ const WeekCalendar = ({ compact = false }) => {
             </span>
             <span style={{ fontSize: '0.6875rem', color: '#6B7280', display: 'block' }}>done</span>
           </div>
+          {missed > 0 && (
+            <div style={{ textAlign: 'center' }}>
+              <span className="font-mono" style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#DC2626' }}>
+                {missed}
+              </span>
+              <span style={{ fontSize: '0.6875rem', color: '#6B7280', display: 'block' }}>missed</span>
+            </div>
+          )}
           <div style={{ textAlign: 'center' }}>
             <span className="font-mono" style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#374151' }}>
               {(totalDistance / 1000).toFixed(1)}

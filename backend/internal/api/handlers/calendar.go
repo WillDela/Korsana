@@ -48,6 +48,8 @@ func (h *CalendarHandler) GetWeek(c *gin.Context) {
 		return
 	}
 
+	_ = h.calendarService.MarkMissedEntries(c.Request.Context(), userID)
+
 	entries, err := h.calendarService.GetWeekEntries(c.Request.Context(), userID, weekStart)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -93,6 +95,8 @@ func (h *CalendarHandler) GetRange(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "end date must not be before start date"})
 		return
 	}
+
+	_ = h.calendarService.MarkMissedEntries(c.Request.Context(), userID)
 
 	entries, err := h.calendarService.GetRangeEntries(c.Request.Context(), userID, start, end)
 	if err != nil {
