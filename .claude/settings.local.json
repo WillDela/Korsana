@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:korsana.vercel.app)",
+      "WebFetch(domain:korsana-backend-zbbe9.ondigitalocean.app)"
+    ]
+  }
+}
