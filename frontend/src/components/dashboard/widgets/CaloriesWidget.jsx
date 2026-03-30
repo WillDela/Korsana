@@ -2,20 +2,11 @@ import {
   BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import WidgetEmptyState from './WidgetEmptyState';
 
-export default function CaloriesWidget({ data }) {
+export default function CaloriesWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="mb-[14px] font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
-          Calories Burned
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">No calorie data yet</div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Calories Burned" title="calorie data" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   const pct = Math.min(

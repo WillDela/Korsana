@@ -390,27 +390,28 @@ const WidgetSelector = ({ active, toggle }) => {
 };
 
 // ─── WidgetGrid ───────────────────────────────────────────────
-const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh }) => {
+const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, stravaConnected, onConnect }) => {
   if (!active.length) return null;
   const has = (id) => active.includes(id);
+  const stravaProps = { stravaConnected, onConnect };
   return (
     <div>
       <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
       <div className="grid grid-cols-2 gap-5">
-        {has('load')          && <div className="col-span-full"><TrainingLoadWidget data={dashboardData?.training_load} /></div>}
-        {has('predictor')     && <div className="col-span-full"><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} /></div>}
-        {has('longrun')       && <LongRunConfidenceWidget data={dashboardData?.long_run} />}
-        {has('recovery')      && <RecoveryWidget data={dashboardData?.recovery} />}
-        {has('injuryrisk')    && <InjuryRiskWidget data={dashboardData?.injury_risk} />}
-        {has('hrzones')       && <HRZonesWidget data={dashboardData?.hr_zones} />}
-        {has('elevation')     && <ElevationWidget data={computedData?.elevation} />}
-        {has('cadence')       && <CadenceWidget data={computedData?.cadence} />}
-        {has('streak')        && <StreakWidget data={computedData?.streak} />}
+        {has('load')          && <div className="col-span-full"><TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} /></div>}
+        {has('predictor')     && <div className="col-span-full"><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} /></div>}
+        {has('longrun')       && <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />}
+        {has('recovery')      && <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />}
+        {has('injuryrisk')    && <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />}
+        {has('hrzones')       && <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />}
+        {has('elevation')     && <ElevationWidget data={computedData?.elevation} {...stravaProps} />}
+        {has('cadence')       && <CadenceWidget data={computedData?.cadence} {...stravaProps} />}
+        {has('streak')        && <StreakWidget data={computedData?.streak} {...stravaProps} />}
         {has('crosstraining') && <div className="col-span-full"><CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} /></div>}
         {has('execution')     && <ExecutionScoreWidget data={dashboardData?.execution} />}
         {has('shoes')         && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
         {has('cardiac')       && <CardiacDriftWidget />}
-        {has('calories')      && <CaloriesWidget data={computedData?.calories} />}
+        {has('calories')      && <CaloriesWidget data={computedData?.calories} {...stravaProps} />}
       </div>
     </div>
   );
@@ -1580,7 +1581,7 @@ const Dashboard = () => {
               </div>
 
               {/* ⑥ OPTIONAL WIDGET GRID */}
-              <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} />
+              <WidgetGrid active={activeWidgets} dashboardData={dashboardData} computedData={widgetData} onRefresh={fetchDashboardData} stravaConnected={stravaConnected} onConnect={handleConnectStrava} />
       </div>
 
       <SessionDetailsModal

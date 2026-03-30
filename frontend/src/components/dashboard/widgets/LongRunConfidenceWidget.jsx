@@ -1,19 +1,8 @@
-export default function LongRunConfidenceWidget({ data }) {
+import WidgetEmptyState from './WidgetEmptyState';
+
+export default function LongRunConfidenceWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="flex justify-between mb-[14px]">
-          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
-            Long Run
-          </span>
-          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">No long runs recorded yet</div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Long Run" title="long run coverage" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   const pct = data.coverage_pct || 0;

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { predictorAPI } from '../../../api/dashboard';
+import WidgetEmptyState from './WidgetEmptyState';
 
 const inputClass = 'px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
@@ -11,7 +12,7 @@ function fmtTime(secs) {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export default function RacePredictorWidget({ data, onRefresh }) {
+export default function RacePredictorWidget({ data, onRefresh, stravaConnected, onConnect }) {
   const [showModal, setShowModal] = useState(false);
   const [editDist, setEditDist] = useState('10K');
   const [editH, setEditH] = useState('0');
@@ -21,22 +22,7 @@ export default function RacePredictorWidget({ data, onRefresh }) {
   const [saving, setSaving] = useState(false);
 
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="flex justify-between mb-[14px]">
-          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
-            Race Predictor
-          </span>
-          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
-            Sync runs to see race predictions
-          </div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Race Predictor" title="race predictions" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   const marathon = data.predictions?.find(p => p.label === 'Marathon');

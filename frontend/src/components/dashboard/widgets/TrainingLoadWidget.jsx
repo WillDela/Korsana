@@ -3,27 +3,13 @@ import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
+import WidgetEmptyState from './WidgetEmptyState';
 
-export default function TrainingLoadWidget({ data }) {
+export default function TrainingLoadWidget({ data, stravaConnected, onConnect }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="flex justify-between mb-[14px]">
-          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
-            Training Load
-          </span>
-          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
-            Sync activities to see training load
-          </div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Training Load" title="training load" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   const tsbColor = data.tsb > 10

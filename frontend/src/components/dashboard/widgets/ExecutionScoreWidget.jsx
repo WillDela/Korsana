@@ -8,11 +8,15 @@ export default function ExecutionScoreWidget({ data }) {
           </span>
           <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
         </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
-            Complete planned workouts to see scores
+        <div className="flex flex-col items-center py-6 gap-3 text-center">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-light)] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
           </div>
+          <p className="font-sans text-[12px] text-[var(--color-text-muted)]">
+            Complete planned workouts<br />to see your execution score
+          </p>
         </div>
       </div>
     );

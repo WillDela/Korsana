@@ -2,22 +2,13 @@ import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
+import WidgetEmptyState from './WidgetEmptyState';
 
 const BLUE = '#4A6CF7';
 
-export default function ElevationWidget({ data }) {
+export default function ElevationWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-3.5">
-          Elevation
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span className="text-3xl">📭</span>
-          <div className="font-sans text-xs text-[var(--color-text-muted)]">No elevation data yet</div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Elevation" title="elevation data" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   return (

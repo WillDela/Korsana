@@ -1,21 +1,10 @@
+import WidgetEmptyState from './WidgetEmptyState';
+
 const ZONE_COLORS = ['#5CC8FF', '#2ECC8B', '#F5A623', '#E8634A', '#E84A4A'];
 
-export default function HRZonesWidget({ data }) {
+export default function HRZonesWidget({ data, stravaConnected, onConnect }) {
   if (!data || !data.zones?.length) {
-    return (
-      <div className="widget-card">
-        <div className="flex justify-between mb-[14px]">
-          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">
-            HR Zones · This Week
-          </span>
-          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">No HR data this week</div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="HR Zones · This Week" title="HR zone breakdown" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   return (

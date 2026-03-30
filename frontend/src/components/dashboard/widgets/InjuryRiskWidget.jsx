@@ -1,21 +1,11 @@
 import { useState } from 'react';
+import WidgetEmptyState from './WidgetEmptyState';
 
-export default function InjuryRiskWidget({ data }) {
+export default function InjuryRiskWidget({ data, stravaConnected, onConnect }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!data) {
-    return (
-      <div className="widget-card">
-        <div className="flex justify-between mb-3.5">
-          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Injury Risk</span>
-          <span className="font-sans text-[9px] font-bold text-[var(--color-coral)]">✦ Korsana</span>
-        </div>
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span className="text-3xl">📭</span>
-          <div className="font-sans text-xs text-[var(--color-text-muted)]">No data to assess risk</div>
-        </div>
-      </div>
-    );
+    return <WidgetEmptyState label="Injury Risk" title="injury risk score" stravaConnected={stravaConnected} onConnect={onConnect} />;
   }
 
   const riskColor = data.risk_level === 'High' ? '#E84A4A' : data.risk_level === 'Moderate' ? '#F5A623' : '#2ECC8B';
