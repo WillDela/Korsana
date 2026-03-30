@@ -395,24 +395,48 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, strav
   const has = (id) => active.includes(id);
   const stravaProps = { stravaConnected, onConnect };
   return (
-    <div>
+    <div className="flex flex-col gap-5">
       <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
-      <div className="grid grid-cols-2 gap-5">
-        {has('load')          && <div className="col-span-full"><TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} /></div>}
-        {has('predictor')     && <div className="col-span-full"><RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} /></div>}
-        {has('longrun')       && <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />}
-        {has('recovery')      && <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />}
-        {has('injuryrisk')    && <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />}
-        {has('hrzones')       && <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />}
-        {has('elevation')     && <ElevationWidget data={computedData?.elevation} {...stravaProps} />}
-        {has('cadence')       && <CadenceWidget data={computedData?.cadence} {...stravaProps} />}
-        {has('streak')        && <StreakWidget data={computedData?.streak} {...stravaProps} />}
-        {has('crosstraining') && <div className="col-span-full"><CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} /></div>}
-        {has('execution')     && <ExecutionScoreWidget data={dashboardData?.execution} />}
-        {has('shoes')         && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
-        {has('cardiac')       && <CardiacDriftWidget />}
-        {has('calories')      && <CaloriesWidget data={computedData?.calories} {...stravaProps} />}
-      </div>
+
+      {/* Row 1 — hero: full-width data-dense widgets */}
+      {has('load')      && <TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} />}
+      {has('predictor') && <RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} />}
+
+      {/* Row 2 — primary metrics: recovery, long run, injury risk */}
+      {(has('recovery') || has('longrun') || has('injuryrisk')) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {has('recovery')   && <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />}
+          {has('longrun')    && <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />}
+          {has('injuryrisk') && <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />}
+        </div>
+      )}
+
+      {/* Row 3 — secondary metrics: hr zones, elevation, cadence */}
+      {(has('hrzones') || has('elevation') || has('cadence')) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {has('hrzones')   && <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />}
+          {has('elevation') && <ElevationWidget data={computedData?.elevation} {...stravaProps} />}
+          {has('cadence')   && <CadenceWidget data={computedData?.cadence} {...stravaProps} />}
+        </div>
+      )}
+
+      {/* Row 4 — consistency + plan: streak, execution score, calories */}
+      {(has('streak') || has('execution') || has('calories')) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {has('streak')    && <StreakWidget data={computedData?.streak} {...stravaProps} />}
+          {has('execution') && <ExecutionScoreWidget data={dashboardData?.execution} />}
+          {has('calories')  && <CaloriesWidget data={computedData?.calories} {...stravaProps} />}
+        </div>
+      )}
+
+      {/* Row 5 — tools: cross-training full width, then shoes + cardiac */}
+      {has('crosstraining') && <CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} />}
+      {(has('shoes') || has('cardiac')) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {has('shoes')   && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
+          {has('cardiac') && <CardiacDriftWidget />}
+        </div>
+      )}
     </div>
   );
 });

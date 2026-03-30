@@ -1,6 +1,8 @@
-const StravaIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+import BrandIcon from '../../BrandIcon';
+
+const ActivityIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
   </svg>
 );
 
@@ -18,8 +20,8 @@ export default function WidgetEmptyState({ title, label, stravaConnected, onConn
       <div className="flex flex-col items-center py-6 gap-3 text-center">
         {isDisconnected ? (
           <>
-            <div className="w-10 h-10 rounded-xl bg-[#FC4C02]/10 border border-[#FC4C02]/20 flex items-center justify-center text-[#FC4C02]">
-              <StravaIcon />
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-strava)]/10 border border-[var(--color-strava)]/20 flex items-center justify-center text-[var(--color-strava)]">
+              <BrandIcon brand="strava" size={18} />
             </div>
             <div>
               <p className="font-sans text-[13px] font-semibold text-navy mb-1">
@@ -31,7 +33,8 @@ export default function WidgetEmptyState({ title, label, stravaConnected, onConn
             </div>
             <button
               onClick={onConnect}
-              className="mt-1 px-4 py-2 rounded-lg bg-[#FC4C02] text-white font-sans text-[12px] font-bold border-none cursor-pointer hover:bg-[#e04400] transition-colors"
+              className="mt-1 px-4 py-2 rounded-lg text-white font-sans text-[12px] font-bold border-none cursor-pointer transition-colors"
+              style={{ background: 'var(--color-strava)' }}
             >
               Connect Strava
             </button>
@@ -39,7 +42,7 @@ export default function WidgetEmptyState({ title, label, stravaConnected, onConn
         ) : (
           <>
             <div className="w-10 h-10 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-light)] flex items-center justify-center text-[var(--color-text-muted)]">
-              <StravaIcon />
+              <ActivityIcon />
             </div>
             <p className="font-sans text-[12px] text-[var(--color-text-muted)]">
               No {title} data yet —<br />sync your activities to get started
