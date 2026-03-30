@@ -18,8 +18,8 @@ const MAJORS = [
 /* ─── Feature cards ─────────────────────────────────────────────── */
 const FEATURES = [
   {
-    label: 'Performance Trends',
-    desc: 'Track your VO2 Max and lactate threshold evolution with predictive modeling.',
+    label: 'Training Load',
+    desc: 'See your weekly training load trend — how hard you trained vs. your baseline — so you never ramp too fast or too slow.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
@@ -29,8 +29,8 @@ const FEATURES = [
     bg: 'bg-garmin/10 border-garmin/20',
   },
   {
-    label: 'Recovery Analysis',
-    desc: "Understand your body's readiness to train daily based on HRV and sleep quality.",
+    label: 'Recovery Score',
+    desc: "Know when to push and when to back off. Your daily recovery score is calculated from recent effort, sleep, and training history.",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -40,8 +40,8 @@ const FEATURES = [
     bg: 'bg-coral/10 border-coral/20',
   },
   {
-    label: 'Predictive Pacing',
-    desc: 'AI-calculated race pace strategies based on recent efforts and course topography.',
+    label: 'Race Predictor',
+    desc: 'Get a realistic finish time prediction for any race distance based on your actual recent Strava efforts.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
@@ -117,13 +117,6 @@ const Landing = () => {
         />
         {/* Overlay: left-heavy gradient so left copy is readable, right stays visible */}
         <div className="absolute inset-0 z-0 bg-gradient-to-r from-white/95 via-white/80 to-white/30" />
-        <div
-          className="absolute inset-0 z-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, var(--color-navy) 1px, transparent 0)',
-            backgroundSize: '40px 40px',
-          }}
-        />
 
         <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-10 md:py-14 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -243,8 +236,8 @@ const Landing = () => {
                 {/* Metric row */}
                 <div className="grid grid-cols-2 gap-px bg-border-light mx-6 mb-4 rounded-xl overflow-hidden border border-border">
                   <div className="bg-white px-4 py-3">
-                    <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">VO2 Max</p>
-                    <p className="text-2xl font-bold text-navy" style={{ fontFamily: 'var(--font-mono)' }}>58.2</p>
+                    <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Avg Pace</p>
+                    <p className="text-2xl font-bold text-navy" style={{ fontFamily: 'var(--font-mono)' }}>8:42</p>
                   </div>
                   <div className="bg-white px-4 py-3">
                     <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Weekly Load</p>
@@ -319,12 +312,8 @@ const Landing = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {FEATURES.map((f, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
                 className="card p-8 flex flex-col gap-5"
               >
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${f.bg} ${f.accent} shrink-0`}>
@@ -334,7 +323,7 @@ const Landing = () => {
                   <h3 className="font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{f.label}</h3>
                   <p className="text-sm text-text-secondary leading-relaxed">{f.desc}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -342,14 +331,6 @@ const Landing = () => {
 
       {/* ── AI Coach ──────────────────────────────────────────────── */}
       <section id="coach" className="py-24 bg-navy relative overflow-hidden border-b border-navy/80">
-        <div
-          className="absolute inset-0 z-0 opacity-[0.06]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-            backgroundSize: '40px 40px',
-          }}
-        />
-
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
@@ -536,13 +517,7 @@ const Landing = () => {
             </div>
 
             {/* Strava connect visual */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6 }}
-              className="hidden lg:flex items-center justify-center"
-            >
+            <div className="hidden lg:flex items-center justify-center">
               <div className="w-full max-w-[360px] bg-bg-app rounded-2xl border border-border p-8 shadow-lg text-center">
                 <div className="w-16 h-16 rounded-2xl bg-[#FC4C02]/10 border border-[#FC4C02]/20 flex items-center justify-center mx-auto mb-6">
                   <BrandIcon brand="strava" size={32} />
@@ -560,7 +535,7 @@ const Landing = () => {
                 </button>
                 <p className="text-[10px] font-mono text-text-muted mt-4 uppercase tracking-widest">Read-only access · We never post on your behalf</p>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -584,12 +559,8 @@ const Landing = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {MAJORS.map((race, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.4, delay: i * 0.07 }}
                 className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default"
               >
                 <img
@@ -602,7 +573,7 @@ const Landing = () => {
                   <p className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{race.city}</p>
                   <p className="text-white/60 font-mono text-[10px] uppercase tracking-widest">{race.month}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -622,12 +593,7 @@ const Landing = () => {
           }}
         />
         <div className="max-w-[800px] mx-auto px-4 sm:px-6 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
+          <div>
             <h2
               className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
               style={{ fontFamily: 'var(--font-heading)' }}
@@ -651,7 +617,7 @@ const Landing = () => {
                 &copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.
               </p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </footer>
     </div>
