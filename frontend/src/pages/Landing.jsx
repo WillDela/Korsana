@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar';
 import BrandIcon from '../components/BrandIcon';
 import { stravaAPI } from '../api/strava';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 /* ─── Marathon Majors data ─────────────────────────────────────── */
 const MAJORS = [
   { city: 'Boston',  country: 'USA',     month: 'Apr', img: '/Boston.jpg' },
@@ -311,9 +313,9 @@ const Landing = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {FEATURES.map((f, i) => (
+            {FEATURES.map((f) => (
               <div
-                key={i}
+                key={f.label}
                 className="card p-8 flex flex-col gap-5"
               >
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${f.bg} ${f.accent} shrink-0`}>
@@ -410,9 +412,9 @@ const Landing = () => {
               </p>
 
               <div className="space-y-6">
-                {BENEFITS.map((b, i) => (
+                {BENEFITS.map((b) => (
                   <motion.div
-                    key={i}
+                    key={b.title}
                     initial={{ opacity: 0, y: 12 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -558,9 +560,9 @@ const Landing = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {MAJORS.map((race, i) => (
+            {MAJORS.map((race) => (
               <div
-                key={i}
+                key={race.city}
                 className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default"
               >
                 <img
@@ -593,7 +595,6 @@ const Landing = () => {
           }}
         />
         <div className="max-w-[800px] mx-auto px-4 sm:px-6 text-center relative z-10">
-          <div>
             <h2
               className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
               style={{ fontFamily: 'var(--font-heading)' }}
@@ -614,10 +615,9 @@ const Landing = () => {
                 </Link>
               </div>
               <p className="text-xs font-mono text-white/25 tracking-wide uppercase">
-                &copy; {new Date().getFullYear()} Korsana Inc. All rights reserved.
+                &copy; {CURRENT_YEAR} Korsana Inc. All rights reserved.
               </p>
             </div>
-          </div>
         </div>
       </footer>
     </div>
