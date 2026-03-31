@@ -416,6 +416,31 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 			_ = s.calendarSvc.AutoMatchActivity(ctx, userID, activity)
 		}
 
+		// Mirror non-run Strava activities into cross_training_sessions so the
+		// widget shows them without requiring manual entry. Uses strava_activity_id
+		// as the conflict key to make re-syncs idempotent.
+		if ctType := crossTrainingType(internalType); ctType != "" {
+			durationMins := act.MovingTime / 60
+			if durationMins < 1 {
+				durationMins = 1
+			}
+			stravaIDStr := fmt.Sprintf("%d", act.ID)
+			var distPtr *float64
+			if act.Distance > 0 {
+				distPtr = &act.Distance
+			}
+			_, _ = s.db.ExecContext(ctx, `
+				INSERT INTO cross_training_sessions
+					(id, user_id, type, date, duration_minutes, distance_meters, source, strava_activity_id)
+				VALUES ($1, $2, $3, $4, $5, $6, 'strava', $7)
+				ON CONFLICT (strava_activity_id) DO UPDATE SET
+					type = EXCLUDED.type,
+					date = EXCLUDED.date,
+					duration_minutes = EXCLUDED.duration_minutes,
+					distance_meters = EXCLUDED.distance_meters
+			`, uuid.New(), userID, ctType, startTime.Truncate(24*time.Hour), durationMins, distPtr, stravaIDStr)
+		}
+
 		syncedCount++
 	}
 
@@ -501,4 +526,27 @@ func (s *StravaService) GetUserActivities(ctx context.Context, userID uuid.UUID,
 func (s *StravaService) DisconnectStrava(ctx context.Context, userID uuid.UUID) error {
 	_, err := s.db.ExecContext(ctx, "DELETE FROM strava_connections WHERE user_id = $1", userID)
 	return err
+}
+
+// crossTrainingType maps an internal activity type to the cross_training_sessions
+// type string. Returns "" for run-type activities which should not be mirrored.
+func crossTrainingType(activityType string) string {
+	switch activityType {
+	case models.ActivityTypeCycling:
+		return "cycling"
+	case models.ActivityTypeSwimming:
+		return "swimming"
+	case models.ActivityTypeWeightLifting:
+		return "weight_lifting"
+	case models.ActivityTypeElliptical:
+		return "elliptical"
+	case models.ActivityTypeRowing:
+		return "rowing"
+	case models.ActivityTypeWalking:
+		return "walking"
+	case models.ActivityTypeHiking:
+		return "hiking"
+	default:
+		return ""
+	}
 }

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { crossTrainingAPI } from '../../../api/dashboard';
+import { crossTrainingGoalsAPI } from '../../../api/crossTrainingGoals';
+import BrandIcon from '../../BrandIcon';
 
 const TYPE_CONFIG = {
   weight_lifting: { icon: '🏋', label: 'Weight Training' },
@@ -21,6 +23,28 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
     notes: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [goals, setGoals] = useState({});
+
+  useEffect(() => {
+    crossTrainingGoalsAPI.getGoals().then((data) => {
+      const map = {};
+      (data || []).forEach(g => { map[g.activity_type] = g.sessions_per_week; });
+      setGoals(map);
+    }).catch(() => {});
+  }, []);
+
+  const handleDelete = async (id) => {
+    setDeletingId(id);
+    try {
+      await crossTrainingAPI.delete(id);
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -50,6 +74,17 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
   const sessions = data?.sessions || [];
   const counts = data?.monthly_counts || {};
 
+  const weekStart = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  const weeklyCounts = sessions.reduce((acc, s) => {
+    if (s.date && new Date(s.date) >= weekStart) acc[s.type] = (acc[s.type] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="widget-card">
       <div className="flex justify-between items-center mb-4">
@@ -65,13 +100,28 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
       </div>
 
       <div className="flex gap-3 mb-4">
-        {Object.entries(TYPE_CONFIG).map(([type, cfg]) => (
-          <div key={type} className="flex-1 text-center bg-[var(--color-bg-elevated)] rounded-[10px] py-[10px] px-1">
-            <div style={{ fontSize: 20 }}>{cfg.icon}</div>
-            <div className="font-mono text-[16px] font-bold text-navy mt-1">{counts[type] || 0}</div>
-            <div className="font-sans text-[9px] text-[var(--color-text-muted)] mt-[2px]">{cfg.label}</div>
-          </div>
-        ))}
+        {Object.entries(TYPE_CONFIG).map(([type, cfg]) => {
+          const target = goals[type];
+          const weekly = weeklyCounts[type] || 0;
+          return (
+            <div key={type} className="flex-1 text-center bg-[var(--color-bg-elevated)] rounded-[10px] py-[10px] px-1">
+              <div style={{ fontSize: 20 }}>{cfg.icon}</div>
+              <div className="font-mono text-[16px] font-bold text-navy mt-1">{counts[type] || 0}</div>
+              <div className="font-sans text-[9px] text-[var(--color-text-muted)] mt-[2px]">{cfg.label}</div>
+              {target > 0 && (
+                <div className="mt-[6px] px-1">
+                  <div className="font-mono text-[9px] text-[var(--color-text-muted)]">{weekly}/{target}/wk</div>
+                  <div className="mt-[3px] h-[3px] rounded-full bg-[var(--color-border-light)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-sage"
+                      style={{ width: `${Math.min(100, (weekly / target) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {sessions.length === 0 ? (
@@ -85,10 +135,10 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
         <div>
           <div
             className="grid gap-2 px-2 mb-1"
-            style={{ gridTemplateColumns: '80px 1fr 70px 80px 24px' }}
+            style={{ gridTemplateColumns: '72px 1fr 60px 72px 20px 20px' }}
           >
-            {['Date', 'Type', 'Duration', 'Details', 'Src'].map(h => (
-              <div key={h} className="font-sans text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.05em]">
+            {['Date', 'Type', 'Duration', 'Details', 'Src', ''].map((h, i) => (
+              <div key={i} className="font-sans text-[9px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.05em]">
                 {h}
               </div>
             ))}
@@ -98,7 +148,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
               key={s.id || i}
               className="grid gap-2 px-2 py-2 rounded-lg items-center"
               style={{
-                gridTemplateColumns: '80px 1fr 70px 80px 24px',
+                gridTemplateColumns: '72px 1fr 60px 72px 20px 20px',
                 background: i % 2 === 0 ? 'var(--color-bg-elevated)' : 'transparent',
               }}
             >
@@ -118,11 +168,29 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
               <span className="font-sans text-[10px] text-[var(--color-text-muted)]">
                 {s.intensity || (s.distance_meters ? `${(s.distance_meters / 1000).toFixed(1)}km` : '—')}
               </span>
-              <span
-                className="font-sans text-[10px]"
-                style={{ color: s.source === 'strava' ? '#FC4C02' : 'var(--color-text-muted)' }}
-              >
-                {s.source === 'strava' ? 'S' : '✎'}
+              <span className="flex items-center justify-center">
+                {s.source === 'strava'
+                  ? <BrandIcon brand="strava" size={12} />
+                  : <span className="font-sans text-[10px] text-[var(--color-text-muted)]">✎</span>
+                }
+              </span>
+              <span className="flex items-center justify-center">
+                {s.source !== 'strava' && (
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    disabled={deletingId === s.id}
+                    className="bg-transparent border-none cursor-pointer p-0 text-[var(--color-text-muted)] hover:text-coral transition-colors"
+                    title="Delete session"
+                  >
+                    {deletingId === s.id ? (
+                      <span className="text-[10px]">…</span>
+                    ) : (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                    )}
+                  </button>
+                )}
               </span>
             </div>
           ))}
