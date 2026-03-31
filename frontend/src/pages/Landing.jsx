@@ -412,7 +412,7 @@ const Landing = () => {
               </p>
 
               <div className="space-y-6">
-                {BENEFITS.map((b) => (
+                {BENEFITS.map((b, i) => (
                   <motion.div
                     key={b.title}
                     initial={{ opacity: 0, y: 12 }}
