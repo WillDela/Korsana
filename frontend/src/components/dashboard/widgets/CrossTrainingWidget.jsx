@@ -25,6 +25,9 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [goals, setGoals] = useState({});
+  const [expanded, setExpanded] = useState(false);
+  const [allSessions, setAllSessions] = useState(null);
+  const [loadingAll, setLoadingAll] = useState(false);
 
   useEffect(() => {
     crossTrainingGoalsAPI.getGoals().then((data) => {
@@ -34,10 +37,32 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
     }).catch(() => {});
   }, []);
 
+  const handleToggleExpand = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+    if (allSessions) {
+      setExpanded(true);
+      return;
+    }
+    setLoadingAll(true);
+    try {
+      const res = await crossTrainingAPI.list(52);
+      setAllSessions(res.sessions || []);
+      setExpanded(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAll(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     setDeletingId(id);
     try {
       await crossTrainingAPI.delete(id);
+      setAllSessions(null);
       if (onRefresh) onRefresh();
     } catch (e) {
       console.error(e);
@@ -62,6 +87,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
       }
       if (form.notes) payload.notes = form.notes;
       await crossTrainingAPI.create(payload);
+      setAllSessions(null);
       setShowModal(false);
       if (onRefresh) onRefresh();
     } catch (e) {
@@ -143,7 +169,8 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
               </div>
             ))}
           </div>
-          {sessions.slice(0, 8).map((s, i) => (
+          <div className={expanded ? 'max-h-[320px] overflow-y-auto' : ''}>
+          {(expanded ? allSessions : sessions.slice(0, 8)).map((s, i) => (
             <div
               key={s.id || i}
               className="grid gap-2 px-2 py-2 rounded-lg items-center"
@@ -194,6 +221,14 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
               </span>
             </div>
           ))}
+          </div>
+          <button
+            onClick={handleToggleExpand}
+            disabled={loadingAll}
+            className="mt-2 w-full py-[6px] font-sans text-[10px] text-[var(--color-text-muted)] hover:text-navy bg-transparent border-none cursor-pointer transition-colors"
+          >
+            {loadingAll ? 'Loading...' : expanded ? '↑ Show less' : `↓ View all history`}
+          </button>
         </div>
       )}
 
