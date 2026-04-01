@@ -87,19 +87,70 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	})
 }
 
-// UpdateProfile
+// UpdateProfile accepts a partial JSON body and merges it into the existing profile.
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	userIDVal, _ := c.Get("userID")
 	userID := userIDVal.(uuid.UUID)
 
-	var req models.UserProfile
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// Load current profile so unset fields aren't zeroed out.
+	current, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
+		return
+	}
+
+	// Decode only the fields the caller sent.
+	var patch map[string]any
+	if err := c.ShouldBindJSON(&patch); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	req.UserID = userID
 
-	updated, err := h.userProfileService.UpdateProfile(c.Request.Context(), &req)
+	if v, ok := patch["display_name"]; ok {
+		if s, ok := v.(string); ok {
+			current.DisplayName = &s
+		}
+	}
+	if v, ok := patch["units_preference"]; ok {
+		if s, ok := v.(string); ok {
+			current.UnitsPreference = s
+		}
+	}
+	if v, ok := patch["notify_weekly_summary"]; ok {
+		if b, ok := v.(bool); ok {
+			current.NotifyWeeklySummary = b
+		}
+	}
+	if v, ok := patch["notify_goal_reminders"]; ok {
+		if b, ok := v.(bool); ok {
+			current.NotifyGoalReminders = b
+		}
+	}
+	if v, ok := patch["notify_sync_failures"]; ok {
+		if b, ok := v.(bool); ok {
+			current.NotifySyncFailures = b
+		}
+	}
+	if v, ok := patch["max_heart_rate"]; ok {
+		if n, ok := v.(float64); ok {
+			i := int(n)
+			current.MaxHeartRate = &i
+		}
+	}
+	if v, ok := patch["resting_heart_rate"]; ok {
+		if n, ok := v.(float64); ok {
+			i := int(n)
+			current.RestingHeartRate = &i
+		}
+	}
+	if v, ok := patch["weekly_distance_goal_meters"]; ok {
+		if n, ok := v.(float64); ok {
+			i := int(n)
+			current.WeeklyDistanceGoalMeters = &i
+		}
+	}
+
+	updated, err := h.userProfileService.UpdateProfile(c.Request.Context(), current)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -317,8 +317,13 @@ const DayDetailModal = ({
 };
 
 const Calendar = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(() => {
+    const m = searchParams.get('month');
+    if (m && /^\d{4}-\d{2}$/.test(m)) {
+      const [y, mo] = m.split('-').map(Number);
+      return new Date(y, mo - 1, 1);
+    }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
@@ -331,7 +336,10 @@ const Calendar = () => {
   const [syncError, setSyncError] = useState('');
   const [stravaConnected, setStravaConnected] = useState(null); // null=unknown, false=not connected
 
-  const [view, setView] = useState('month');
+  const [view, setView] = useState(() => {
+    const v = searchParams.get('view');
+    return ['month', 'week', 'day'].includes(v) ? v : 'month';
+  });
   const [filterType, setFilterType] = useState('all');
 
   const { gridStart, gridEnd } = useMemo(
@@ -385,6 +393,20 @@ const Calendar = () => {
     fetchMonthEntries();
   }, [fetchMonthEntries]);
 
+  // Persist view + month in URL so the page is shareable and survives refresh
+  useEffect(() => {
+    const now = new Date();
+    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (view !== 'month') next.set('view', view); else next.delete('view');
+      if (monthStr !== defaultMonth) next.set('month', monthStr); else next.delete('month');
+      return next;
+    }, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, currentMonth]);
+
   const handleConnectStrava = async () => {
     try {
       const data = await stravaAPI.getAuthURL('/calendar');
@@ -435,7 +457,11 @@ const Calendar = () => {
   // After connecting Strava from this page, auto-sync and clear the param.
   useEffect(() => {
     if (searchParams.get('strava_connected') === 'true') {
-      window.history.replaceState({}, document.title, window.location.pathname);
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('strava_connected');
+        return next;
+      }, { replace: true });
       handleSync();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

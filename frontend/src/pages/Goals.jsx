@@ -238,6 +238,7 @@ const Goals = () => {
   const [logGoal, setLogGoal] = useState(null);
   const [showCrossModal, setShowCrossModal] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(true);
+  const [completedPage, setCompletedPage] = useState(0);
   const [ctGoals, setCtGoals] = useState([]);
   const [ctProgress, setCtProgress] = useState({});
   const [toast, setToast] = useState({ visible: false, msg: '' });
@@ -684,9 +685,15 @@ const Goals = () => {
                         No completed races yet — go get one
                       </p>
                     </div>
-                  ) : (
+                  ) : (() => {
+                    const PAGE_SIZE = 6;
+                    const totalPages = Math.ceil(completed.length / PAGE_SIZE);
+                    const page = Math.min(completedPage, totalPages - 1);
+                    const pageItems = completed.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+                    return (
+                    <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
-                      {completed.map((c, i) => {
+                      {pageItems.map((c, i) => {
                         const hasDiff = c.target_time_seconds && c.result_time_seconds;
                         const diff = hasDiff ? timeDiffSec(c.target_time_seconds, c.result_time_seconds) : null;
                         const needsResult = !c.result_time_seconds;
@@ -806,7 +813,30 @@ const Goals = () => {
                         );
                       })}
                     </div>
-                  )}
+                    {totalPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+                        <button
+                          onClick={() => setCompletedPage(p => Math.max(0, p - 1))}
+                          disabled={page === 0}
+                          style={{ background: page === 0 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === 0 ? '#8B93B0' : '#fff', cursor: page === 0 ? 'default' : 'pointer' }}
+                        >
+                          ← Prev
+                        </button>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#8B93B0' }}>
+                          {page + 1} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setCompletedPage(p => Math.min(totalPages - 1, p + 1))}
+                          disabled={page === totalPages - 1}
+                          style={{ background: page === totalPages - 1 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === totalPages - 1 ? '#8B93B0' : '#fff', cursor: page === totalPages - 1 ? 'default' : 'pointer' }}
+                        >
+                          Next →
+                        </button>
+                      </div>
+                    )}
+                    </>
+                    );
+                  })()}
                 </motion.div>
               )}
             </AnimatePresence>
