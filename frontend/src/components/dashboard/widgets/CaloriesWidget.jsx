@@ -35,7 +35,7 @@ export default function CaloriesWidget({ data, stravaConnected, onConnect }) {
           {pct}%
         </span>
       </div>
-      <div className="h-[7px] bg-[var(--color-border-light)] rounded-full overflow-hidden mb-[14px]">
+      <div className="h-[8px] bg-[var(--color-border-light)] rounded-full overflow-hidden mb-[14px]">
         <div
           className="h-full rounded-full"
           style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#F5A623,#E8634A)' }}

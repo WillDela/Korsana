@@ -18,15 +18,15 @@ export default function RecoveryWidget({ data, stravaConnected, onConnect }) {
       <div className="flex gap-5 items-center">
         <div className="relative w-[120px] h-[120px] shrink-0">
           <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r={r} fill="none" stroke="var(--color-border-light)" strokeWidth="10" />
+            <circle cx="60" cy="60" r={r} fill="none" stroke="var(--color-border-light)" strokeWidth="12" />
             <circle
-              cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="10"
+              cx="60" cy="60" r={r} fill="none" stroke={color} strokeWidth="12"
               strokeDasharray={`${(score / 100) * circ} ${circ}`}
               strokeLinecap="round" transform="rotate(-90 60 60)"
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-[28px] font-bold leading-none" style={{ color }}>
+            <span className="font-mono text-[32px] font-bold leading-none" style={{ color }}>
               {score}
             </span>
             <span className="font-sans text-[10px] text-[var(--color-text-muted)]">/ 100</span>

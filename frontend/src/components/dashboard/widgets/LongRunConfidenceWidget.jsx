@@ -32,12 +32,12 @@ export default function LongRunConfidenceWidget({ data, stravaConnected, onConne
         <svg width="160" height="90" viewBox="0 0 160 90">
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-            fill="none" stroke="#ECEEF4" strokeWidth="12" strokeLinecap="round"
+            fill="none" stroke="#ECEEF4" strokeWidth="14" strokeLinecap="round"
           />
           {pct > 0 && (
             <path
               d={`M ${cx - r} ${cy} A ${r} ${r} 0 ${largeArc} 1 ${arcX(endAngle)} ${arcY(endAngle)}`}
-              fill="none" stroke={color} strokeWidth="12" strokeLinecap="round"
+              fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
             />
           )}
           {[50, 75, 90].map(m => {

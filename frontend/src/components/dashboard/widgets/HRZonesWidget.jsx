@@ -26,14 +26,14 @@ export default function HRZonesWidget({ data, stravaConnected, onConnect }) {
               <span className="font-mono text-[10px] text-[var(--color-text-muted)]">{z.bpm}</span>
             </div>
             <div className="flex items-center gap-[6px]">
-              <span className="font-mono text-[11px] font-bold text-navy">{Math.round(z.minutes)}min</span>
+              <span className="font-mono text-[13px] font-bold text-navy">{Math.round(z.minutes)}min</span>
               <span className="font-mono text-[11px] text-[var(--color-text-muted)]">{Math.round(z.pct)}%</span>
               {z.in_range && (
                 <span className="text-[12px]" style={{ color: '#2ECC8B' }}>✓</span>
               )}
             </div>
           </div>
-          <div className="h-[6px] bg-[var(--color-border-light)] rounded-full">
+          <div className="h-[8px] bg-[var(--color-border-light)] rounded-full">
             <div
               className="h-full rounded-full"
               style={{ width: `${z.pct}%`, background: ZONE_COLORS[i] }}

@@ -132,12 +132,12 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
           return (
             <div key={type} className="flex-1 text-center bg-[var(--color-bg-elevated)] rounded-[10px] py-[10px] px-1">
               <div style={{ fontSize: 20 }}>{cfg.icon}</div>
-              <div className="font-mono text-[16px] font-bold text-navy mt-1">{counts[type] || 0}</div>
+              <div className="font-mono text-[22px] font-bold text-navy mt-1">{counts[type] || 0}</div>
               <div className="font-sans text-[9px] text-[var(--color-text-muted)] mt-[2px]">{cfg.label}</div>
               {target > 0 && (
                 <div className="mt-[6px] px-1">
                   <div className="font-mono text-[9px] text-[var(--color-text-muted)]">{weekly}/{target}/wk</div>
-                  <div className="mt-[3px] h-[3px] rounded-full bg-[var(--color-border-light)] overflow-hidden">
+                  <div className="mt-[3px] h-[5px] rounded-full bg-[var(--color-border-light)] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-sage"
                       style={{ width: `${Math.min(100, (weekly / target) * 100)}%` }}

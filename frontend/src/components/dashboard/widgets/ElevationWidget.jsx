@@ -18,7 +18,7 @@ export default function ElevationWidget({ data, stravaConnected, onConnect }) {
       </div>
       <div className="mb-3.5">
         <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[26px] font-bold text-navy leading-none">
+          <span className="font-mono text-[34px] font-bold text-navy leading-none">
             {(data.weekly_gain_ft || 0).toLocaleString()}
           </span>
           <span className="font-sans text-[13px] text-[var(--color-text-muted)]">ft gain</span>

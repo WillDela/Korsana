@@ -337,18 +337,37 @@ const Coach = () => {
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <div style={{
-                      fontFamily: 'var(--font-sans)', fontSize: '13px',
-                      fontWeight: isActive ? 600 : 400,
-                      color: isActive ? C.white : 'rgba(255,255,255,0.72)',
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      marginBottom: '2px',
-                    }}>
-                      {s.title}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
-                      {relativeDay(s.created_at)}
-                    </div>
+                    {s.title && s.title !== 'New session' ? (
+                      <>
+                        <div style={{
+                          fontFamily: 'var(--font-sans)', fontSize: '13px',
+                          fontWeight: isActive ? 600 : 400,
+                          color: isActive ? C.white : 'rgba(255,255,255,0.72)',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          marginBottom: '2px',
+                        }}>
+                          {s.title}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
+                          {relativeDay(s.created_at)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{
+                          fontFamily: 'var(--font-sans)', fontSize: '12px',
+                          fontStyle: 'italic',
+                          color: isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          marginBottom: '2px',
+                        }}>
+                          New session
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
+                          {relativeDay(s.created_at)}
+                        </div>
+                      </>
+                    )}
                   </button>
                 );
               })

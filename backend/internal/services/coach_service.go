@@ -241,14 +241,9 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 		if err := s.db.GetContext(ctx, &count, `
 			SELECT COUNT(*) FROM coach_conversations WHERE session_id = $1 AND role = 'user'
 		`, *sessionID); err == nil && count == 1 {
-			title := userMessage
-			if len([]rune(title)) > 45 {
-				runes := []rune(title)
-				title = string(runes[:45]) + "…"
-			}
 			_, _ = s.db.ExecContext(ctx, `
 				UPDATE coach_sessions SET title = $1, updated_at = NOW() WHERE id = $2
-			`, title, *sessionID)
+			`, sessionTitle(userMessage), *sessionID)
 		}
 	}
 
@@ -581,6 +576,27 @@ Target Time: %s`,
 	}
 
 	return contextStr, nil
+}
+
+// sessionTitle derives a short sidebar title from the user's first message.
+// It prefers a natural sentence boundary (?) over raw truncation.
+func sessionTitle(msg string) string {
+	msg = strings.TrimSpace(msg)
+	const maxRunes = 50
+	runes := []rune(msg)
+	if len(runes) <= maxRunes {
+		return msg
+	}
+	// End at a question mark if it falls within a reasonable length
+	if idx := strings.IndexByte(msg, '?'); idx > 0 && idx <= 60 {
+		return msg[:idx+1]
+	}
+	// Word-boundary truncation
+	candidate := string(runes[:maxRunes])
+	if lastSpace := strings.LastIndex(candidate, " "); lastSpace > 20 {
+		return candidate[:lastSpace] + "…"
+	}
+	return candidate + "…"
 }
 
 func min(a, b int) int {

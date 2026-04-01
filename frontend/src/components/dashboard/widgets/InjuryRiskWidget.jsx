@@ -34,7 +34,7 @@ export default function InjuryRiskWidget({ data, stravaConnected, onConnect }) {
                 <span className="font-sans text-[10px] text-[var(--color-text-secondary)]">{f.label}</span>
                 <span className="font-mono text-[10px] text-navy">{Math.round(f.score)}</span>
               </div>
-              <div className="h-[5px] bg-[var(--color-border-light)] rounded-full">
+              <div className="h-[7px] bg-[var(--color-border-light)] rounded-full">
                 <div
                   className="h-full rounded-full"
                   style={{

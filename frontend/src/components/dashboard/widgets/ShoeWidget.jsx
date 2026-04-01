@@ -88,14 +88,14 @@ export default function ShoeWidget({ data, onRefresh }) {
                   </div>
                 )}
                 <div className="flex justify-between mb-1">
-                  <span className="font-mono text-[11px] text-[var(--color-text-secondary)]">
+                  <span className="font-mono text-[13px] font-bold text-[var(--color-text-secondary)]">
                     {Math.round(shoe.current_miles || 0)} mi
                   </span>
                   <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
                     / {shoe.max_miles || 450} mi
                   </span>
                 </div>
-                <div className="h-[7px] bg-[var(--color-border-light)] rounded-full">
+                <div className="h-[8px] bg-[var(--color-border-light)] rounded-full">
                   <div
                     className="h-full rounded-full transition-[width] duration-300"
                     style={{
