@@ -15,6 +15,7 @@ import Calendar from './pages/Calendar';
 import Settings from './pages/Settings';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import AuthCallback from './pages/AuthCallback';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -33,6 +34,7 @@ const AppRoutes = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
       {/* Authenticated routes with shared AppLayout (navbar + content area) */}
