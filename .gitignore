@@ -17,6 +17,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # Go / Backend
+# Build & module caches
+backend/.gocache/
+backend/.gomodcache/
+
 # Binaries
 *.exe
 *.exe~
