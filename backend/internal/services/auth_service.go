@@ -73,10 +73,29 @@ func (s *AuthService) UpdateEmail(ctx context.Context, userID uuid.UUID, newEmai
 	return nil
 }
 
-// DeleteUser removes a user record and all cascaded rows.
-// The corresponding auth.users row must be deleted separately via Supabase Admin API
-// or the Supabase dashboard if a full account purge is needed.
+// DeleteUser fully removes a user: first from Supabase Auth (blocks re-login
+// immediately), then from public.users which cascades to all app data.
 func (s *AuthService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
+	url := fmt.Sprintf("%s/auth/v1/admin/users/%s", s.supabaseURL, userID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("create delete request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("supabase admin delete: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		var errBody map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&errBody)
+		return fmt.Errorf("supabase returned %d: %v", resp.StatusCode, errBody)
+	}
+
+	_, err = s.db.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
 	return err
 }

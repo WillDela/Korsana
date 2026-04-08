@@ -25,3 +25,19 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 4. Function + trigger: delete public.users row when auth.users row is deleted.
+--    This keeps the mirror consistent when deletions happen outside the app
+--    (e.g. Supabase dashboard or admin scripts).
+CREATE OR REPLACE FUNCTION public.handle_deleted_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM public.users WHERE id = OLD.id;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_deleted ON auth.users;
+CREATE TRIGGER on_auth_user_deleted
+  AFTER DELETE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_deleted_user();
