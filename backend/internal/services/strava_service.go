@@ -166,7 +166,12 @@ func (s *StravaService) GetAuthURL(ctx context.Context, userID uuid.UUID, return
 	return s.stravaClient.GetAuthorizationURL(state), nil
 }
 
-// HandleCallback processes the OAuth callback and saves the connection
+// ErrStravaAlreadyConnected is returned when the Strava athlete is already linked
+// to a different Korsana account.
+var ErrStravaAlreadyConnected = errors.New("strava account already connected to another user")
+
+// HandleCallback processes the OAuth callback and saves the connection.
+// Returns ErrStravaAlreadyConnected if the athlete is already linked to a different user.
 func (s *StravaService) HandleCallback(ctx context.Context, userID uuid.UUID, code string) error {
 	// 1. Exchange code for token
 	tokenResp, err := s.stravaClient.ExchangeToken(code)
@@ -174,13 +179,23 @@ func (s *StravaService) HandleCallback(ctx context.Context, userID uuid.UUID, co
 		return err
 	}
 
-	// 2. Save or update connection in database
+	// 2. Check if this athlete is already connected to a different account.
+	var existingUserID uuid.UUID
+	lookupErr := s.db.GetContext(ctx, &existingUserID,
+		"SELECT user_id FROM strava_connections WHERE strava_athlete_id = $1",
+		tokenResp.Athlete.ID,
+	)
+	if lookupErr == nil && existingUserID != userID {
+		return ErrStravaAlreadyConnected
+	}
+
+	// 3. Insert or refresh tokens (same user reconnecting is fine).
 	query := `
 		INSERT INTO strava_connections (
 			user_id, strava_athlete_id, access_token, refresh_token, token_expires_at, updated_at
 		) VALUES ($1, $2, $3, $4, $5, NOW())
-		ON CONFLICT (strava_athlete_id) 
-		DO UPDATE SET 
+		ON CONFLICT (strava_athlete_id)
+		DO UPDATE SET
 			access_token = EXCLUDED.access_token,
 			refresh_token = EXCLUDED.refresh_token,
 			token_expires_at = EXCLUDED.token_expires_at,

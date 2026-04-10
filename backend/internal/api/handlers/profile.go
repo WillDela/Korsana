@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -304,7 +305,7 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "training zones updated"})
 }
 
-// UpdateEmail changes the authenticated user's email via Supabase Admin API.
+// UpdateEmail verifies the current password then changes the user's email.
 func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
@@ -314,19 +315,54 @@ func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
 	userID := userIDVal.(uuid.UUID)
 
 	var req struct {
-		Email string `json:"email" binding:"required,email"`
+		CurrentPassword string `json:"current_password" binding:"required"`
+		NewEmail        string `json:"new_email" binding:"required,email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "valid email is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "current_password and a valid new_email are required"})
 		return
 	}
 
-	if err := h.authService.UpdateEmail(c.Request.Context(), userID, req.Email); err != nil {
+	if err := h.authService.UpdateEmail(c.Request.Context(), userID, req.CurrentPassword, req.NewEmail); err != nil {
+		if errors.Is(err, services.ErrWrongPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is incorrect"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "email updated successfully"})
+}
+
+// ChangePassword verifies the current password then updates to the new one.
+func (h *ProfileHandler) ChangePassword(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		CurrentPassword string `json:"current_password" binding:"required"`
+		NewPassword     string `json:"new_password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "current_password and new_password are required"})
+		return
+	}
+
+	if err := h.authService.ChangePassword(c.Request.Context(), userID, req.CurrentPassword, req.NewPassword); err != nil {
+		if errors.Is(err, services.ErrWrongPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is incorrect"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
 }
 
 // DeleteAccount deletes the user account

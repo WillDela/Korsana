@@ -42,6 +42,7 @@ const Settings = () => {
         missing_state: 'Security validation failed',
         invalid_state: 'Invalid or expired session',
         connection_failed: 'Failed to connect to Strava',
+        already_connected: 'This Strava account is already linked to another Korsana account',
       };
       setStravaMessage({ type: 'error', text: errorMessages[error] || 'Failed to connect Strava' });
       setActiveTab('integrations');

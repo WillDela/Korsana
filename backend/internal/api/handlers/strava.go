@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -73,7 +74,11 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 	}
 
 	if err = h.stravaService.HandleCallback(c.Request.Context(), userID, code); err != nil {
-		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error=connection_failed")
+		errParam := "connection_failed"
+		if errors.Is(err, services.ErrStravaAlreadyConnected) {
+			errParam = "already_connected"
+		}
+		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error="+errParam)
 		return
 	}
 

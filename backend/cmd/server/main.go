@@ -152,6 +152,7 @@ func main() {
 				profile.POST("/prs/detect", profileHandler.DetectPRsFromStrava)
 
 				profile.PUT("/email", profileHandler.UpdateEmail)
+				profile.PUT("/password", profileHandler.ChangePassword)
 
 				profile.GET("/zones", profileHandler.GetTrainingZones)
 				profile.PUT("/zones", profileHandler.UpdateTrainingZones)
