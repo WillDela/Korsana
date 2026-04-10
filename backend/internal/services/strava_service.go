@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -11,15 +12,25 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
 	"github.com/korsana/backend/pkg/strava"
 	"github.com/redis/go-redis/v9"
 )
 
+// stravaQuerier is the subset of database methods StravaService needs.
+// *database.DB satisfies this interface via its embedded *sqlx.DB.
+type stravaQuerier interface {
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	NamedQueryContext(ctx context.Context, query string, arg any) (*sqlx.Rows, error)
+	SelectContext(ctx context.Context, dest any, query string, args ...any) error
+}
+
 // StravaService handles Strava business logic
 type StravaService struct {
-	db           *database.DB
+	db           stravaQuerier
 	stravaClient *strava.Client
 	redis        *redis.Client
 	calendarSvc  *CalendarService

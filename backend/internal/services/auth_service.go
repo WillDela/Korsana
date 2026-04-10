@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,12 +17,20 @@ import (
 // ErrWrongPassword is returned when the supplied current password is incorrect.
 var ErrWrongPassword = errors.New("current password is incorrect")
 
+// authQuerier is the subset of database methods AuthService needs.
+// *database.DB satisfies this interface via its embedded *sqlx.DB.
+type authQuerier interface {
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
 // AuthService provides user-record helpers used by profile and other handlers.
 // Authentication itself is handled by Supabase Auth.
 type AuthService struct {
-	db                     *database.DB
+	db                     authQuerier
 	supabaseURL            string
 	supabaseServiceRoleKey string
+	httpClient             *http.Client // injectable for tests; defaults to http.DefaultClient
 }
 
 func NewAuthService(db *database.DB, supabaseURL, supabaseServiceRoleKey string) *AuthService {
@@ -29,6 +38,7 @@ func NewAuthService(db *database.DB, supabaseURL, supabaseServiceRoleKey string)
 		db:                     db,
 		supabaseURL:            supabaseURL,
 		supabaseServiceRoleKey: supabaseServiceRoleKey,
+		httpClient:             http.DefaultClient,
 	}
 }
 
@@ -56,7 +66,7 @@ func (s *AuthService) verifyCurrentPassword(ctx context.Context, userID uuid.UUI
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("apikey", s.supabaseServiceRoleKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("supabase sign-in: %w", err)
 	}
@@ -105,7 +115,7 @@ func (s *AuthService) UpdateEmail(ctx context.Context, userID uuid.UUID, current
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("supabase admin request: %w", err)
 	}
@@ -139,7 +149,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, curr
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("supabase admin request: %w", err)
 	}
@@ -164,7 +174,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	}
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("supabase admin delete: %w", err)
 	}
