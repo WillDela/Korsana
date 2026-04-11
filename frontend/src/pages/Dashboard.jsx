@@ -10,6 +10,7 @@ import { stravaAPI } from '../api/strava';
 import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
 import { getErrorMessage } from '../api/client';
+import ErrorBoundary from '../components/ErrorBoundary';
 import SessionDetailsModal from '../components/SessionDetailsModal';
 import BrandIcon from '../components/BrandIcon';
 import { dashboardAPI } from '../api/dashboard';
@@ -399,42 +400,98 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, strav
       <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
 
       {/* Row 1 — hero: full-width data-dense widgets */}
-      {has('load')      && <TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} />}
-      {has('predictor') && <RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} />}
+      {has('load') && (
+        <ErrorBoundary name="Training Load">
+          <TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} />
+        </ErrorBoundary>
+      )}
+      {has('predictor') && (
+        <ErrorBoundary name="Race Predictor">
+          <RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} />
+        </ErrorBoundary>
+      )}
 
       {/* Row 2 — primary metrics: recovery, long run, injury risk */}
       {(has('recovery') || has('longrun') || has('injuryrisk')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('recovery')   && <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />}
-          {has('longrun')    && <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />}
-          {has('injuryrisk') && <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />}
+          {has('recovery') && (
+            <ErrorBoundary name="Recovery">
+              <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />
+            </ErrorBoundary>
+          )}
+          {has('longrun') && (
+            <ErrorBoundary name="Long Run">
+              <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />
+            </ErrorBoundary>
+          )}
+          {has('injuryrisk') && (
+            <ErrorBoundary name="Injury Risk">
+              <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />
+            </ErrorBoundary>
+          )}
         </div>
       )}
 
       {/* Row 3 — secondary metrics: hr zones, elevation, cadence */}
       {(has('hrzones') || has('elevation') || has('cadence')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('hrzones')   && <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />}
-          {has('elevation') && <ElevationWidget data={computedData?.elevation} {...stravaProps} />}
-          {has('cadence')   && <CadenceWidget data={computedData?.cadence} {...stravaProps} />}
+          {has('hrzones') && (
+            <ErrorBoundary name="HR Zones">
+              <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />
+            </ErrorBoundary>
+          )}
+          {has('elevation') && (
+            <ErrorBoundary name="Elevation">
+              <ElevationWidget data={computedData?.elevation} {...stravaProps} />
+            </ErrorBoundary>
+          )}
+          {has('cadence') && (
+            <ErrorBoundary name="Cadence">
+              <CadenceWidget data={computedData?.cadence} {...stravaProps} />
+            </ErrorBoundary>
+          )}
         </div>
       )}
 
       {/* Row 4 — consistency + plan: streak, execution score, calories */}
       {(has('streak') || has('execution') || has('calories')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('streak')    && <StreakWidget data={computedData?.streak} {...stravaProps} />}
-          {has('execution') && <ExecutionScoreWidget data={dashboardData?.execution} />}
-          {has('calories')  && <CaloriesWidget data={computedData?.calories} {...stravaProps} />}
+          {has('streak') && (
+            <ErrorBoundary name="Streak">
+              <StreakWidget data={computedData?.streak} {...stravaProps} />
+            </ErrorBoundary>
+          )}
+          {has('execution') && (
+            <ErrorBoundary name="Execution Score">
+              <ExecutionScoreWidget data={dashboardData?.execution} />
+            </ErrorBoundary>
+          )}
+          {has('calories') && (
+            <ErrorBoundary name="Calories">
+              <CaloriesWidget data={computedData?.calories} {...stravaProps} />
+            </ErrorBoundary>
+          )}
         </div>
       )}
 
       {/* Row 5 — tools: cross-training full width, then shoes + cardiac */}
-      {has('crosstraining') && <CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} />}
+      {has('crosstraining') && (
+        <ErrorBoundary name="Cross-Training">
+          <CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} />
+        </ErrorBoundary>
+      )}
       {(has('shoes') || has('cardiac')) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {has('shoes')   && <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />}
-          {has('cardiac') && <CardiacDriftWidget />}
+          {has('shoes') && (
+            <ErrorBoundary name="Shoes">
+              <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />
+            </ErrorBoundary>
+          )}
+          {has('cardiac') && (
+            <ErrorBoundary name="Cardiac Drift">
+              <CardiacDriftWidget />
+            </ErrorBoundary>
+          )}
         </div>
       )}
     </div>
