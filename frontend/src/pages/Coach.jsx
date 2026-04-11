@@ -182,7 +182,6 @@ const Coach = () => {
       const data = await coachAPI.sendMessage(msg, session.id);
       applyQuota(data._quota);
 
-      // If this was the first message, update the session title in the list
       setMessages(prev => {
         const without = prev.filter(m => !m._opt);
         return sortMsgs([
@@ -192,9 +191,12 @@ const Coach = () => {
         ]);
       });
 
-      // Refresh sessions to pick up auto-generated title
-      const updated = await coachAPI.getSessions();
-      if (updated?.sessions) setSessions(updated.sessions);
+      if (data.session_title) {
+        setSessions(prev => prev.map(s =>
+          s.id === session.id ? { ...s, title: data.session_title } : s
+        ));
+        setActiveSession(prev => prev?.id === session.id ? { ...prev, title: data.session_title } : prev);
+      }
     } catch (error) {
       const isLimit = error?.response?.status === 429;
       setMessages(prev => {

@@ -149,7 +149,7 @@ func (s *CoachService) GetSessionMessages(ctx context.Context, userID, sessionID
 
 // SendMessage sends a message to the AI coach and gets a response.
 // sessionID is optional — if provided messages are stored under that session.
-func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage string) (string, error) {
+func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage string) (string, string, error) {
 	// Build context about user's training
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
@@ -210,11 +210,11 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 		log.Printf("[Coach] Calling Claude API with %d messages", len(messages))
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
-		return "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
+		return "", "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
 	if err != nil {
 		log.Printf("[Coach] ERROR from AI API: %v", err)
-		return "", err
+		return "", "", err
 	}
 	log.Printf("[Coach] Got response (%d chars)", len(response))
 
@@ -235,19 +235,20 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 	_, _ = s.db.NamedExecContext(ctx, insertQuery, userMsg)
 	_, _ = s.db.NamedExecContext(ctx, insertQuery, assistantMsg)
 
-	// Auto-title session from first user message
+	var generatedTitle string
 	if sessionID != nil {
 		var count int
-		if err := s.db.GetContext(ctx, &count, `
+		if dbErr := s.db.GetContext(ctx, &count, `
 			SELECT COUNT(*) FROM coach_conversations WHERE session_id = $1 AND role = 'user'
-		`, *sessionID); err == nil && count == 1 {
+		`, *sessionID); dbErr == nil && count == 1 {
+			generatedTitle = s.GenerateSessionTitle(ctx, userMessage)
 			_, _ = s.db.ExecContext(ctx, `
 				UPDATE coach_sessions SET title = $1, updated_at = NOW() WHERE id = $2
-			`, sessionTitle(userMessage), *sessionID)
+			`, generatedTitle, *sessionID)
 		}
 	}
 
-	return response, nil
+	return response, generatedTitle, nil
 }
 
 // callClaudeAPI calls the Anthropic Claude API
@@ -576,6 +577,38 @@ Target Time: %s`,
 	}
 
 	return contextStr, nil
+}
+
+// GenerateSessionTitle calls the AI to produce a short ≤6-word session title.
+// Falls back to text truncation if the AI call fails or returns nothing useful.
+func (s *CoachService) GenerateSessionTitle(ctx context.Context, userMessage string) string {
+	prompt := fmt.Sprintf(
+		"Write a 3-5 word title for a running coaching conversation that begins with:\n%q\nReply with ONLY the title. No quotes, no trailing punctuation.",
+		userMessage,
+	)
+	msgs := []ChatMessage{{Role: "user", Content: prompt}}
+	system := "You write short, descriptive titles for running coach conversations."
+
+	var (
+		title string
+		err   error
+	)
+	if s.config.GeminiAPIKey != "" {
+		title, err = s.callGeminiAPI(msgs, system)
+	} else if s.config.ClaudeAPIKey != "" {
+		title, err = s.callClaudeAPI(msgs, system)
+	}
+
+	if err != nil || strings.TrimSpace(title) == "" {
+		return sessionTitle(userMessage)
+	}
+
+	title = strings.TrimSpace(title)
+	title = strings.Trim(title, `"'`)
+	if words := strings.Fields(title); len(words) > 6 {
+		title = strings.Join(words[:6], " ")
+	}
+	return title
 }
 
 // sessionTitle derives a short sidebar title from the user's first message.

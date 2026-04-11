@@ -95,12 +95,16 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		}
 	}
 
-	response, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message)
+	response, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"response": response})
+	result := gin.H{"response": response}
+	if sessionTitle != "" {
+		result["session_title"] = sessionTitle
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
