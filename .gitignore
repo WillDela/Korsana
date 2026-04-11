@@ -50,5 +50,4 @@ redis_data/
 extras
 claude-code-config
 .vercel
-.claude
-bash.exe.stackdump
+
