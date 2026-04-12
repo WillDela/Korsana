@@ -1,13 +1,7 @@
 import { Link } from 'react-router-dom';
+import LegalSection from '../components/LegalSection';
 
-const Section = ({ title, children }) => (
-  <div className="mb-8 last:mb-0">
-    <h2 className="text-base font-semibold text-navy mb-3" style={{ fontFamily: 'var(--font-heading)' }}>
-      {title}
-    </h2>
-    {children}
-  </div>
-);
+const Section = LegalSection;
 
 const PrivacyPolicy = () => (
   <div className="min-h-screen bg-bg-app px-6 py-16 flex flex-col items-center">
