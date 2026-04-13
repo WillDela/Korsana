@@ -1,4 +1,4 @@
-import { LuActivity as Activity, LuTarget as Target, LuAlertCircle as AlertCircle, LuLoader2 as Loader2 } from 'react-icons/lu';
+import { LuActivity as Activity, LuTarget as Target, LuCircleAlert as AlertCircle, LuLoader2 as Loader2 } from 'react-icons/lu';
 import BrandIcon from '../BrandIcon';
 
 const variantConfig = {

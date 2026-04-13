@@ -1,4 +1,4 @@
-import { LuTrendingUp as TrendingUp, LuAlertTriangle as AlertTriangle, LuMinus as Minus } from 'react-icons/lu';
+import { LuTrendingUp as TrendingUp, LuTriangleAlert as AlertTriangle, LuMinus as Minus } from 'react-icons/lu';
 
 const signalConfig = {
   positive: { Icon: TrendingUp, color: 'text-[var(--color-success)]' },
