@@ -30,6 +30,9 @@ export const coachAPI = {
     return res.data;
   },
 
+  // Dashboard insight
+  getInsight: () => client.get('/coach/insight').then(r => r.data),
+
   // Quota
   getQuota: async () => {
     const res = await client.get('/coach/quota');

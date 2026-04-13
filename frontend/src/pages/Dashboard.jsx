@@ -1,4 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import {
+  LuBarChart2, LuTarget, LuActivity, LuHeart, LuZap, LuHeartPulse,
+  LuMountain, LuFootprints, LuFlame, LuDumbbell, LuCheckCircle2,
+  LuTrendingUp, LuCheck,
+} from 'react-icons/lu';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
@@ -28,6 +33,11 @@ import ExecutionScoreWidget from '../components/dashboard/widgets/ExecutionScore
 import ShoeWidget from '../components/dashboard/widgets/ShoeWidget';
 import CardiacDriftWidget from '../components/dashboard/widgets/CardiacDriftWidget';
 import CaloriesWidget from '../components/dashboard/widgets/CaloriesWidget';
+import AppPageHero from '../components/ui/AppPageHero';
+import MetricStrip from '../components/ui/MetricStrip';
+import BriefingPanel from '../components/ui/BriefingPanel';
+import { coachAPI } from '../api/coach';
+import { chartTheme } from '../lib/chartTheme';
 
 // ─── Workout type colors ───────────────────────────────────────
 const WC = {
@@ -60,21 +70,23 @@ const PC = {
   'Race Week': { accent: '#F5A623', label: '#856404', badge: '#FFF3CD' },
 };
 
+const PHASE_VARIANT = { Build: 'info', Peak: 'coral', Taper: 'success', 'Race Week': 'warning' };
+
 const WIDGETS = [
-  { id: 'load',          label: 'Training Load',  icon: '📊' },
-  { id: 'predictor',     label: 'Race Predictor', icon: '🎯' },
-  { id: 'longrun',       label: 'Long Run',       icon: '🏃' },
-  { id: 'recovery',      label: 'Recovery',       icon: '💚' },
-  { id: 'injuryrisk',    label: 'Injury Risk',    icon: '⚡' },
-  { id: 'hrzones',       label: 'HR Zones',       icon: '❤' },
-  { id: 'elevation',     label: 'Elevation',      icon: '⛰' },
-  { id: 'cadence',       label: 'Cadence',        icon: '👟' },
-  { id: 'streak',        label: 'Streak',         icon: '🔥' },
-  { id: 'crosstraining', label: 'Cross-Training', icon: '🏋' },
-  { id: 'execution',     label: 'Exec Score',     icon: '✓' },
-  { id: 'shoes',         label: 'Shoes',          icon: '👟' },
-  { id: 'cardiac',       label: 'Cardiac Drift',  icon: '📈' },
-  { id: 'calories',      label: 'Calories',       icon: '🔥' },
+  { id: 'load',          label: 'Training Load',  Icon: LuBarChart2 },
+  { id: 'predictor',     label: 'Race Predictor', Icon: LuTarget },
+  { id: 'longrun',       label: 'Long Run',       Icon: LuActivity },
+  { id: 'recovery',      label: 'Recovery',       Icon: LuHeart },
+  { id: 'injuryrisk',    label: 'Injury Risk',    Icon: LuZap },
+  { id: 'hrzones',       label: 'HR Zones',       Icon: LuHeartPulse },
+  { id: 'elevation',     label: 'Elevation',      Icon: LuMountain },
+  { id: 'cadence',       label: 'Cadence',        Icon: LuFootprints },
+  { id: 'streak',        label: 'Streak',         Icon: LuFlame },
+  { id: 'crosstraining', label: 'Cross-Training', Icon: LuDumbbell },
+  { id: 'execution',     label: 'Exec Score',     Icon: LuCheckCircle2 },
+  { id: 'shoes',         label: 'Shoes',          Icon: LuFootprints },
+  { id: 'cardiac',       label: 'Cardiac Drift',  Icon: LuTrendingUp },
+  { id: 'calories',      label: 'Calories',       Icon: LuFlame },
 ];
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -364,7 +376,7 @@ const WidgetSelector = ({ active, toggle }) => {
                       borderColor: on ? '#1B2559' : '#ECEEF4',
                     }}
                   >
-                    <span style={{ fontSize: 14 }}>{w.icon}</span>
+                    <w.Icon size={14} />
                     <span
                       className="font-sans text-[10px] font-bold"
                       style={{ color: on ? '#ffffff' : '#4A5173' }}
@@ -396,103 +408,133 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, strav
   const has = (id) => active.includes(id);
   const stravaProps = { stravaConnected, onConnect };
   return (
-    <div className="flex flex-col gap-5">
-      <SLabel>{active.length} Widget{active.length !== 1 ? 's' : ''} Active</SLabel>
+    <div className="flex flex-col gap-8">
 
-      {/* Row 1 — hero: full-width data-dense widgets */}
-      {has('load') && (
-        <ErrorBoundary name="Training Load">
-          <TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} />
-        </ErrorBoundary>
-      )}
-      {has('predictor') && (
-        <ErrorBoundary name="Race Predictor">
-          <RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} />
-        </ErrorBoundary>
-      )}
-
-      {/* Row 2 — primary metrics: recovery, long run, injury risk */}
-      {(has('recovery') || has('longrun') || has('injuryrisk')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('recovery') && (
-            <ErrorBoundary name="Recovery">
-              <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-          {has('longrun') && (
-            <ErrorBoundary name="Long Run">
-              <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-          {has('injuryrisk') && (
-            <ErrorBoundary name="Injury Risk">
-              <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-        </div>
+      {/* ── Readiness ── */}
+      {(has('load') || has('recovery') || has('injuryrisk')) && (
+        <section>
+          <SLabel>Readiness</SLabel>
+          <div className="flex flex-col gap-5">
+            {has('load') && (
+              <ErrorBoundary name="Training Load">
+                <TrainingLoadWidget data={dashboardData?.training_load} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+            {(has('recovery') || has('injuryrisk')) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {has('recovery') && (
+                  <ErrorBoundary name="Recovery">
+                    <RecoveryWidget data={dashboardData?.recovery} {...stravaProps} />
+                  </ErrorBoundary>
+                )}
+                {has('injuryrisk') && (
+                  <ErrorBoundary name="Injury Risk">
+                    <InjuryRiskWidget data={dashboardData?.injury_risk} {...stravaProps} />
+                  </ErrorBoundary>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
-      {/* Row 3 — secondary metrics: hr zones, elevation, cadence */}
-      {(has('hrzones') || has('elevation') || has('cadence')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('hrzones') && (
-            <ErrorBoundary name="HR Zones">
-              <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-          {has('elevation') && (
-            <ErrorBoundary name="Elevation">
-              <ElevationWidget data={computedData?.elevation} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-          {has('cadence') && (
-            <ErrorBoundary name="Cadence">
-              <CadenceWidget data={computedData?.cadence} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-        </div>
+      {/* ── Performance ── */}
+      {(has('predictor') || has('longrun') || has('hrzones')) && (
+        <section>
+          <SLabel>Performance</SLabel>
+          <div className="flex flex-col gap-5">
+            {has('predictor') && (
+              <ErrorBoundary name="Race Predictor">
+                <RacePredictorWidget data={dashboardData?.predictor} onRefresh={onRefresh} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+            {(has('longrun') || has('hrzones')) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {has('longrun') && (
+                  <ErrorBoundary name="Long Run">
+                    <LongRunConfidenceWidget data={dashboardData?.long_run} {...stravaProps} />
+                  </ErrorBoundary>
+                )}
+                {has('hrzones') && (
+                  <ErrorBoundary name="HR Zones">
+                    <HRZonesWidget data={dashboardData?.hr_zones} {...stravaProps} />
+                  </ErrorBoundary>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
-      {/* Row 4 — consistency + plan: streak, execution score, calories */}
-      {(has('streak') || has('execution') || has('calories')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {has('streak') && (
-            <ErrorBoundary name="Streak">
-              <StreakWidget data={computedData?.streak} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-          {has('execution') && (
-            <ErrorBoundary name="Execution Score">
-              <ExecutionScoreWidget data={dashboardData?.execution} />
-            </ErrorBoundary>
-          )}
-          {has('calories') && (
-            <ErrorBoundary name="Calories">
-              <CaloriesWidget data={computedData?.calories} {...stravaProps} />
-            </ErrorBoundary>
-          )}
-        </div>
+      {/* ── Durability ── */}
+      {(has('elevation') || has('cadence') || has('streak')) && (
+        <section>
+          <SLabel>Durability</SLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {has('elevation') && (
+              <ErrorBoundary name="Elevation">
+                <ElevationWidget data={computedData?.elevation} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+            {has('cadence') && (
+              <ErrorBoundary name="Cadence">
+                <CadenceWidget data={computedData?.cadence} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+            {has('streak') && (
+              <ErrorBoundary name="Streak">
+                <StreakWidget data={computedData?.streak} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+          </div>
+        </section>
       )}
 
-      {/* Row 5 — tools: cross-training full width, then shoes + cardiac */}
-      {has('crosstraining') && (
-        <ErrorBoundary name="Cross-Training">
-          <CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} />
-        </ErrorBoundary>
+      {/* ── Execution ── */}
+      {(has('execution') || has('calories')) && (
+        <section>
+          <SLabel>Execution</SLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {has('execution') && (
+              <ErrorBoundary name="Execution Score">
+                <ExecutionScoreWidget data={dashboardData?.execution} />
+              </ErrorBoundary>
+            )}
+            {has('calories') && (
+              <ErrorBoundary name="Calories">
+                <CaloriesWidget data={computedData?.calories} {...stravaProps} />
+              </ErrorBoundary>
+            )}
+          </div>
+        </section>
       )}
-      {(has('shoes') || has('cardiac')) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {has('shoes') && (
-            <ErrorBoundary name="Shoes">
-              <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />
-            </ErrorBoundary>
-          )}
-          {has('cardiac') && (
-            <ErrorBoundary name="Cardiac Drift">
-              <CardiacDriftWidget />
-            </ErrorBoundary>
-          )}
-        </div>
+
+      {/* ── Support ── */}
+      {(has('crosstraining') || has('shoes') || has('cardiac')) && (
+        <section>
+          <SLabel>Support</SLabel>
+          <div className="flex flex-col gap-5">
+            {has('crosstraining') && (
+              <ErrorBoundary name="Cross-Training">
+                <CrossTrainingWidget data={dashboardData?.cross_training} onRefresh={onRefresh} />
+              </ErrorBoundary>
+            )}
+            {(has('shoes') || has('cardiac')) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {has('shoes') && (
+                  <ErrorBoundary name="Shoes">
+                    <ShoeWidget data={dashboardData?.shoes} onRefresh={onRefresh} />
+                  </ErrorBoundary>
+                )}
+                {has('cardiac') && (
+                  <ErrorBoundary name="Cardiac Drift">
+                    <CardiacDriftWidget />
+                  </ErrorBoundary>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
       )}
     </div>
   );
@@ -509,6 +551,7 @@ const Dashboard = () => {
   const [syncMsg, setSyncMsg] = useState({ text: '', type: '' });
   const [lastSynced, setLastSynced] = useState(null);
   const [stravaConnected, setStravaConnected] = useState(null);
+  const [insight, setInsight] = useState(null);
 
   const [showFactors, setShowFactors] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -567,6 +610,13 @@ const Dashboard = () => {
     } catch { /* dashboard data unavailable */ }
   }, []);
 
+  const fetchInsight = useCallback(async () => {
+    try {
+      const data = await coachAPI.getInsight();
+      setInsight(data?.insight || null);
+    } catch { /* insight is non-critical, fail silently */ }
+  }, []);
+
   const fetchWeekEntries = useCallback(async () => {
     try {
       const today = new Date();
@@ -611,7 +661,7 @@ const Dashboard = () => {
       setLastSynced(new Date().toISOString());
       const count = result?.count || 0;
       setSyncMsg({
-        text: count > 0 ? `✓ Synced ${count} activit${count === 1 ? 'y' : 'ies'}` : '✓ Already up to date',
+        text: count > 0 ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}` : 'Already up to date',
         type: 'success',
       });
       setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
@@ -643,6 +693,7 @@ const Dashboard = () => {
     fetchActivitiesAndAutoSync();
     fetchWeekEntries();
     fetchDashboardData();
+    fetchInsight();
   }, []);
 
   const today = new Date();
@@ -671,6 +722,55 @@ const Dashboard = () => {
     const secPerKm = activeGoal.target_time_seconds / (activeGoal.race_distance_meters / 1000);
     return fmtPace(secPerKm);
   }, [activeGoal]);
+
+  const totalTrainingWeeks = useMemo(() => {
+    if (!activeGoal?.race_date || !activeGoal?.created_at) return null;
+    return Math.ceil((new Date(activeGoal.race_date) - new Date(activeGoal.created_at)) / (7 * 86400000));
+  }, [activeGoal]);
+
+  const weeksIn = useMemo(() => {
+    if (!activeGoal?.created_at) return null;
+    return Math.max(1, Math.ceil((today - new Date(activeGoal.created_at)) / (7 * 86400000)));
+  }, [activeGoal]);
+
+  const heroSubtitle = useMemo(() => {
+    if (!activeGoal) return 'Set a race goal to personalise your dashboard';
+    const parts = [];
+    if (weeksIn && totalTrainingWeeks) parts.push(`Week ${weeksIn} of ${totalTrainingWeeks}`);
+    parts.push(`${trainingPhase} phase`);
+    if (daysToRace != null) parts.push(`${daysToRace} day${daysToRace !== 1 ? 's' : ''} to race`);
+    return parts.join(' · ');
+  }, [activeGoal, weeksIn, totalTrainingWeeks, trainingPhase, daysToRace]);
+
+  const priorityMetrics = useMemo(() => {
+    const rec  = dashboardData?.recovery;
+    const load = dashboardData?.training_load;
+    const pred = dashboardData?.predictor;
+    const recScore = rec?.score;
+    const tsb = load?.tsb;
+    return [
+      {
+        label: 'Recovery',
+        value: recScore != null ? String(recScore) : '—',
+        unit: '%',
+        trend: recScore >= 70 ? 'up' : recScore >= 40 ? 'neutral' : 'down',
+        variant: recScore >= 70 ? 'success' : recScore >= 40 ? 'warning' : 'danger',
+        trendLabel: recScore >= 70 ? 'Good' : recScore >= 40 ? 'Fair' : 'Low',
+      },
+      {
+        label: 'Form (TSB)',
+        value: tsb != null ? `${tsb > 0 ? '+' : ''}${Math.round(tsb)}` : '—',
+        trend: tsb > 5 ? 'up' : tsb < -5 ? 'down' : 'neutral',
+        variant: tsb != null && Math.abs(tsb) <= 10 ? 'success' : 'neutral',
+      },
+      {
+        label: 'Predictor',
+        value: pred?.marathon_time || '—',
+        trend: 'neutral',
+        variant: 'neutral',
+      },
+    ];
+  }, [dashboardData]);
 
   const startOfWeek = useMemo(() => {
     const d = new Date(today);
@@ -1053,111 +1153,53 @@ const Dashboard = () => {
         ::-webkit-scrollbar-thumb { background: #D4D8E8; border-radius: 3px; }
       `}</style>
 
-      {/* ── TOOLBAR ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              onClick={handlePlanWorkout}
-              className="flex items-center gap-[7px] bg-coral border-0 rounded-[10px] px-[18px] py-[9px] font-sans text-[13px] font-bold text-white cursor-pointer shadow-[0_3px_10px_rgba(232,99,74,0.35)]"
+      {/* ── PAGE HERO ── */}
+      <AppPageHero
+        title={activeGoal?.race_name || 'Your Training'}
+        subtitle={heroSubtitle}
+        status={activeGoal ? { label: `${trainingPhase} Phase`, variant: PHASE_VARIANT[trainingPhase] || 'info' } : null}
+        primaryAction={{
+          label: isSyncing ? 'Syncing…' : (stravaConnected === false ? 'Connect Strava' : 'Sync Strava'),
+          onClick: stravaConnected === false ? handleConnectStrava : handleSyncActivities,
+        }}
+      >
+        <div className="flex items-center gap-3 flex-wrap mt-1">
+          <button
+            onClick={handlePlanWorkout}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-navy border border-[var(--color-border)] bg-white hover:bg-[var(--color-bg-elevated)] transition-all cursor-pointer"
+          >
+            + Plan Activity
+          </button>
+          <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
+          {syncMsg.text && (
+            <span
+              className="font-sans text-[11px] font-semibold"
+              style={{ color: syncMsg.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Plan Activity
-            </button>
-            {syncMsg.text && (
-              <span
-                className="font-sans text-[11px] font-semibold"
-                style={{ color: syncMsg.type === 'success' ? '#2ECC8B' : '#E84A4A' }}
-              >{syncMsg.text}</span>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <SyncDropdown isSyncing={isSyncing} onSync={handleSyncActivities} onConnect={handleConnectStrava} stravaConnected={stravaConnected} />
-            <WidgetSelector active={activeWidgets} toggle={toggleWidget} />
-          </div>
+              {syncMsg.text}
+            </span>
+          )}
         </div>
+      </AppPageHero>
+
+      {/* ── PRIORITY STRIP ── */}
+      <div className="mb-6">
+        <MetricStrip metrics={priorityMetrics} />
+      </div>
+
+      {/* ── COACH BRIEFING ── */}
+      {insight && (
+        <div className="mb-6">
+          <BriefingPanel
+            reason={insight}
+            action={{ label: 'Talk to Coach', href: '/coach' }}
+            variant="insight"
+          />
+        </div>
+      )}
 
       {/* ── BODY ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-
-          {/* ── GOAL HERO CARD ── */}
-          {activeGoal ? (
-            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 32px', boxShadow: '0 1px 2px rgba(27,37,89,0.05), 0 2px 12px rgba(27,37,89,0.04)', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: 5, height: '100%', background: 'var(--color-coral)' }} />
-
-              {/* Top row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 24 }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{ background: 'var(--color-coral)', color: '#fff', borderRadius: 5, padding: '3px 10px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                      {distanceLabel(activeGoal.race_distance_meters)}
-                    </span>
-                    <span style={{ background: pc.badge, color: pc.label, borderRadius: 5, padding: '3px 9px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                      {trainingPhase} Phase
-                    </span>
-                  </div>
-                  <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1, marginBottom: 7 }}>
-                    {activeGoal.race_name}
-                  </h2>
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
-                    {activeGoal.race_date
-                      ? new Date(activeGoal.race_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : '—'}
-                  </p>
-                </div>
-
-                {/* Stats */}
-                <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0 }}>
-                  {[
-                    { value: activeGoal.target_time_seconds ? fmtTargetTime(activeGoal.target_time_seconds) : 'Just finish', label: 'Target Time', size: 26, color: 'var(--color-navy)' },
-                    { value: targetPaceDisplay || '—', label: 'Goal Pace', size: 20, color: 'var(--color-navy)' },
-                    { value: `${weeksOut ?? 0}w`, label: 'To Race Day', size: 30, color: 'var(--color-coral)' },
-                  ].map((s, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-                      {i > 0 && <div style={{ width: 1, height: 50, background: 'var(--color-border-light)', margin: '0 20px' }} />}
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: s.size, fontWeight: 700, color: s.color, lineHeight: 1 }}>
-                          {s.value}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 5 }}>
-                          {s.label}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bottom row */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, borderTop: '1px solid var(--color-border-light)', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 130, height: 4, background: 'var(--color-border-light)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${trainingProgress}%`, background: 'linear-gradient(90deg,#E8634A,#f2a040)', borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--color-text-muted)' }}>
-                    {trainingProgress}% of training done
-                  </span>
-                </div>
-                <Link
-                  to="/goals"
-                  style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-light)', borderRadius: 9, padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--color-navy)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                >
-                  View Goals →
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div style={{ background: '#fff', borderRadius: 20, padding: '28px 32px', boxShadow: '0 1px 2px rgba(27,37,89,0.05), 0 2px 12px rgba(27,37,89,0.04)', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: 5, height: '100%', background: '#D4D8E8' }} />
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 18, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 8 }}>
-                No active goal
-              </div>
-              <Link to="/goals/new" style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-coral)', fontWeight: 600, textDecoration: 'none' }}>
-                Set a race goal →
-              </Link>
-            </div>
-          )}
 
           {/* ① WEEK CALENDAR STRIP */}
               <div>
@@ -1272,7 +1314,7 @@ const Dashboard = () => {
                                     onClick={() => calendarAPI.updateStatus(entry.id, 'completed').then(fetchWeekEntries)}
                                     className="bg-[#2ECC8B] text-white border-0 rounded-lg px-4 py-2 font-sans text-[13px] font-semibold cursor-pointer flex items-center gap-[6px]"
                                   >
-                                    <span>✓</span> Mark Done
+                                    <LuCheck size={14} /> Mark Done
                                   </button>
                                   <button
                                     onClick={handlePlanWorkout}
@@ -1314,8 +1356,8 @@ const Dashboard = () => {
                 )}
               </div>
 
-              {/* Race Readiness + Coach Insight */}
-              <div className="grid grid-cols-2 gap-5">
+              {/* Race Readiness */}
+              <div>
                 <Card>
                   <SLabel>Race Readiness</SLabel>
                   <div className="flex items-center gap-4 mb-4">
@@ -1369,21 +1411,6 @@ const Dashboard = () => {
                     </div>
                   )}
                 </Card>
-                <div className="bg-navy rounded-2xl px-6 py-5 shadow-[0_6px_24px_rgba(27,37,89,0.15)] border-l-[6px] border-coral flex flex-col">
-                  <div className="flex items-center gap-[10px] mb-[14px]">
-                    <div className="w-7 h-7 rounded-lg bg-coral flex items-center justify-center text-[14px] shrink-0">✦</div>
-                    <span className="font-sans text-[11px] font-bold text-white/60 uppercase tracking-[0.1em]">Coach Insight</span>
-                  </div>
-                  <p className="font-sans text-[14px] text-white/80 leading-relaxed mb-4 flex-1">
-                    Sync your training data and visit the Coach to get personalized insights about your fitness and race preparation.
-                  </p>
-                  <Link
-                    to="/coach"
-                    className="block w-full text-center bg-white/10 border border-white/15 rounded-[10px] py-[10px] font-sans text-[13px] font-semibold text-white no-underline"
-                  >
-                    Ask Coach →
-                  </Link>
-                </div>
               </div>
 
               {/* Up Next */}
@@ -1529,7 +1556,7 @@ const Dashboard = () => {
                     {weeklyChartData.length > 0 ? (
                       <ResponsiveContainer width="100%" height={160}>
                         <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
-                          <XAxis dataKey="week" tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fill: '#8B93B0' }} axisLine={false} tickLine={false} tickMargin={8} />
+                          <XAxis dataKey="week" tick={chartTheme.axis.tick} axisLine={false} tickLine={false} tickMargin={8} />
                           <YAxis hide />
                           <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: 'rgba(27,37,89,0.02)' }} />
                           <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
@@ -1570,7 +1597,7 @@ const Dashboard = () => {
                             <div className="flex items-center gap-2">
                               {z.mins > 0 && <span className="font-sans text-[11px] text-[var(--color-text-muted)]">{Math.round(z.mins)}m</span>}
                               <span className="font-mono text-[13px] font-bold text-navy">{z.pct}%</span>
-                              {onTarget && <span className="text-[12px] font-bold text-[#2ECC8B] ml-[2px]">✓</span>}
+                              {onTarget && <LuCheck size={12} className="text-[var(--color-success)]" />}
                             </div>
                           </div>
                           <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden">
