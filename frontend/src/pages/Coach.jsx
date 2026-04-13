@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { LuBarChart2, LuActivity, LuCalendar, LuTarget } from 'react-icons/lu';
+import { LuChartColumnBig as LuBarChart2, LuActivity, LuCalendar, LuTarget } from 'react-icons/lu';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';

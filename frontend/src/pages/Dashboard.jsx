@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
-  LuBarChart2, LuTarget, LuActivity, LuHeart, LuZap, LuHeartPulse,
-  LuMountain, LuFootprints, LuFlame, LuDumbbell, LuCheckCircle2,
+  LuChartColumnBig as LuBarChart2, LuTarget, LuActivity, LuHeart, LuZap, LuHeartPulse,
+  LuMountain, LuFootprints, LuFlame, LuDumbbell, LuCircleCheckBig as LuCheckCircle2,
   LuTrendingUp, LuCheck,
 } from 'react-icons/lu';
 import { useSearchParams, Link } from 'react-router-dom';
