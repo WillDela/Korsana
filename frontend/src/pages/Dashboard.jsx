@@ -611,9 +611,23 @@ const Dashboard = () => {
   }, []);
 
   const fetchInsight = useCallback(async () => {
+    const CACHE_KEY = 'korsana_insight';
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      const today = new Date().toDateString();
+      if (cached?.date === today && cached?.text) {
+        setInsight(cached.text);
+        return;
+      }
+    } catch { /* ignore bad cache */ }
+
     try {
       const data = await coachAPI.getInsight();
-      setInsight(data?.insight || null);
+      const text = data?.insight || null;
+      setInsight(text);
+      if (text) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ text, date: new Date().toDateString() }));
+      }
     } catch { /* insight is non-critical, fail silently */ }
   }, []);
 
