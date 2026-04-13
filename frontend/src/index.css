@@ -62,6 +62,45 @@
 
   /* Layout */
   --spacing-container: 1280px;
+
+  /* Surface tiers */
+  --surface-0: #FFFFFF;
+  --surface-1: #F5F6FA;
+  --surface-2: #ECEEF4;
+  --surface-3: #1B2559;
+
+  /* Tinted surfaces */
+  --navy-tint:  rgba(27, 37, 89, 0.06);
+  --coral-tint: rgba(232, 114, 90, 0.08);
+  --sage-tint:  rgba(91, 140, 62, 0.08);
+  --amber-tint: rgba(229, 168, 48, 0.08);
+
+  /* Shadow levels */
+  --shadow-xs: 0 1px 2px rgba(27,37,89,0.05);
+  --shadow-sm: 0 2px 8px rgba(27,37,89,0.07);
+  --shadow-md: 0 4px 20px rgba(27,37,89,0.10);
+  --shadow-lg: 0 8px 32px rgba(27,37,89,0.14);
+
+  /* Motion timings */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:   150ms;
+  --duration-base:   250ms;
+  --duration-slow:   400ms;
+
+  /* Chart accent palette */
+  --chart-1: #4A6CF7;
+  --chart-2: #E8725A;
+  --chart-3: #2ECC8B;
+  --chart-4: #E5A830;
+  --chart-5: #8B93B0;
+
+  /* State colors (updated + new) */
+  --color-success: #2ECC8B;
+  --color-warning: #E5A830;
+  --color-danger:  #E84A4A;
+  --color-info:    #4A6CF7;
 }
 
 /* ============================================

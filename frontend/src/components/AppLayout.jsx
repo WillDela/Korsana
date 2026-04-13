@@ -8,8 +8,8 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen bg-bg-app">
       <Navbar variant="app" />
-      <div style={{ padding: isCoach ? '0 12px' : '0 24px' }}>
-        <main className="w-full mx-auto" style={{ maxWidth: 1280, padding: isCoach ? '16px 0' : '24px 0' }}>
+      <div className={`max-w-screen-xl mx-auto ${isCoach ? 'px-3 sm:px-4' : 'px-4 sm:px-6 lg:px-8'}`}>
+        <main className={`w-full ${isCoach ? 'pt-4 pb-8' : 'pt-6 pb-16'}`}>
           <Outlet />
         </main>
       </div>
