@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { LuBarChart2, LuActivity, LuCalendar, LuTarget } from 'react-icons/lu';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { coachAPI } from '../api/coach';
@@ -26,10 +27,10 @@ const C = {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PROMPTS = [
-  { label: 'Analyze my last week', icon: '📊' },
-  { label: 'Should I run today?',  icon: '🏃' },
-  { label: 'Build me a plan',      icon: '📅' },
-  { label: 'Is my goal realistic?',icon: '🎯' },
+  { label: 'Analyze my last week', Icon: LuBarChart2 },
+  { label: 'Should I run today?',  Icon: LuActivity },
+  { label: 'Build me a plan',      Icon: LuCalendar },
+  { label: 'Is my goal realistic?',Icon: LuTarget },
 ];
 
 const SIDEBAR_W = 252;   // px when open
@@ -677,7 +678,7 @@ function EmptyState({ onPrompt, disabled }) {
             onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = C.gray50; }}
             onMouseLeave={e => { e.currentTarget.style.background = C.white; }}
           >
-            <span style={{ fontSize: '15px' }}>{p.icon}</span>
+            <p.Icon size={15} />
             {p.label}
           </motion.button>
         ))}

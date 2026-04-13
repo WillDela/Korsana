@@ -158,18 +158,23 @@ const Navbar = ({ variant = 'landing' }) => {
                   style={{
                     fontFamily: 'DM Sans, sans-serif',
                     fontSize: 13,
-                    fontWeight: 500,
+                    fontWeight: isActive ? 600 : 500,
+                    letterSpacing: isActive ? '-0.01em' : '0em',
                     textDecoration: 'none',
                     position: 'relative',
-                    padding: '6px 15px',
+                    padding: '6px 16px',
                     borderRadius: 8,
-                    color: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.5)',
-                    background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    color: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.6)',
+                    background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                    transition: 'color 150ms, background 150ms',
                   }}
                 >
                   {tab.label}
                   {isActive && (
-                    <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-sm" style={{ background: '#E8634A' }} />
+                    <span
+                      className="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full"
+                      style={{ background: '#E8634A' }}
+                    />
                   )}
                 </Link>
               );
@@ -191,39 +196,52 @@ const Navbar = ({ variant = 'landing' }) => {
               {dropdownOpen && (
                 <div style={{
                   position: "absolute",
-                  top: "calc(100% + 8px)",
+                  top: "calc(100% + 10px)",
                   right: 0,
                   background: "#FFFFFF",
-                  borderRadius: 14,
-                  boxShadow: "0 4px 32px rgba(27,37,89,0.16), 0 1px 4px rgba(27,37,89,0.08)",
+                  borderRadius: 16,
+                  boxShadow: "0 8px 32px rgba(27,37,89,0.18), 0 1px 4px rgba(27,37,89,0.08)",
                   border: "1px solid #ECEEF4",
-                  padding: "14px 14px 10px",
+                  padding: "6px",
                   zIndex: 300,
-                  minWidth: 200
+                  minWidth: 212,
                 }}>
-                  <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid #ECEEF4" }}>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 10, fontWeight: 700, color: "#8B93B0", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Signed in as</div>
-                    <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600, color: "#1B2559", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
+                  {/* Identity header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px 10px", marginBottom: 2, borderBottom: "1px solid #ECEEF4" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#E8634A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 13, color: "#fff", flexShrink: 0 }}>
+                      {initial}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: 13, fontWeight: 600, color: "#1B2559", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Runner'}
+                      </div>
+                      <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: 11, color: "#8B93B0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {user?.email}
+                      </div>
+                    </div>
                   </div>
-                  <Link
-                    to="/settings"
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, textDecoration: "none", color: "#4A5173", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500 }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = "#F8F9FC"; e.currentTarget.style.color = "#1B2559"; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4A5173"; }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
-                    Settings
-                  </Link>
-                  <div style={{ margin: "4px 0" }} />
-                  <button
-                    onClick={handleLogout}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent", color: "#E84A4A", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = "#FDE8E3"; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                    Log out
-                  </button>
+                  {/* Nav items */}
+                  <div style={{ padding: "4px 0 2px" }}>
+                    <Link
+                      to="/settings"
+                      style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 10, textDecoration: "none", color: "#4A5173", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, transition: "background 120ms, color 120ms" }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = "#F5F6FA"; e.currentTarget.style.color = "#1B2559"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4A5173"; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                      Settings
+                    </Link>
+                    <div style={{ margin: "2px 0", height: 1, background: "#ECEEF4" }} />
+                    <button
+                      onClick={handleLogout}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 10, border: "none", background: "transparent", color: "#E84A4A", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 120ms" }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = "#FEF0EE"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                      Log out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
