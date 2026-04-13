@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { chartTheme } from '../lib/chartTheme';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const COLORS = {
@@ -83,7 +84,7 @@ const RunTypeBreakdown = ({ activities = [], targetPaceSecondsPerKm }) => {
               </Pie>
               <Tooltip
                 formatter={(value, name) => [`${value} runs (${Math.round((value / total) * 100)}%)`, name]}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.8125rem' }}
+                contentStyle={{ ...chartTheme.tooltip.style, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               />
             </PieChart>
           </ResponsiveContainer>

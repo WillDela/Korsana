@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { predictorAPI } from '../../../api/dashboard';
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 const inputClass = 'px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
@@ -22,7 +22,20 @@ export default function RacePredictorWidget({ data, onRefresh, stravaConnected, 
   const [saving, setSaving] = useState(false);
 
   if (!data) {
-    return <WidgetEmptyState label="Race Predictor" title="race predictions" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Race Predictor</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No predictions yet'}
+          description={stravaConnected === false ? 'Connect to see your race predictions' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   const marathon = data.predictions?.find(p => p.label === 'Marathon');

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { crossTrainingAPI } from '../../../api/dashboard';
 import { crossTrainingGoalsAPI } from '../../../api/crossTrainingGoals';
 import BrandIcon from '../../BrandIcon';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 const TYPE_CONFIG = {
   weight_lifting: { icon: '🏋', label: 'Weight Training' },
@@ -151,12 +152,11 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
       </div>
 
       {sessions.length === 0 ? (
-        <div className="flex flex-col items-center py-4 gap-[6px]">
-          <span style={{ fontSize: 24 }}>📭</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
-            No sessions in the last 4 weeks
-          </div>
-        </div>
+        <DataEmptyState
+          variant="nodata"
+          title="No sessions logged"
+          description="No cross-training in the last 4 weeks"
+        />
       ) : (
         <div>
           <div

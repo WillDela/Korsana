@@ -1,8 +1,21 @@
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 export default function LongRunConfidenceWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return <WidgetEmptyState label="Long Run" title="long run coverage" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Long Run Coverage</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No long run data yet'}
+          description={stravaConnected === false ? 'Connect to see your long run coverage' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   const pct = data.coverage_pct || 0;

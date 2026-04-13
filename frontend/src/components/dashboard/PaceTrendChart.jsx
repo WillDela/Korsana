@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { chartTheme } from '../../lib/chartTheme';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ReferenceLine, ResponsiveContainer, CartesianGrid,
@@ -73,10 +74,10 @@ const PaceTrendChart = ({ activities = [], goalPace }) => {
       <div className="h-[200px]">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-            <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} tickLine={false} axisLine={false} />
+            <CartesianGrid stroke={chartTheme.grid.stroke} strokeDasharray={chartTheme.grid.strokeDasharray} vertical={false} />
+            <XAxis dataKey="week" tick={chartTheme.axis.tick} tickLine={false} axisLine={false} />
             <YAxis
-              tick={{ fontSize: 11, fill: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}
+              tick={chartTheme.axis.tick}
               tickLine={false}
               axisLine={false}
               tickFormatter={secsToMinSec}
@@ -85,7 +86,7 @@ const PaceTrendChart = ({ activities = [], goalPace }) => {
             />
             <Tooltip
               formatter={(v) => [secsToMinSec(v), 'Avg Pace']}
-              contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.8125rem' }}
+              contentStyle={{ ...chartTheme.tooltip.style, borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
             />
             <Line type="monotone" dataKey="pace" stroke="var(--color-navy)" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             {goalPace && (

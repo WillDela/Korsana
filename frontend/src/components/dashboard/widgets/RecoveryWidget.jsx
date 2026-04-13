@@ -1,8 +1,21 @@
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 export default function RecoveryWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return <WidgetEmptyState label="Recovery" title="recovery status" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Recovery Status</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No recovery data yet'}
+          description={stravaConnected === false ? 'Connect to see your recovery status' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   const score = Math.round(data.recovery_pct || 0);

@@ -2,11 +2,25 @@ import {
   BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
+import { chartTheme } from '../../../lib/chartTheme';
 
 export default function CaloriesWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return <WidgetEmptyState label="Calories Burned" title="calorie data" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Calories Burned</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No calorie data yet'}
+          description={stravaConnected === false ? 'Connect to see your calorie data' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   const pct = Math.min(
@@ -50,13 +64,13 @@ export default function CaloriesWidget({ data, stravaConnected, onConnect }) {
         <BarChart data={data.trend || []} barSize={14}>
           <XAxis
             dataKey="week"
-            tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: '#8B93B0' }}
+            tick={chartTheme.axis.tick}
             axisLine={false} tickLine={false}
           />
           <YAxis hide />
           <Tooltip
             contentStyle={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
+              ...chartTheme.tooltip.style,
               background: '#1B2559', border: 'none', borderRadius: 8, color: '#fff',
             }}
             formatter={(v) => [`${v} kcal`, 'Burned']}

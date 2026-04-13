@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { gearAPI } from '../../../api/dashboard';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 const inputClass = 'w-full px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
@@ -51,12 +52,11 @@ export default function ShoeWidget({ data, onRefresh }) {
       </div>
 
       {shoes.length === 0 ? (
-        <div className="flex flex-col items-center py-6 gap-2">
-          <span style={{ fontSize: 28 }}>👟</span>
-          <div className="font-sans text-[12px] text-[var(--color-text-muted)]">
-            Add your running shoes to track mileage
-          </div>
-        </div>
+        <DataEmptyState
+          variant="nogoal"
+          title="No shoes tracked"
+          description="Add your running shoes to track mileage"
+        />
       ) : (
         <div className="flex flex-col gap-[14px]">
           {shoes.map((shoe, i) => {

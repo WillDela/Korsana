@@ -3,13 +3,27 @@ import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
+import { chartTheme } from '../../../lib/chartTheme';
 
 export default function TrainingLoadWidget({ data, stravaConnected, onConnect }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!data) {
-    return <WidgetEmptyState label="Training Load" title="training load" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Training Load</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No training load data yet'}
+          description={stravaConnected === false ? 'Connect to see your training load' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   const tsbColor = data.tsb > 10
@@ -74,7 +88,7 @@ export default function TrainingLoadWidget({ data, stravaConnected, onConnect })
             <XAxis dataKey="date" hide />
             <YAxis hide />
             <Tooltip contentStyle={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
+              ...chartTheme.tooltip.style,
               background: '#1B2559', border: 'none', borderRadius: 8, color: '#fff',
             }} />
             <Area

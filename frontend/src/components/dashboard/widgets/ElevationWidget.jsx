@@ -2,13 +2,27 @@ import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
+import { chartTheme } from '../../../lib/chartTheme';
 
 const BLUE = '#4A6CF7';
 
 export default function ElevationWidget({ data, stravaConnected, onConnect }) {
   if (!data) {
-    return <WidgetEmptyState label="Elevation" title="elevation data" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">Elevation</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No elevation data yet'}
+          description={stravaConnected === false ? 'Connect to see your elevation data' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   return (
@@ -42,14 +56,14 @@ export default function ElevationWidget({ data, stravaConnected, onConnect }) {
           </defs>
           <XAxis
             dataKey="week"
-            tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 8, fill: 'var(--color-text-muted)' }}
+            tick={chartTheme.axis.tick}
             axisLine={false} tickLine={false}
           />
           <YAxis hide />
           <Tooltip
             contentStyle={{
-              fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
-              background: 'var(--color-navy)', border: 'none', borderRadius: 8, color: '#fff',
+              ...chartTheme.tooltip.style,
+              background: '#1B2559', border: 'none', borderRadius: 8, color: '#fff',
             }}
             formatter={(v) => [`${v} ft`, 'Gain']}
           />

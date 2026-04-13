@@ -1,10 +1,23 @@
-import WidgetEmptyState from './WidgetEmptyState';
+import DataEmptyState from '../../ui/DataEmptyState';
 
 const ZONE_COLORS = ['#5CC8FF', '#2ECC8B', '#F5A623', '#E8634A', '#E84A4A'];
 
 export default function HRZonesWidget({ data, stravaConnected, onConnect }) {
   if (!data || !data.zones?.length) {
-    return <WidgetEmptyState label="HR Zones · This Week" title="HR zone breakdown" stravaConnected={stravaConnected} onConnect={onConnect} />;
+    return (
+      <div className="widget-card">
+        <div className="flex justify-between mb-4">
+          <span className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em]">HR Zones · This Week</span>
+          <span className="font-sans text-[9px] font-bold text-coral">✦ Korsana</span>
+        </div>
+        <DataEmptyState
+          variant={stravaConnected === false ? 'strava' : 'nodata'}
+          title={stravaConnected === false ? 'Connect Strava' : 'No HR zone data yet'}
+          description={stravaConnected === false ? 'Connect to see your HR zone breakdown' : 'Sync activities to get started'}
+          action={stravaConnected === false ? { label: 'Connect Strava', onClick: onConnect } : undefined}
+        />
+      </div>
+    );
   }
 
   return (
