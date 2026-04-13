@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { LuTrendingUp as TrendingUp, LuTrendingDown as TrendingDown, LuMinus as Minus } from 'react-icons/lu';
 
 const TrendIcon = ({ trend }) => {
   if (trend === 'up')   return <TrendingUp size={10} />;

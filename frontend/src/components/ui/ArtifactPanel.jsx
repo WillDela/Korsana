@@ -1,4 +1,4 @@
-import { Compass, BarChart2, Dumbbell, Calendar, Target, Flag, Heart } from 'lucide-react';
+import { LuCompass as Compass, LuBarChart2 as BarChart2, LuDumbbell as Dumbbell, LuCalendar as Calendar, LuTarget as Target, LuFlag as Flag, LuHeart as Heart } from 'react-icons/lu';
 
 const artifactConfig = {
   daily_brief:        { Icon: Compass,   color: 'text-[var(--color-info)]',    bg: 'bg-[rgba(74,108,247,0.10)]', label: 'Daily Brief' },

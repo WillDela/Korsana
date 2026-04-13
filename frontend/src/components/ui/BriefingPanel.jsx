@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { LuCheck as Check } from 'react-icons/lu';
 import ActionRail from './ActionRail';
 
 const variantConfig = {

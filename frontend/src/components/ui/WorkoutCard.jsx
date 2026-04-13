@@ -1,4 +1,4 @@
-import { MapPin, Zap, Clock } from 'lucide-react';
+import { LuMapPin as MapPin, LuZap as Zap, LuClock as Clock } from 'react-icons/lu';
 import StatusBadge from './StatusBadge';
 
 const typeColors = {

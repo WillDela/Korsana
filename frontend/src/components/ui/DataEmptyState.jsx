@@ -1,4 +1,4 @@
-import { Activity, Target, AlertCircle, Loader2 } from 'lucide-react';
+import { LuActivity as Activity, LuTarget as Target, LuAlertCircle as AlertCircle, LuLoader2 as Loader2 } from 'react-icons/lu';
 import BrandIcon from '../BrandIcon';
 
 const variantConfig = {
