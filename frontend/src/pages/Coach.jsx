@@ -10,6 +10,9 @@ import ContextRail from '../components/coach/ContextRail';
 import CoachStartSurface from '../components/coach/CoachStartSurface';
 import WeeklyReviewArtifact from '../components/coach/artifacts/WeeklyReviewArtifact';
 import DailyBriefArtifact from '../components/coach/artifacts/DailyBriefArtifact';
+import WorkoutAdjustmentArtifact from '../components/coach/artifacts/WorkoutAdjustmentArtifact';
+import GoalFeasibilityArtifact from '../components/coach/artifacts/GoalFeasibilityArtifact';
+import PlanBoard from '../components/coach/PlanBoard';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -456,66 +459,15 @@ const Coach = () => {
             )}
           </div>
 
-          {/* Plan card */}
+          {/* Plan board */}
           <AnimatePresence>
             {planData && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
-                style={{
-                  margin: '0 16px 8px', background: C.gray50,
-                  border: `1px solid ${C.gray100}`, borderRadius: '12px', padding: '14px',
-                  borderLeft: `4px solid ${C.coral}`,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '13px', color: C.navy }}>
-                    7-day training plan
-                  </span>
-                  <span style={{
-                    fontFamily: 'var(--font-sans)', fontSize: '10px', fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                    padding: '2px 7px', borderRadius: '4px',
-                    background: C.navy, color: C.white,
-                  }}>
-                    Preview
-                  </span>
-                </div>
-                {planData.summary && (
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: '12px', color: C.gray600, margin: '0 0 10px', lineHeight: 1.6 }}>
-                    {planData.summary}
-                  </p>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '160px', overflowY: 'auto' }}>
-                  {planData.plan?.map((entry, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '6px 8px', borderRadius: '7px',
-                      background: C.white, border: `1px solid ${C.gray100}`, fontSize: '12px',
-                    }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: C.gray400, width: '70px', flexShrink: 0 }}>
-                        {entry.date}
-                      </span>
-                      <WorkoutPill type={entry.workout_type} />
-                      <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 500, color: C.navy, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {entry.title}
-                      </span>
-                      {entry.distance_km > 0 && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: C.gray400, marginLeft: 'auto', flexShrink: 0 }}>
-                          {(entry.distance_km * 0.621371).toFixed(1)} mi
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                  <button onClick={confirmPlan} disabled={isSavingPlan} className="btn btn-primary btn-sm">
-                    {isSavingPlan ? 'Saving…' : 'Save to Calendar'}
-                  </button>
-                  <button onClick={() => setPlanData(null)} className="btn btn-ghost btn-sm">
-                    Discard
-                  </button>
-                </div>
-              </motion.div>
+              <PlanBoard
+                planData={planData}
+                onConfirm={confirmPlan}
+                onDiscard={() => setPlanData(null)}
+                isSaving={isSavingPlan}
+              />
             )}
           </AnimatePresence>
 
@@ -652,12 +604,10 @@ function ArtifactRenderer({ artifact }) {
   const parsed = typeof data === 'string' ? JSON.parse(data) : data;
   const wrapperStyle = { marginTop: '8px', marginLeft: '34px' };
 
-  if (type === 'weekly_review') {
-    return <div style={wrapperStyle}><WeeklyReviewArtifact data={parsed} /></div>;
-  }
-  if (type === 'daily_brief') {
-    return <div style={wrapperStyle}><DailyBriefArtifact data={parsed} /></div>;
-  }
+  if (type === 'weekly_review')      return <div style={wrapperStyle}><WeeklyReviewArtifact data={parsed} /></div>;
+  if (type === 'daily_brief')        return <div style={wrapperStyle}><DailyBriefArtifact data={parsed} /></div>;
+  if (type === 'workout_adjustment') return <div style={wrapperStyle}><WorkoutAdjustmentArtifact data={parsed} /></div>;
+  if (type === 'goal_feasibility')   return <div style={wrapperStyle}><GoalFeasibilityArtifact data={parsed} /></div>;
   return null;
 }
 

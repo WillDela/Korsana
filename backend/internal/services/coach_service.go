@@ -176,6 +176,25 @@ func detectIntent(message string) string {
 			return "weekly_review"
 		}
 	}
+	for _, p := range []string{
+		"adjust my workout", "change my workout", "modify my workout",
+		"swap my workout", "adapt my workout", "tweak my workout",
+		"should i change", "should i adjust", "replace my workout",
+	} {
+		if strings.Contains(lower, p) {
+			return "workout_adjustment"
+		}
+	}
+	for _, p := range []string{
+		"is my goal realistic", "is my goal achievable", "can i do it",
+		"can i achieve", "goal feasible", "realistic goal", "goal realistic",
+		"make my goal", "hit my goal", "goal possible", "feasibility",
+		"is it realistic", "can i hit",
+	} {
+		if strings.Contains(lower, p) {
+			return "goal_feasibility"
+		}
+	}
 	return ""
 }
 
@@ -186,6 +205,10 @@ func artifactInstruction(intent string) string {
 		return "\n\nAfter your response, on a new line, include a structured artifact block with real values from the runner's data. Use EXACTLY this format:\n```artifact\n{\"type\":\"daily_brief\",\"recommendation\":\"run_easy\",\"headline\":\"Short decision headline.\",\"reason\":\"Reason based on their data.\",\"evidence\":[\"Evidence point 1\",\"Evidence point 2\"],\"workout_suggestion\":{\"type\":\"Easy\",\"distance\":6,\"pace\":\"9:30\"}}\n```"
 	case "weekly_review":
 		return "\n\nAfter your response, on a new line, include a structured artifact block with real values from the runner's data. Use EXACTLY this format:\n```artifact\n{\"type\":\"weekly_review\",\"week\":\"Apr 7-13\",\"summary\":\"One sentence summary.\",\"metrics\":[{\"label\":\"Volume\",\"value\":\"38mi\",\"vs_plan\":\"+2mi\",\"signal\":\"positive\"}],\"highlights\":[\"Key highlight\"],\"risks\":[\"Key risk if any\"],\"next_focus\":\"What to focus on next week.\"}\n```"
+	case "workout_adjustment":
+		return "\n\nAfter your response, on a new line, include a structured artifact block showing the adjustment. Use EXACTLY this format:\n```artifact\n{\"type\":\"workout_adjustment\",\"original\":{\"date\":\"2026-04-15\",\"type\":\"Tempo\",\"distance\":10},\"adjusted\":{\"type\":\"Easy\",\"distance\":7,\"reason\":\"Fatigue signal detected.\"},\"action\":\"replace_calendar_entry\"}\n```"
+	case "goal_feasibility":
+		return "\n\nAfter your response, on a new line, include a structured artifact block assessing the goal. Use EXACTLY this format:\n```artifact\n{\"type\":\"goal_feasibility\",\"verdict\":\"stretch\",\"confidence\":0.74,\"headline\":\"One sentence verdict.\",\"evidence\":[\"Evidence point 1\",\"Evidence point 2\"],\"gap\":\"What needs to improve and by how much.\",\"recommendation\":\"Specific actionable recommendation.\"}\n```"
 	}
 	return ""
 }
