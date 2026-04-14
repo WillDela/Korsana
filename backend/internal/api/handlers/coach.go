@@ -70,6 +70,7 @@ func (h *CoachHandler) GetSessionMessages(c *gin.Context) {
 type sendMessageRequest struct {
 	Message   string  `json:"message" binding:"required"`
 	SessionID *string `json:"session_id"`
+	Mode      string  `json:"mode"` // "copilot" | "guide" (defaults to "copilot")
 }
 
 func (h *CoachHandler) SendMessage(c *gin.Context) {
@@ -86,6 +87,9 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Message too long (max 1000 characters)"})
 		return
 	}
+	if req.Mode == "" {
+		req.Mode = "copilot"
+	}
 
 	var sessionID *uuid.UUID
 	if req.SessionID != nil && *req.SessionID != "" {
@@ -95,12 +99,15 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		}
 	}
 
-	response, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message)
+	response, artifact, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message, req.Mode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	result := gin.H{"response": response}
+	if artifact != nil {
+		result["artifact"] = artifact
+	}
 	if sessionTitle != "" {
 		result["session_title"] = sessionTitle
 	}

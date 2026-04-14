@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import AppPageHero from '../components/ui/AppPageHero';
 import ContextRail from '../components/coach/ContextRail';
 import CoachStartSurface from '../components/coach/CoachStartSurface';
+import WeeklyReviewArtifact from '../components/coach/artifacts/WeeklyReviewArtifact';
+import DailyBriefArtifact from '../components/coach/artifacts/DailyBriefArtifact';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -99,6 +101,7 @@ const Coach = () => {
 
   const [sidebarOpen, setSidebarOpen]           = useState(true);
   const [contextRailOpen, setContextRailOpen]   = useState(true);
+  const [mode, setMode] = useState(() => localStorage.getItem('coach_mode') || 'copilot');
   const [sessions, setSessions]                 = useState([]);
   const [activeSession, setActiveSession]       = useState(null);
   const [messages, setMessages]                 = useState([]);
@@ -118,6 +121,11 @@ const Coach = () => {
   const applyQuota = useCallback((q) => {
     if (q) setQuota(prev => ({ ...prev, ...q }));
   }, []);
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    localStorage.setItem('coach_mode', newMode);
+  };
 
   // Initial load
   useEffect(() => {
@@ -202,7 +210,7 @@ const Coach = () => {
     setIsLoading(true);
 
     try {
-      const data = await coachAPI.sendMessage(msg, session.id);
+      const data = await coachAPI.sendMessage(msg, session.id, mode);
       applyQuota(data._quota);
 
       setMessages(prev => {
@@ -210,7 +218,7 @@ const Coach = () => {
         return sortMsgs([
           ...without,
           { role: 'user', content: msg, created_at: ts, session_id: session.id },
-          { role: 'assistant', content: data.response, created_at: new Date().toISOString(), session_id: session.id },
+          { role: 'assistant', content: data.response, artifact: data.artifact ?? null, created_at: new Date().toISOString(), session_id: session.id },
         ]);
       });
 
@@ -309,7 +317,9 @@ const Coach = () => {
         subtitle={heroSubtitle}
         status={heroStatus}
         primaryAction={{ label: 'New Session', onClick: handleNewSession }}
-      />
+      >
+        <ModeToggle mode={mode} onChange={handleModeChange} />
+      </AppPageHero>
 
       {/* ── Three-panel row ───────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', gap: '8px', minHeight: 0 }}>
@@ -435,7 +445,10 @@ const Coach = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {messages.map((msg, i) => (
-                  <Bubble key={`${msg.role}-${msg.created_at || i}-${i}`} msg={msg} userEmail={user?.email} />
+                  <div key={`${msg.role}-${msg.created_at || i}-${i}`}>
+                    <Bubble msg={msg} userEmail={user?.email} />
+                    {msg.artifact && <ArtifactRenderer artifact={msg.artifact} />}
+                  </div>
                 ))}
                 {isLoading && <TypingDots />}
                 <div ref={bottomRef} />
@@ -605,6 +618,48 @@ const Coach = () => {
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function ModeToggle({ mode, onChange }) {
+  return (
+    <div style={{
+      display: 'inline-flex', borderRadius: '8px', overflow: 'hidden',
+      border: `1px solid ${C.gray200}`,
+    }}>
+      {['copilot', 'guide'].map(m => (
+        <button
+          key={m}
+          onClick={() => onChange(m)}
+          style={{
+            padding: '5px 14px',
+            fontFamily: 'var(--font-sans)', fontSize: '12px', fontWeight: 600,
+            background: mode === m ? C.navy : C.white,
+            color: mode === m ? C.white : C.gray400,
+            border: 'none', cursor: 'pointer',
+            textTransform: 'capitalize',
+            transition: 'background 0.15s, color 0.15s',
+          }}
+        >
+          {m.charAt(0).toUpperCase() + m.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ArtifactRenderer({ artifact }) {
+  if (!artifact) return null;
+  const { type, data } = artifact;
+  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+  const wrapperStyle = { marginTop: '8px', marginLeft: '34px' };
+
+  if (type === 'weekly_review') {
+    return <div style={wrapperStyle}><WeeklyReviewArtifact data={parsed} /></div>;
+  }
+  if (type === 'daily_brief') {
+    return <div style={wrapperStyle}><DailyBriefArtifact data={parsed} /></div>;
+  }
+  return null;
+}
 
 const WORKOUT_COLORS = {
   Easy:          { bg: '#E8F0FE', text: '#2A3A7C' },

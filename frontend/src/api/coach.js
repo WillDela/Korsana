@@ -16,10 +16,11 @@ export const coachAPI = {
   },
 
   // Messages
-  sendMessage: async (message, sessionId = null) => {
+  sendMessage: async (message, sessionId = null, mode = 'copilot') => {
     const res = await client.post('/coach/message', {
       message,
       session_id: sessionId,
+      mode,
     });
     return { ...res.data, _quota: extractQuota(res.headers) };
   },

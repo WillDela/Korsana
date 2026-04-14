@@ -147,9 +147,95 @@ func (s *CoachService) GetSessionMessages(ctx context.Context, userID, sessionID
 	return messages, nil
 }
 
+// ArtifactResult is a structured AI output returned alongside the text response.
+type ArtifactResult struct {
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
+// detectIntent matches the user's message against known artifact trigger phrases.
+// Returns the artifact type string or "" if no match.
+func detectIntent(message string) string {
+	lower := strings.ToLower(message)
+	for _, p := range []string{
+		"should i run", "run today", "what today", "rest today",
+		"workout today", "train today", "exercise today",
+		"run this morning", "run tonight", "go for a run",
+	} {
+		if strings.Contains(lower, p) {
+			return "daily_brief"
+		}
+	}
+	for _, p := range []string{
+		"review my week", "last week", "how was my week",
+		"analyze my week", "weekly review", "week review",
+		"how did my week", "this week's training", "this weeks training",
+		"my week in review",
+	} {
+		if strings.Contains(lower, p) {
+			return "weekly_review"
+		}
+	}
+	return ""
+}
+
+// artifactInstruction returns the structured output prompt addendum for a detected intent.
+func artifactInstruction(intent string) string {
+	switch intent {
+	case "daily_brief":
+		return "\n\nAfter your response, on a new line, include a structured artifact block with real values from the runner's data. Use EXACTLY this format:\n```artifact\n{\"type\":\"daily_brief\",\"recommendation\":\"run_easy\",\"headline\":\"Short decision headline.\",\"reason\":\"Reason based on their data.\",\"evidence\":[\"Evidence point 1\",\"Evidence point 2\"],\"workout_suggestion\":{\"type\":\"Easy\",\"distance\":6,\"pace\":\"9:30\"}}\n```"
+	case "weekly_review":
+		return "\n\nAfter your response, on a new line, include a structured artifact block with real values from the runner's data. Use EXACTLY this format:\n```artifact\n{\"type\":\"weekly_review\",\"week\":\"Apr 7-13\",\"summary\":\"One sentence summary.\",\"metrics\":[{\"label\":\"Volume\",\"value\":\"38mi\",\"vs_plan\":\"+2mi\",\"signal\":\"positive\"}],\"highlights\":[\"Key highlight\"],\"risks\":[\"Key risk if any\"],\"next_focus\":\"What to focus on next week.\"}\n```"
+	}
+	return ""
+}
+
+// extractArtifact parses a ```artifact ... ``` block from the AI response.
+// Returns the cleaned response text (artifact block removed) and the parsed artifact.
+// If parsing fails, returns the original response and nil — never breaks the chat.
+func extractArtifact(response string) (string, *ArtifactResult) {
+	before, after, found := strings.Cut(response, "```artifact")
+	if !found {
+		return response, nil
+	}
+	content, trailing, found := strings.Cut(after, "```")
+	if !found {
+		return response, nil
+	}
+	artifactJSON := strings.TrimSpace(content)
+
+	// Build clean response by removing the artifact block
+	cleanResponse := strings.TrimSpace(before)
+	if rem := strings.TrimSpace(trailing); rem != "" {
+		cleanResponse = cleanResponse + "\n" + rem
+	}
+	cleanResponse = strings.TrimSpace(cleanResponse)
+
+	// Parse artifact type from JSON
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(artifactJSON), &raw); err != nil {
+		log.Printf("[Coach] Artifact JSON parse error: %v", err)
+		return cleanResponse, nil
+	}
+	typeBytes, ok := raw["type"]
+	if !ok {
+		return cleanResponse, nil
+	}
+	var artifactType string
+	if err := json.Unmarshal(typeBytes, &artifactType); err != nil {
+		return cleanResponse, nil
+	}
+
+	return cleanResponse, &ArtifactResult{
+		Type: artifactType,
+		Data: json.RawMessage(artifactJSON),
+	}
+}
+
 // SendMessage sends a message to the AI coach and gets a response.
 // sessionID is optional — if provided messages are stored under that session.
-func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage string) (string, string, error) {
+// mode is "copilot" (proactive) or "guide" (reactive); defaults to "copilot".
+func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage, mode string) (string, *ArtifactResult, string, error) {
 	// Build context about user's training
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
@@ -188,6 +274,16 @@ func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessio
 	}
 	messages = append(messages, ChatMessage{Role: "user", Content: userMessage})
 
+	// Mode instruction
+	modeInstruction := "\n\nCoaching Mode: COPILOT — Be proactive. Surface patterns you see before they ask. Suggest training adjustments even when not explicitly requested."
+	if mode == "guide" {
+		modeInstruction = "\n\nCoaching Mode: GUIDE — Be reactive. Answer questions thoroughly. Avoid making changes or suggestions the runner didn't explicitly ask about."
+	}
+
+	// Artifact instruction (appended when intent is detected)
+	intent := detectIntent(userMessage)
+	artifactInstr := artifactInstruction(intent)
+
 	systemPrompt := fmt.Sprintf(`You are Korsana, an experienced endurance and strength training coach with expertise in marathon training, cross-training, and periodized fitness programs. You provide evidence-based, personalized advice to runners.
 
 Your coaching philosophy:
@@ -198,25 +294,29 @@ Your coaching philosophy:
 - Be direct, supportive, and data-informed
 
 Current runner's context:
-%s
+%s%s
 
-Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.`, trainingContext)
+Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.%s`,
+		trainingContext, modeInstruction, artifactInstr)
 
 	var response string
 	if s.config.GeminiAPIKey != "" {
-		log.Printf("[Coach] Calling Gemini API with %d messages", len(messages))
+		log.Printf("[Coach] Calling Gemini API with %d messages (mode=%s, intent=%q)", len(messages), mode, intent)
 		response, err = s.callGeminiAPI(messages, systemPrompt)
 	} else if s.config.ClaudeAPIKey != "" {
-		log.Printf("[Coach] Calling Claude API with %d messages", len(messages))
+		log.Printf("[Coach] Calling Claude API with %d messages (mode=%s, intent=%q)", len(messages), mode, intent)
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
-		return "", "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
+		return "", nil, "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
 	if err != nil {
 		log.Printf("[Coach] ERROR from AI API: %v", err)
-		return "", "", err
+		return "", nil, "", err
 	}
 	log.Printf("[Coach] Got response (%d chars)", len(response))
+
+	// Extract structured artifact from response (strips artifact block from stored text)
+	cleanResponse, artifact := extractArtifact(response)
 
 	now := time.Now()
 	userMsg := &models.CoachConversation{
@@ -225,7 +325,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 	}
 	assistantMsg := &models.CoachConversation{
 		ID: uuid.New(), UserID: userID, Role: "assistant",
-		Content: response, CreatedAt: now.Add(time.Millisecond), SessionID: sessionID,
+		Content: cleanResponse, CreatedAt: now.Add(time.Millisecond), SessionID: sessionID,
 	}
 
 	insertQuery := `
@@ -248,7 +348,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 		}
 	}
 
-	return response, generatedTitle, nil
+	return cleanResponse, artifact, generatedTitle, nil
 }
 
 // callClaudeAPI calls the Anthropic Claude API
