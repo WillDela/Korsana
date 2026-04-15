@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { gearAPI } from '../../../api/dashboard';
 import DataEmptyState from '../../ui/DataEmptyState';
+import { useUnits } from '../../../context/UnitsContext';
 
 const inputClass = 'w-full px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
 export default function ShoeWidget({ data, onRefresh }) {
+  const { unit } = useUnits();
+  const isMetric = unit === 'metric';
+  // Backend stores distances in miles; convert for display when metric
+  const toDisplay = (miles) => isMetric ? Math.round(miles * 1.60934) : Math.round(miles);
+  const fromDisplay = (val) => isMetric ? Math.round(val / 1.60934) : val;
+  const distUnit = isMetric ? 'km' : 'mi';
+  const defaultMax = isMetric ? '725' : '450';
+
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
-    name: '', brand: '', max_miles: '450',
+    name: '', brand: '', max_miles: defaultMax,
     date_purchased: '', usage_label: '', is_primary: false,
   });
   const [saving, setSaving] = useState(false);
@@ -20,7 +29,7 @@ export default function ShoeWidget({ data, onRefresh }) {
     try {
       const payload = {
         name: form.name,
-        max_miles: parseInt(form.max_miles) || 450,
+        max_miles: fromDisplay(parseInt(form.max_miles) || (isMetric ? 725 : 450)),
         is_primary: form.is_primary,
       };
       if (form.brand) payload.brand = form.brand;
@@ -28,7 +37,7 @@ export default function ShoeWidget({ data, onRefresh }) {
       if (form.usage_label) payload.usage_label = form.usage_label;
       await gearAPI.addShoe(payload);
       setShowModal(false);
-      setForm({ name: '', brand: '', max_miles: '450', date_purchased: '', usage_label: '', is_primary: false });
+      setForm({ name: '', brand: '', max_miles: defaultMax, date_purchased: '', usage_label: '', is_primary: false });
       if (onRefresh) onRefresh();
     } catch (e) {
       console.error(e);
@@ -89,10 +98,10 @@ export default function ShoeWidget({ data, onRefresh }) {
                 )}
                 <div className="flex justify-between mb-1">
                   <span className="font-mono text-[13px] font-bold text-[var(--color-text-secondary)]">
-                    {Math.round(shoe.current_miles || 0)} mi
+                    {toDisplay(shoe.current_miles || 0)} {distUnit}
                   </span>
                   <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
-                    / {shoe.max_miles || 450} mi
+                    / {toDisplay(shoe.max_miles || 450)} {distUnit}
                   </span>
                 </div>
                 <div className="h-[8px] bg-[var(--color-border-light)] rounded-full">
@@ -121,7 +130,7 @@ export default function ShoeWidget({ data, onRefresh }) {
             {[
               { label: 'Shoe Name *', field: 'name', type: 'text', placeholder: 'e.g. Pegasus 41' },
               { label: 'Brand', field: 'brand', type: 'text', placeholder: 'e.g. Nike' },
-              { label: 'Max Mileage', field: 'max_miles', type: 'number', placeholder: '450' },
+              { label: `Max Distance (${distUnit})`, field: 'max_miles', type: 'number', placeholder: defaultMax },
               { label: 'Date Purchased', field: 'date_purchased', type: 'date' },
               { label: 'Usage Label', field: 'usage_label', type: 'text', placeholder: 'e.g. Easy & Long' },
             ].map(({ label, field, type, placeholder }) => (

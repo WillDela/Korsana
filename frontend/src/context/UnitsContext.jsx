@@ -1,10 +1,10 @@
 import { createContext, useContext, useState } from 'react';
 
-const UnitsContext = createContext('metric');
+const UnitsContext = createContext('imperial');
 
 export const UnitsProvider = ({ children }) => {
   const [unit, setUnit] = useState(
-    () => localStorage.getItem('units_preference') || 'metric'
+    () => localStorage.getItem('units_preference') || 'imperial'
   );
 
   const updateUnit = (newUnit) => {

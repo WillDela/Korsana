@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { goalsAPI } from '../api/goals';
 import { crossTrainingGoalsAPI } from '../api/crossTrainingGoals';
 import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance, formatPace, distanceLabel as unitLabel } from '../utils/units';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -16,12 +18,14 @@ const DIST_LABELS = [
   { label: '5K',            meters: 5000,  tolerance: 200 },
 ];
 
-const distanceLabel = (meters) => {
+// Returns a human-readable distance label: named distances like "Marathon",
+// otherwise a formatted value in the user's preferred unit.
+const distanceLabel = (meters, unit) => {
   if (!meters) return '—';
   for (const { label, meters: m, tolerance } of DIST_LABELS) {
     if (Math.abs(meters - m) < tolerance) return label;
   }
-  return `${(meters / 1000).toFixed(1)} km`;
+  return formatDistance(meters, unit);
 };
 
 const secondsToHMS = (seconds) => {
@@ -32,13 +36,11 @@ const secondsToHMS = (seconds) => {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const derivePace = (targetSeconds, distanceMeters) => {
+const derivePace = (targetSeconds, distanceMeters, unit) => {
   if (!targetSeconds || !distanceMeters) return null;
-  const miles = distanceMeters / METERS_PER_MILE;
-  const paceSeconds = targetSeconds / miles;
-  const min = Math.floor(paceSeconds / 60);
-  const sec = Math.floor(paceSeconds % 60);
-  return `${min}:${String(sec).padStart(2, '0')}/mi`;
+  // Always derive pace in sec/km first, then format via the shared utility
+  const secPerKm = targetSeconds / (distanceMeters / 1000);
+  return formatPace(secPerKm, unit);
 };
 
 const weeksUntil = (dateStr) =>
@@ -232,6 +234,7 @@ const LogResultModal = ({ goal, onClose, onSave }) => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const Goals = () => {
+  const { unit } = useUnits();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settingActiveId, setSettingActiveId] = useState(null);
@@ -412,7 +415,7 @@ const Goals = () => {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                       <span style={{ background: 'var(--color-coral)', color: '#fff', borderRadius: 5, padding: '3px 10px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        {distanceLabel(active.distance_meters || active.race_distance_meters)}
+                        {distanceLabel(active.distance_meters || active.race_distance_meters, unit)}
                       </span>
                       <span style={{ background: 'rgba(46,204,139,0.18)', color: '#2ECC8B', borderRadius: 5, padding: '3px 9px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
                         Active
@@ -436,7 +439,7 @@ const Goals = () => {
                         color: '#fff',
                       },
                       {
-                        value: derivePace(active.target_time_seconds, active.distance_meters || active.race_distance_meters) || '—',
+                        value: derivePace(active.target_time_seconds, active.distance_meters || active.race_distance_meters, unit) || '—',
                         label: 'Required Pace',
                         size: 20,
                         color: 'rgba(255,255,255,0.8)',
@@ -510,8 +513,8 @@ const Goals = () => {
             </SLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
               {upcoming.map((g, i) => {
-                const dist = distanceLabel(g.distance_meters || g.race_distance_meters);
-                const pace = derivePace(g.target_time_seconds, g.distance_meters || g.race_distance_meters);
+                const dist = distanceLabel(g.distance_meters || g.race_distance_meters, unit);
+                const pace = derivePace(g.target_time_seconds, g.distance_meters || g.race_distance_meters, unit);
                 const wks = weeksUntil(g.race_date);
                 return (
                   <motion.div
@@ -732,7 +735,7 @@ const Goals = () => {
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
                                   <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                                    {distanceLabel(c.distance_meters || c.race_distance_meters)}
+                                    {distanceLabel(c.distance_meters || c.race_distance_meters, unit)}
                                   </span>
                                   {c.is_pr && (
                                     <span style={{ background: '#FFF3CD', color: '#856404', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>

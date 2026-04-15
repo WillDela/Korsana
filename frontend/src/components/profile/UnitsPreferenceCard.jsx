@@ -4,7 +4,7 @@ import { useUnits } from '../../context/UnitsContext';
 
 const UnitsPreferenceCard = ({ profileData, onUpdate }) => {
   const { unit, updateUnit } = useUnits();
-  const initialPref = profileData?.profile?.units_preference || 'metric';
+  const initialPref = profileData?.profile?.units_preference || 'imperial';
   const [pref, setPref] = useState(initialPref);
   const [saving, setSaving] = useState(false);
 

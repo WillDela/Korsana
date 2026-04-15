@@ -43,7 +43,7 @@ func (s *UserProfileService) GetOrCreateProfile(ctx context.Context, userID uuid
 			profile = models.UserProfile{
 				ID:                  uuid.New(),
 				UserID:              userID,
-				UnitsPreference:     "metric",
+				UnitsPreference:     "imperial",
 				NotifyWeeklySummary: true,
 				NotifyGoalReminders: true,
 				NotifySyncFailures:  true,

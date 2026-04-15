@@ -11,6 +11,8 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { goalsAPI } from '../api/goals';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance, formatPace, distanceLabel } from '../utils/units';
 import { stravaAPI } from '../api/strava';
 import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
@@ -100,11 +102,7 @@ const fmtDateISO = (d) => {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 };
 
-const fmtPace = (secPerKm) => {
-  if (!secPerKm) return '--:--';
-  const spm = secPerKm * 1.60934;
-  return `${Math.floor(spm / 60)}:${String(Math.floor(spm % 60)).padStart(2, '0')}`;
-};
+// fmtPace is now defined inside the component so it closes over `unit`.
 
 const fmtTime = (secs) => {
   if (!secs) return '--:--:--';
@@ -130,32 +128,33 @@ const getTrainingPhase = (weeksOut) => {
   return 'Build';
 };
 
-const getWorkoutSegments = (type, miles) => {
-  const m = miles || 0;
+const getWorkoutSegments = (type, dist, u) => {
+  const m = dist || 0;
+  const ul = u === 'imperial' ? 'mi' : 'km';
   switch (type) {
     case 'Long Run':
     case 'Long':
       return [
-        { name: 'Warm-up',  detail: '2 mi easy · HR ramp to Z2' },
-        { name: 'Main Set', detail: `${Math.max(1, m - 4)} mi @ Z2 · feel conversational` },
-        { name: 'Cool-down', detail: '2 mi easy walk/jog' },
+        { name: 'Warm-up',  detail: `2 ${ul} easy · HR ramp to Z2` },
+        { name: 'Main Set', detail: `${Math.max(1, m - 4)} ${ul} @ Z2 · feel conversational` },
+        { name: 'Cool-down', detail: `2 ${ul} easy walk/jog` },
       ];
     case 'Tempo':
       return [
-        { name: 'Warm-up',  detail: '1 mi easy' },
-        { name: 'Main Set', detail: `${Math.max(1, m - 2)} mi @ Z3–Z4 · comfortably hard` },
-        { name: 'Cool-down', detail: '1 mi easy' },
+        { name: 'Warm-up',  detail: `1 ${ul} easy` },
+        { name: 'Main Set', detail: `${Math.max(1, m - 2)} ${ul} @ Z3–Z4 · comfortably hard` },
+        { name: 'Cool-down', detail: `1 ${ul} easy` },
       ];
     case 'Intervals':
       return [
-        { name: 'Warm-up',  detail: '1 mi easy + strides' },
+        { name: 'Warm-up',  detail: `1 ${ul} easy + strides` },
         { name: 'Main Set', detail: 'Repeats @ Z4–Z5 · full recovery' },
-        { name: 'Cool-down', detail: '1 mi easy jog' },
+        { name: 'Cool-down', detail: `1 ${ul} easy jog` },
       ];
     default:
       return [
         { name: 'Effort',   detail: 'Z1–Z2 · conversational pace' },
-        { name: 'Duration', detail: `${m > 0 ? `${m} mi target` : 'Easy effort'}` },
+        { name: 'Duration', detail: `${m > 0 ? `${m} ${ul} target` : 'Easy effort'}` },
         { name: 'Focus',    detail: 'Keep HR below Z3' },
       ];
   }
@@ -167,14 +166,6 @@ const DIST_LABELS = [
   { label: '10K',           meters: 10000, tolerance: 200 },
   { label: '5K',            meters: 5000,  tolerance: 200 },
 ];
-const distanceLabel = (meters) => {
-  if (!meters) return '—';
-  for (const { label, meters: m, tolerance } of DIST_LABELS) {
-    if (Math.abs(meters - m) < tolerance) return label;
-  }
-  return `${(meters / 1000).toFixed(1)} km`;
-};
-
 // ─── Atom components ──────────────────────────────────────────
 const Pill = ({ type, sm = false }) => {
   const s = WC[type] || WC.Easy;
@@ -543,6 +534,13 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, strav
 // ─── Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
+  const { unit } = useUnits();
+
+  // Unit-aware helpers (defined here so they close over `unit`)
+  const MPU = unit === 'imperial' ? 1609.34 : 1000;            // meters per unit
+  const fmtPace = (secPerKm) => formatPace(secPerKm, unit);
+  const fmtDist = (meters) => formatDistance(meters, unit);
+  const unitLabel = distanceLabel(unit);
 
   const [activeGoal, setActiveGoal] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -798,26 +796,26 @@ const Dashboard = () => {
     [activities, startOfWeek]);
 
   const weeklyMileage = useMemo(() =>
-    parseFloat((thisWeekRuns.reduce((s, a) => s + (a.distance_meters || 0), 0) * 0.000621371).toFixed(1)),
-    [thisWeekRuns]);
+    parseFloat((thisWeekRuns.reduce((s, a) => s + (a.distance_meters || 0), 0) / MPU).toFixed(1)),
+    [thisWeekRuns, MPU]);
 
   const weeklyTarget = useMemo(() => {
-    if (!activeGoal) return 30;
-    const raceDist  = (activeGoal.race_distance_meters || 42195) * 0.000621371;
-    const peakMileage = Math.min(raceDist * 3, 60);
+    if (!activeGoal) return unit === 'imperial' ? 30 : 48;
+    const raceDist   = (activeGoal.race_distance_meters || 42195) / MPU;
+    const peakVolume = Math.min(raceDist * 3, unit === 'imperial' ? 60 : 96);
     const ramp = Math.min(1, trainingProgress / 80);
-    return Math.round(Math.max(10, peakMileage * (0.5 + 0.5 * ramp)));
-  }, [activeGoal, trainingProgress]);
+    return Math.round(Math.max(unit === 'imperial' ? 10 : 16, peakVolume * (0.5 + 0.5 * ramp)));
+  }, [activeGoal, trainingProgress, unit, MPU]);
 
   const weeklyMilageDelta = useMemo(() => {
     if (!activities.length) return 0;
     const prevStart = new Date(startOfWeek);
     prevStart.setDate(prevStart.getDate() - 7);
-    const prevMiles = activities
+    const prevVol = activities
       .filter(a => a.activity_type === 'run' && new Date(a.start_time) >= prevStart && new Date(a.start_time) < startOfWeek)
-      .reduce((s, a) => s + (a.distance_meters || 0), 0) * 0.000621371;
-    return parseFloat((weeklyMileage - prevMiles).toFixed(1));
-  }, [activities, weeklyMileage, startOfWeek]);
+      .reduce((s, a) => s + (a.distance_meters || 0), 0) / MPU;
+    return parseFloat((weeklyMileage - prevVol).toFixed(1));
+  }, [activities, weeklyMileage, startOfWeek, MPU]);
 
   const weeklyRunCount = thisWeekRuns.length;
 
@@ -923,7 +921,7 @@ const Dashboard = () => {
         start.setHours(0, 0, 0, 0);
         const end = new Date(start);
         end.setDate(end.getDate() + 7);
-        prev.push(activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= start && new Date(a.start_time) < end).reduce((s, a) => s + (a.distance_meters || 0) * 0.000621371, 0));
+        prev.push(activities.filter(a => a.activity_type === 'run' && new Date(a.start_time) >= start && new Date(a.start_time) < end).reduce((s, a) => s + (a.distance_meters || 0) / MPU, 0));
       }
       const avg = prev.reduce((a, b) => a + b, 0) / 3;
       if (avg > 0) {
@@ -968,7 +966,7 @@ const Dashboard = () => {
       const ws = new Date(d);
       ws.setDate(ws.getDate() - ws.getDay());
       const key = ws.toISOString().slice(0, 10);
-      if (weeks[key]) weeks[key].miles += (a.distance_meters || 0) * 0.000621371;
+      if (weeks[key]) weeks[key].miles += (a.distance_meters || 0) / MPU;
     });
     return Object.values(weeks).map(w => ({ ...w, miles: parseFloat(w.miles.toFixed(1)) }));
   }, [activities]);
@@ -1033,7 +1031,7 @@ const Dashboard = () => {
       const type  = entry?.workout_type || null;
       const title = entry?.title || null;
       const miles = entry?.planned_distance_meters
-        ? parseFloat((entry.planned_distance_meters * 0.000621371).toFixed(1))
+        ? parseFloat((entry.planned_distance_meters / MPU).toFixed(1))
         : null;
       result.push({
         day: DAY_LABELS[d.getDay()], date: String(d.getDate()), iso,
@@ -1254,7 +1252,7 @@ const Dashboard = () => {
                           </div>
                           {d.miles ? (
                             <div className={`font-mono text-[16px] font-semibold ${isT ? 'text-coral' : 'text-navy'}`}>
-                              {d.miles}<span className={`font-sans text-[10px] ${isT ? 'text-white/30' : 'text-[var(--color-text-muted)]'}`}> mi</span>
+                              {d.miles}<span className={`font-sans text-[10px] ${isT ? 'text-white/30' : 'text-[var(--color-text-muted)]'}`}> {unitLabel}</span>
                             </div>
                           ) : (
                             <div className={`font-sans text-[12px] ${isT ? 'text-white/20' : 'text-[#D4D8E8]'}`}>
@@ -1281,17 +1279,17 @@ const Dashboard = () => {
                 {todayEntries.length > 0 ? (
                   <div className="flex flex-col gap-4">
                     {todayEntries.map(entry => {
-                      const entryMiles = entry.distance_km
-                        ? parseFloat((entry.distance_km * 0.621371).toFixed(1))
+                      const entryDist = entry.distance_km
+                        ? parseFloat((entry.distance_km * 1000 / MPU).toFixed(1))
                         : null;
                       const entryType  = entry.workout_type || null;
                       const isCrossTrain = entryType === 'cross_train';
                       const entryHeading = entryType === 'Rest' || entryType === 'rest' ? 'Rest Day'
                         : isCrossTrain ? (entry.title || 'Cross Training')
-                        : entryMiles ? `${entryMiles} mi ${entryType}`
+                        : entryDist ? `${entryDist} ${unitLabel} ${entryType}`
                         : (entry.title || entryType || 'Workout');
                       const showSubtitle = !isCrossTrain && entry.title && entryHeading !== entry.title;
-                      const segments = entryType ? getWorkoutSegments(entryType, entryMiles) : null;
+                      const segments = entryType ? getWorkoutSegments(entryType, entryDist, unit) : null;
                       return (
                         <div key={entry.id} className="bg-navy rounded-2xl overflow-hidden relative shadow-[0_6px_24px_rgba(27,37,89,0.15)]">
                           <div className="absolute left-0 top-0 bottom-0 w-[6px] bg-coral" />
@@ -1443,7 +1441,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         {d.type && <Pill type={d.type} sm />}
-                        {d.miles && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.miles} miles</div>}
+                        {d.miles && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.miles} {unitLabel}</div>}
                         {!d.miles && d.title && <div className="font-sans text-[12px] font-semibold text-[var(--color-text-secondary)] mt-1">{d.title}</div>}
                       </div>
                     </div>
@@ -1462,10 +1460,10 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-baseline gap-[6px] mb-1">
                       <span className="font-mono text-[42px] font-bold text-navy leading-none">{weeklyMileage}</span>
-                      <span className="font-sans text-[14px] text-[var(--color-text-muted)] font-semibold">mi</span>
+                      <span className="font-sans text-[14px] text-[var(--color-text-muted)] font-semibold">{unitLabel}</span>
                     </div>
                     <div className="font-sans text-[12px] text-[var(--color-text-muted)] mb-4">
-                      of {weeklyTarget} mi planned
+                      of {weeklyTarget} {unitLabel} planned
                     </div>
                     <div className="h-[6px] bg-[var(--color-border-light)] rounded-full overflow-hidden mb-3">
                       <div
@@ -1478,7 +1476,7 @@ const Dashboard = () => {
                         className="font-sans text-[12px] font-semibold"
                         style={{ color: weeklyMilageDelta > 0 ? '#2ECC8B' : '#F5A623' }}
                       >
-                        {weeklyMilageDelta > 0 ? '▲' : '▼'} {Math.abs(weeklyMilageDelta)} mi vs last week
+                        {weeklyMilageDelta > 0 ? '▲' : '▼'} {Math.abs(weeklyMilageDelta)} {unitLabel} vs last week
                       </span>
                     )}
                   </Card>
@@ -1572,7 +1570,7 @@ const Dashboard = () => {
                         <BarChart data={weeklyChartData} barSize={20} barCategoryGap="20%">
                           <XAxis dataKey="week" tick={chartTheme.axis.tick} axisLine={false} tickLine={false} tickMargin={8} />
                           <YAxis hide />
-                          <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit=" mi" />} cursor={{ fill: 'rgba(27,37,89,0.02)' }} />
+                          <Tooltip content={({ active, payload, label }) => <Tip active={active} payload={payload} label={label} unit={` ${unitLabel}`} />} cursor={{ fill: 'rgba(27,37,89,0.02)' }} />
                           <Bar dataKey="miles" radius={[4, 4, 0, 0]}>
                             {weeklyChartData.map((_, idx) => (
                               <Cell key={idx} fill={idx === weeklyChartData.length - 1 ? '#E8634A' : '#1B2559'} fillOpacity={idx === weeklyChartData.length - 1 ? 1 : 0.4} />
@@ -1654,7 +1652,7 @@ const Dashboard = () => {
                     {recentRuns.map((r, i) => {
                       const hr      = r.average_heart_rate;
                       const hrColor = hr >= 165 ? '#E84A4A' : hr <= 145 ? '#2ECC8B' : '#F5A623';
-                      const distMi  = parseFloat(((r.distance_meters || 0) * 0.000621371).toFixed(1));
+                      const distMi  = parseFloat(((r.distance_meters || 0) / MPU).toFixed(1));
                       const elevFt  = Math.round((r.elevation_gain || 0) * 3.28084);
                       const runType = r.workout_type || 'Easy';
                       return (
@@ -1672,7 +1670,7 @@ const Dashboard = () => {
                           </span>
                           <span><Pill type={runType} /></span>
                           <span className="font-mono text-[20px] font-bold text-navy text-right">
-                            {distMi}<span className="text-[12px] font-medium text-[var(--color-text-muted)]"> mi</span>
+                            {distMi}<span className="text-[12px] font-medium text-[var(--color-text-muted)]"> {unitLabel}</span>
                           </span>
                           <span className="font-mono text-[14px] text-navy text-right">
                             {fmtPace(r.average_pace_seconds_per_km)}

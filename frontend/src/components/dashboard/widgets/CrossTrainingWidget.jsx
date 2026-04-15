@@ -3,6 +3,8 @@ import { crossTrainingAPI } from '../../../api/dashboard';
 import { crossTrainingGoalsAPI } from '../../../api/crossTrainingGoals';
 import BrandIcon from '../../BrandIcon';
 import DataEmptyState from '../../ui/DataEmptyState';
+import { useUnits } from '../../../context/UnitsContext';
+import { formatDistance } from '../../../utils/units';
 
 const TYPE_CONFIG = {
   weight_lifting: { icon: '🏋', label: 'Weight Training' },
@@ -14,6 +16,7 @@ const TYPE_CONFIG = {
 const inputClass = 'w-full px-[10px] py-2 rounded-lg border border-[var(--color-border-light)] font-sans text-[12px] box-border';
 
 export default function CrossTrainingWidget({ data, onRefresh }) {
+  const { unit } = useUnits();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     type: 'weight_lifting',
@@ -193,7 +196,7 @@ export default function CrossTrainingWidget({ data, onRefresh }) {
                 {s.duration_minutes}min
               </span>
               <span className="font-sans text-[10px] text-[var(--color-text-muted)]">
-                {s.intensity || (s.distance_meters ? `${(s.distance_meters / 1000).toFixed(1)}km` : '—')}
+                {s.intensity || (s.distance_meters ? formatDistance(s.distance_meters, unit) : '—')}
               </span>
               <span className="flex items-center justify-center">
                 {s.source === 'strava'
