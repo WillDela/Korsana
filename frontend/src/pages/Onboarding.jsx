@@ -95,7 +95,7 @@ const Onboarding = () => {
       await goalsAPI.createGoal({
         race_name: raceName,
         race_date: raceDate,
-        distance_km: distanceKm,
+        race_distance_km: distanceKm,
         goal_type: goalType,
         target_time_seconds: targetTimeSeconds,
       });
@@ -395,6 +395,12 @@ const Onboarding = () => {
                   {submitting ? 'Creating...' : 'Set Goal'}
                 </button>
               </div>
+              <button
+                onClick={goNext}
+                className="w-full mt-2 text-xs text-text-muted hover:text-text-secondary transition-colors"
+              >
+                Skip for now
+              </button>
             </motion.div>
           )}
 
