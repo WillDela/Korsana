@@ -80,7 +80,7 @@ export default function WorkoutCard({
         {pace && (
           <span className="flex items-center gap-1">
             <Zap size={10} />
-            {pace}/mi
+            {pace}/{unit}
           </span>
         )}
         {duration && (

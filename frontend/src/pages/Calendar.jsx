@@ -3,9 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
 import { stravaAPI } from '../api/strava';
+import { goalsAPI } from '../api/goals';
 import SessionDetailsModal, { WORKOUT_TYPES } from '../components/SessionDetailsModal';
 import ManualActivityModal from '../components/ManualActivityModal';
 import WeekCalendar from '../components/WeekCalendar';
+import AppPageHero from '../components/ui/AppPageHero';
+import MetricStrip from '../components/ui/MetricStrip';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance, distanceLabel, formatPace } from '../utils/units';
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -63,29 +68,48 @@ const getBadgeClasses = (type) => {
 };
 
 
-const MiniCard = ({ entry }) => {
-  const isMissed = entry.status === 'missed';
+const MiniCard = ({ entry, unit = 'imperial' }) => {
+  const status = entry.status || 'planned';
+  const isMissed = status === 'missed';
+  const isCompleted = status === 'completed';
+  const isSynced = status === 'synced' || entry.source === 'strava';
+  const isAdapted = status === 'adapted';
   const typeInfo = WORKOUT_TYPES.find((w) => w.value === entry.workout_type);
   const accentColor = typeInfo?.color || '#6B7280';
 
-  const distKm = entry.planned_distance_meters > 0
-    ? (entry.planned_distance_meters / 1000).toFixed(1)
+  // Compact distance label for tight calendar cells
+  const distShort = entry.planned_distance_meters > 0
+    ? unit === 'imperial'
+      ? `${(entry.planned_distance_meters / 1609.34).toFixed(1)}m`
+      : `${(entry.planned_distance_meters / 1000).toFixed(1)}k`
     : null;
+
+  const cellStyle = isMissed
+    ? { border: '1.5px dashed #D1D5DB', background: 'transparent' }
+    : { borderLeft: `2.5px solid ${accentColor}`, background: `${accentColor}12` };
 
   return (
     <div
       className={`flex items-center gap-1 rounded px-1 py-0.5 min-w-0 ${isMissed ? 'opacity-50' : ''}`}
-      style={{ borderLeft: `2.5px solid ${accentColor}`, background: `${accentColor}12` }}
+      style={cellStyle}
     >
-      {entry.source === 'strava' && (
+      {isSynced && (
         <span className="text-[7px] font-bold text-orange-500 flex-shrink-0 leading-none">S</span>
       )}
-      <span className={`text-[10px] font-semibold truncate flex-1 leading-tight ${isMissed ? 'text-gray-400 line-through' : 'text-text-primary'}`}>
+      {isCompleted && !isSynced && (
+        <span className="text-[7px] font-bold flex-shrink-0 leading-none" style={{ color: accentColor }}>✓</span>
+      )}
+      {isAdapted && (
+        <span className="text-[7px] font-bold text-amber-500 flex-shrink-0 leading-none">✦</span>
+      )}
+      <span className={`text-[10px] font-semibold truncate flex-1 leading-tight ${
+        isMissed ? 'text-gray-400 line-through' : 'text-text-primary'
+      }`}>
         {entry.title}
       </span>
-      {distKm && (
+      {distShort && !isMissed && (
         <span className="text-[8px] font-mono text-text-muted flex-shrink-0 leading-none">
-          {distKm}k
+          {distShort}
         </span>
       )}
     </div>
@@ -102,6 +126,7 @@ const DayDetailModal = ({
   onEditEntry,
   onMarkComplete,
 }) => {
+  const { unit } = useUnits();
   if (!isOpen || !date) return null;
 
   const dateObj = new Date(date + 'T12:00:00');
@@ -180,16 +205,13 @@ const DayDetailModal = ({
               )}
               {entries.map((entry) => {
                 const color = getBadgeColor(entry.workout_type);
-                const distMi = entry.planned_distance_meters
-                  ? (entry.planned_distance_meters * 0.000621371).toFixed(1)
+                const distDisplay = entry.planned_distance_meters > 0
+                  ? formatDistance(entry.planned_distance_meters, unit)
                   : null;
                 const durMin = entry.planned_duration_minutes;
                 let paceStr = null;
                 if (entry.planned_pace_per_km) {
-                  const p = entry.planned_pace_per_km * 1.60934;
-                  const m = Math.floor(p / 60);
-                  const s = Math.round(p % 60);
-                  paceStr = `${m}:${s.toString().padStart(2, '0')}/mi`;
+                  paceStr = formatPace(entry.planned_pace_per_km, unit);
                 }
 
                 const isComplete = entry.status === 'completed';
@@ -239,11 +261,11 @@ const DayDetailModal = ({
                       <p className="text-sm font-semibold text-text-primary">
                         {entry.title}
                       </p>
-                      {(distMi || paceStr || durMin) && (
+                      {(distDisplay || paceStr || durMin) && (
                         <div className="flex items-center gap-3 mt-1.5">
-                          {distMi && (
+                          {distDisplay && (
                             <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                              {distMi} mi
+                              {distDisplay}
                             </span>
                           )}
                           {paceStr && (
@@ -335,6 +357,8 @@ const Calendar = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [stravaConnected, setStravaConnected] = useState(null); // null=unknown, false=not connected
+  const [activeGoal, setActiveGoal] = useState(null);
+  const { unit } = useUnits();
 
   const [view, setView] = useState(() => {
     const v = searchParams.get('view');
@@ -392,6 +416,119 @@ const Calendar = () => {
   useEffect(() => {
     fetchMonthEntries();
   }, [fetchMonthEntries]);
+
+  useEffect(() => {
+    goalsAPI.getActiveGoal().then(setActiveGoal).catch(() => {});
+  }, []);
+
+  // Current week bounds (Mon–Sun)
+  const currentWeekStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const currentWeekEnd = useMemo(() => {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() + 6);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, [currentWeekStart]);
+
+  const lastWeekStart = useMemo(() => {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() - 7);
+    return d;
+  }, [currentWeekStart]);
+
+  const lastWeekEnd = useMemo(() => {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() - 1);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, [currentWeekStart]);
+
+  // Hero stats derived from the loaded month entries
+  const heroData = useMemo(() => {
+    const thisWeek = entries.filter((e) => {
+      const d = new Date((e.date || '').slice(0, 10) + 'T12:00:00');
+      return d >= currentWeekStart && d <= currentWeekEnd;
+    });
+    const lastWeek = entries.filter((e) => {
+      const d = new Date((e.date || '').slice(0, 10) + 'T12:00:00');
+      return d >= lastWeekStart && d <= lastWeekEnd;
+    });
+    const plannedVol = thisWeek.reduce((s, e) => s + (e.planned_distance_meters || 0), 0);
+    const keyWorkout = thisWeek.reduce((best, e) => {
+      if (!best || (e.planned_distance_meters || 0) > (best.planned_distance_meters || 0)) return e;
+      return best;
+    }, null);
+    const lastWeekDone = lastWeek.filter(
+      (e) => e.status === 'completed' || e.status === 'synced'
+    ).length;
+    const lastWeekTracked = lastWeek.filter((e) => e.status !== 'planned').length;
+    const execScore = lastWeekTracked > 0
+      ? Math.round((lastWeekDone / lastWeekTracked) * 100)
+      : null;
+    return { plannedVol, keyWorkout, execScore };
+  }, [entries, currentWeekStart, currentWeekEnd, lastWeekStart, lastWeekEnd]);
+
+  const weeksToRace = useMemo(() => {
+    if (!activeGoal?.race_date) return null;
+    const diff = new Date(activeGoal.race_date) - new Date();
+    return Math.max(0, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+  }, [activeGoal]);
+
+  const trainingPhase = useMemo(() => {
+    if (weeksToRace === null) return null;
+    if (weeksToRace > 12) return 'Base';
+    if (weeksToRace > 6) return 'Build';
+    if (weeksToRace > 3) return 'Peak';
+    return 'Taper';
+  }, [weeksToRace]);
+
+  const heroSubtitle = useMemo(() => {
+    const weekLabel = currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return [
+      `Week of ${weekLabel}`,
+      trainingPhase && `${trainingPhase} phase`,
+      weeksToRace !== null && `${weeksToRace} week${weeksToRace !== 1 ? 's' : ''} to race`,
+    ].filter(Boolean).join(' · ');
+  }, [currentWeekStart, trainingPhase, weeksToRace]);
+
+  const keyWorkoutBadge = heroData.keyWorkout
+    ? { label: heroData.keyWorkout.title || 'Key Workout', variant: 'neutral', size: 'sm' }
+    : null;
+
+  const heroMetrics = useMemo(() => {
+    const unitLbl = distanceLabel(unit);
+    const volParts = heroData.plannedVol > 0
+      ? formatDistance(heroData.plannedVol, unit).split(' ')
+      : ['0', unitLbl];
+    return [
+      {
+        label: 'This Week',
+        value: volParts[0],
+        unit: volParts[1] || unitLbl,
+        variant: 'neutral',
+      },
+      {
+        label: 'Last Week Execution',
+        value: heroData.execScore !== null ? `${heroData.execScore}%` : '—',
+        variant: heroData.execScore !== null && heroData.execScore >= 80
+          ? 'success'
+          : heroData.execScore !== null && heroData.execScore >= 50
+            ? 'warning'
+            : 'neutral',
+      },
+      {
+        label: 'Month Completed',
+        value: String(monthStats.completed),
+        variant: 'neutral',
+      },
+    ];
+  }, [heroData, unit, monthStats.completed]);
 
   // Persist view + month in URL so the page is shareable and survives refresh
   useEffect(() => {
@@ -534,24 +671,29 @@ const Calendar = () => {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* 1. Page-Level Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-3xl font-bold text-navy" style={{ fontFamily: 'var(--font-heading)' }}>
-            Training Calendar
-          </h1>
-        </div>
+      {/* Hero */}
+      <AppPageHero
+        title="Training Calendar"
+        subtitle={heroSubtitle}
+        status={keyWorkoutBadge}
+        primaryAction={{ label: '+ Log Workout', onClick: handleQuickAdd }}
+      >
+        <MetricStrip metrics={heroMetrics} />
+      </AppPageHero>
 
-        <div className="flex items-center gap-3">
+      {/* Controls Bar */}
+      <div className="bg-white rounded-xl border border-border shadow-sm p-3 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left Side: View Tabs + Nav */}
+        <div className="flex items-center gap-3 flex-wrap">
           {/* View Tabs */}
-          <div className="flex items-center p-1 bg-white rounded-lg border border-border shadow-sm">
+          <div className="flex items-center p-0.5 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-light)]">
             {['month', 'week', 'day'].map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-colors ${view === v
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-colors ${view === v
                   ? 'bg-navy text-white shadow-sm'
-                  : 'text-text-secondary hover:text-navy hover:bg-bg-app'
+                  : 'text-[var(--color-text-secondary)] hover:text-navy hover:bg-white'
                   }`}
               >
                 {v}
@@ -559,19 +701,8 @@ const Calendar = () => {
             ))}
           </div>
 
-          <button
-            onClick={handleQuickAdd}
-            className="px-4 py-2 bg-navy hover:bg-navy-light text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2"
-          >
-            <span className="text-lg leading-none mb-[2px]">+</span> Log Workout
-          </button>
-        </div>
-      </div>
+          <div className="h-4 w-[1px] bg-border hidden md:block" />
 
-      {/* 2. Controls Bar */}
-      <div className="bg-white rounded-xl border border-border shadow-sm p-3 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left Side: Nav */}
-        <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             <h2 className="text-lg font-bold text-navy w-32" style={{ fontFamily: 'var(--font-heading)' }}>
               {monthLabel}
@@ -715,8 +846,8 @@ const Calendar = () => {
                       {entries.map(entry => {
                         const typeInfo = WORKOUT_TYPES.find((w) => w.value === entry.workout_type);
                         const accentColor = typeInfo?.color || '#6B7280';
-                        const distKm = entry.planned_distance_meters > 0
-                          ? (entry.planned_distance_meters / 1000).toFixed(1)
+                        const distDisplay = entry.planned_distance_meters > 0
+                          ? formatDistance(entry.planned_distance_meters, unit)
                           : null;
 
                         return (
@@ -740,10 +871,10 @@ const Calendar = () => {
                               </p>
 
                               <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-text-muted">
-                                {distKm && (
+                                {distDisplay && (
                                   <span className="flex items-center gap-1.5">
                                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
-                                    {distKm} km
+                                    {distDisplay}
                                   </span>
                                 )}
                                 {entry.planned_duration_minutes > 0 && (
@@ -868,7 +999,7 @@ const Calendar = () => {
                       {/* Entry mini cards */}
                       <div className="flex flex-col gap-1 flex-1">
                         {visibleEntries.map((entry) => (
-                          <MiniCard key={entry.id} entry={entry} />
+                          <MiniCard key={entry.id} entry={entry} unit={unit} />
                         ))}
                         {moreCount > 0 && (
                           <span className="text-[10px] text-navy font-semibold pl-1.5 hover:underline">
