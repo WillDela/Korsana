@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import WorkoutCard from '../ui/WorkoutCard';
+import { useUnits } from '../../context/UnitsContext';
 
 // Map backend workout_type strings → WorkoutCard type names
 const TYPE_MAP = {
@@ -20,9 +21,9 @@ function normalizeType(raw) {
   return TYPE_MAP[raw?.toLowerCase()] ?? 'Easy';
 }
 
-function distanceMi(km) {
+function planDistance(km, isImperial) {
   if (!km || km <= 0) return null;
-  return +(km * 0.621371).toFixed(1);
+  return +(isImperial ? km * 0.621371 : km).toFixed(1);
 }
 
 function dayLabel(dateStr) {
@@ -34,6 +35,8 @@ function dayLabel(dateStr) {
 }
 
 export default function PlanBoard({ planData, onConfirm, onDiscard, isSaving }) {
+  const { unit } = useUnits();
+  const isImperial = unit === 'imperial';
   if (!planData?.plan?.length) return null;
 
   return (
@@ -84,7 +87,7 @@ export default function PlanBoard({ planData, onConfirm, onDiscard, isSaving }) 
           {planData.plan.map((entry, i) => {
             const { day, date } = dayLabel(entry.date);
             const type = normalizeType(entry.workout_type);
-            const dist = distanceMi(entry.distance_km);
+            const dist = planDistance(entry.distance_km, isImperial);
             const isRest = type === 'Rest';
 
             return (
@@ -118,7 +121,7 @@ export default function PlanBoard({ planData, onConfirm, onDiscard, isSaving }) 
                     type={type}
                     title={entry.title}
                     distance={dist}
-                    unit="mi"
+                    unit={unit === 'imperial' ? 'mi' : 'km'}
                     status="planned"
                     source="ai_coach"
                   />

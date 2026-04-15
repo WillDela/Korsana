@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance, formatPace as fmtPace } from '../utils/units';
 
 const ACTIVITY_ICON = (
   <svg className="w-4 h-4 text-text-muted flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -6,7 +8,8 @@ const ACTIVITY_ICON = (
   </svg>
 );
 
-const RecentActivitiesCard = ({ activities = [], formatPace, metersToMiles, formatDate }) => {
+const RecentActivitiesCard = ({ activities = [], formatDate }) => {
+  const { unit } = useUnits();
   const recent = activities.slice(0, 5);
 
   return (
@@ -35,10 +38,10 @@ const RecentActivitiesCard = ({ activities = [], formatPace, metersToMiles, form
               </div>
               <div className="text-right flex-shrink-0">
                 <div className="text-sm font-medium text-text-primary font-mono">
-                  {metersToMiles(activity.distance_meters)} mi
+                  {formatDistance(activity.distance_meters, unit)}
                 </div>
                 <div className="text-xs text-text-muted font-mono">
-                  {formatPace(activity.average_pace_seconds_per_km)}/mi
+                  {fmtPace(activity.average_pace_seconds_per_km, unit)}
                 </div>
               </div>
             </div>

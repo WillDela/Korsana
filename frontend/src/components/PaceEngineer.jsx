@@ -1,21 +1,27 @@
 import { useState, useMemo } from 'react';
+import { useUnits } from '../context/UnitsContext';
 
 const PaceEngineer = ({ activeGoal }) => {
+  const { unit } = useUnits();
+  const isImperial = unit === 'imperial';
+  const distUnit = isImperial ? 'mi' : 'km';
+  const MPM = isImperial ? 1609.34 : 1000;
+
   const defaultSeconds = activeGoal?.target_time_seconds || 0;
   const [targetHours, setTargetHours] = useState(Math.floor(defaultSeconds / 3600) || '');
   const [targetMinutes, setTargetMinutes] = useState(Math.floor((defaultSeconds % 3600) / 60) || '');
 
-  const raceDistanceMiles = activeGoal
-    ? (activeGoal.race_distance_meters || 42195) * 0.000621371
-    : 26.2;
+  const raceDistanceUnits = activeGoal
+    ? (activeGoal.race_distance_meters || 42195) / MPM
+    : isImperial ? 26.2 : 42.195;
 
   const splits = useMemo(() => {
     const totalSeconds = (parseInt(targetHours) || 0) * 3600 + (parseInt(targetMinutes) || 0) * 60;
     if (totalSeconds <= 0) return null;
 
-    const paceSecondsPerMile = totalSeconds / raceDistanceMiles;
-    const paceMin = Math.floor(paceSecondsPerMile / 60);
-    const paceSec = Math.floor(paceSecondsPerMile % 60);
+    const paceSecondsPerUnit = totalSeconds / raceDistanceUnits;
+    const paceMin = Math.floor(paceSecondsPerUnit / 60);
+    const paceSec = Math.floor(paceSecondsPerUnit % 60);
 
     const formatTime = (secs) => {
       const h = Math.floor(secs / 3600);
@@ -26,21 +32,30 @@ const PaceEngineer = ({ activeGoal }) => {
         : `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    const checkpoints = [
-      { label: '5K', miles: 3.10686 },
-      { label: '13.1 mi', miles: 13.1 },
-      { label: '20 mi', miles: 20 },
-      { label: 'Finish', miles: raceDistanceMiles },
-    ].filter(cp => cp.miles <= raceDistanceMiles + 0.1);
+    const checkpoints = isImperial
+      ? [
+          { label: '5K', dist: 3.10686 },
+          { label: '13.1 mi', dist: 13.1 },
+          { label: '20 mi', dist: 20 },
+          { label: 'Finish', dist: raceDistanceUnits },
+        ]
+      : [
+          { label: '5K', dist: 5 },
+          { label: 'Half (21.1 km)', dist: 21.1 },
+          { label: '30K', dist: 30 },
+          { label: 'Finish', dist: raceDistanceUnits },
+        ];
 
     return {
       paceDisplay: `${paceMin}:${paceSec.toString().padStart(2, '0')}`,
-      checkpoints: checkpoints.map(cp => ({
-        ...cp,
-        time: formatTime(cp.miles * paceSecondsPerMile),
-      })),
+      checkpoints: checkpoints
+        .filter(cp => cp.dist <= raceDistanceUnits + 0.1)
+        .map(cp => ({
+          ...cp,
+          time: formatTime(cp.dist * paceSecondsPerUnit),
+        })),
     };
-  }, [targetHours, targetMinutes, raceDistanceMiles]);
+  }, [targetHours, targetMinutes, raceDistanceUnits, isImperial]);
 
   return (
     <div className="bg-white rounded-xl border border-border p-5">
@@ -76,7 +91,10 @@ const PaceEngineer = ({ activeGoal }) => {
         {splits && (
           <div className="ml-4 pl-4 border-l border-border">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Req. Pace</div>
-            <div className="text-2xl font-bold text-navy font-mono">{splits.paceDisplay}<span className="text-sm font-normal text-text-muted">/mi</span></div>
+            <div className="text-2xl font-bold text-navy font-mono">
+              {splits.paceDisplay}
+              <span className="text-sm font-normal text-text-muted">/{distUnit}</span>
+            </div>
           </div>
         )}
       </div>

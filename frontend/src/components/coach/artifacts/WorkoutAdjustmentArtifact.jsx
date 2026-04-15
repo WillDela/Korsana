@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ArtifactPanel from '../../ui/ArtifactPanel';
+import { useUnits } from '../../../context/UnitsContext';
 
 const typeColors = {
   Easy:       { bg: 'rgba(91,140,62,0.1)',   text: '#5B8C3E' },
@@ -24,7 +25,7 @@ function TypePill({ type }) {
   );
 }
 
-function WorkoutSummary({ workout, label }) {
+function WorkoutSummary({ workout, label, distUnit }) {
   return (
     <div style={{ flex: 1 }}>
       <p style={{
@@ -41,7 +42,7 @@ function WorkoutSummary({ workout, label }) {
         <TypePill type={workout.type ?? 'Easy'} />
         {workout.distance && (
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#1B2559', marginTop: '6px', fontWeight: 600 }}>
-            {workout.distance} mi
+            {workout.distance} {distUnit}
           </p>
         )}
         {workout.reason && (
@@ -55,6 +56,8 @@ function WorkoutSummary({ workout, label }) {
 }
 
 export default function WorkoutAdjustmentArtifact({ data }) {
+  const { unit } = useUnits();
+  const distUnit = unit === 'imperial' ? 'mi' : 'km';
   const [accepted, setAccepted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -78,13 +81,13 @@ export default function WorkoutAdjustmentArtifact({ data }) {
         <div className="space-y-4">
           {/* Before / After */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            {data.original && <WorkoutSummary workout={data.original} label="Original" />}
+            {data.original && <WorkoutSummary workout={data.original} label="Original" distUnit={distUnit} />}
             <div style={{ display: 'flex', alignItems: 'center', paddingTop: '22px', flexShrink: 0, color: '#8B93B0' }}>
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 10h12M10 4l6 6-6 6" />
               </svg>
             </div>
-            {data.adjusted && <WorkoutSummary workout={data.adjusted} label="Suggested" />}
+            {data.adjusted && <WorkoutSummary workout={data.adjusted} label="Suggested" distUnit={distUnit} />}
           </div>
 
           {/* Actions */}

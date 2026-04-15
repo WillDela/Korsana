@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUnits } from '../context/UnitsContext';
 
 export const WORKOUT_TYPES = [
   { value: 'easy', label: 'Easy Run', color: '#5B8C3E', badge: 'RUN', badgeBg: 'bg-sage', badgeText: 'text-white' },
@@ -17,9 +18,14 @@ export const WORKOUT_TYPES = [
 ];
 
 const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selectedDate }) => {
+  const { unit } = useUnits();
+  const isImperial = unit === 'imperial';
+  const distUnit = isImperial ? 'mi' : 'km';
+  const MPM = isImperial ? 1609.34 : 1000; // meters per display unit
+
   const [title, setTitle] = useState('');
   const [workoutType, setWorkoutType] = useState('easy');
-  const [distanceMiles, setDistanceMiles] = useState('');
+  const [distanceValue, setDistanceValue] = useState('');
   const [targetPace, setTargetPace] = useState('');
   const [notes, setNotes] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
@@ -32,12 +38,17 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
     if (entry) {
       setTitle(entry.title || '');
       setWorkoutType(entry.workout_type || 'easy');
-      setDistanceMiles(entry.planned_distance_meters ? (entry.planned_distance_meters * 0.000621371).toFixed(1) : '');
-      // Convert pace from seconds/km to mm:ss/mi
+      setDistanceValue(
+        entry.planned_distance_meters
+          ? (entry.planned_distance_meters / MPM).toFixed(1)
+          : ''
+      );
       if (entry.planned_pace_per_km) {
-        const pacePerMile = entry.planned_pace_per_km * 1.60934;
-        const m = Math.floor(pacePerMile / 60);
-        const s = Math.round(pacePerMile % 60);
+        const secPerUnit = isImperial
+          ? entry.planned_pace_per_km * 1.60934
+          : entry.planned_pace_per_km;
+        const m = Math.floor(secPerUnit / 60);
+        const s = Math.round(secPerUnit % 60);
         setTargetPace(`${m}:${s.toString().padStart(2, '0')}`);
       } else {
         setTargetPace('');
@@ -47,13 +58,13 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
     } else {
       setTitle('');
       setWorkoutType('easy');
-      setDistanceMiles('');
+      setDistanceValue('');
       setTargetPace('');
       setNotes('');
       setIsCompleted(false);
     }
     setError('');
-  }, [entry, isOpen]);
+  }, [entry, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTypeChange = (type) => {
     setWorkoutType(type);
@@ -70,8 +81,8 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
     const mins = parseInt(parts[0]);
     const secs = parseInt(parts[1]);
     if (isNaN(mins) || isNaN(secs)) return null;
-    const totalSecsPerMile = mins * 60 + secs;
-    return Math.round(totalSecsPerMile / 1.60934);
+    const totalSecs = mins * 60 + secs; // seconds per display unit
+    return isImperial ? Math.round(totalSecs / 1.60934) : totalSecs;
   };
 
   const handleSave = async () => {
@@ -84,7 +95,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
     setError('');
 
     try {
-      const distanceMeters = distanceMiles ? Math.round(parseFloat(distanceMiles) / 0.000621371) : null;
+      const distanceMeters = distanceValue ? Math.round(parseFloat(distanceValue) * MPM) : null;
       const pacePerKm = parsePaceToSecondsPerKm(targetPace);
 
       const data = {
@@ -189,13 +200,13 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1.5">Distance (mi)</label>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1.5">Distance ({distUnit})</label>
                   <input
                     type="number"
                     step="0.1"
                     min="0"
-                    value={distanceMiles}
-                    onChange={(e) => setDistanceMiles(e.target.value)}
+                    value={distanceValue}
+                    onChange={(e) => setDistanceValue(e.target.value)}
                     placeholder="0.0"
                     className="w-full rounded-lg border border-border text-sm font-mono focus:outline-none focus:border-navy" style={{ padding: '12px 16px' }}
                   />
@@ -205,7 +216,7 @@ const SessionDetailsModal = ({ isOpen, onClose, onSave, onDelete, entry, selecte
               {/* Target Pace + Mark Completed row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1.5">Target Pace (mm:ss/mi)</label>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1.5">Target Pace (mm:ss/{distUnit})</label>
                   <input
                     type="text"
                     value={targetPace}

@@ -1,5 +1,6 @@
 import ArtifactPanel from '../../ui/ArtifactPanel';
 import EvidenceCard from '../../ui/EvidenceCard';
+import { useUnits } from '../../../context/UnitsContext';
 
 const RECOMMENDATION_CONFIG = {
   run_easy:    { label: 'Easy Run',       color: '#2ECC8B', bg: 'rgba(46,204,139,0.1)',  dot: '#2ECC8B' },
@@ -9,6 +10,9 @@ const RECOMMENDATION_CONFIG = {
 };
 
 export default function DailyBriefArtifact({ data }) {
+  const { unit } = useUnits();
+  const distUnit = unit === 'imperial' ? 'mi' : 'km';
+
   if (!data) return null;
 
   const rec = RECOMMENDATION_CONFIG[data.recommendation] ?? RECOMMENDATION_CONFIG.run_easy;
@@ -59,7 +63,7 @@ export default function DailyBriefArtifact({ data }) {
               <p className="text-sm font-semibold text-navy font-heading">
                 {data.workout_suggestion.type}
                 {data.workout_suggestion.distance
-                  ? ` · ${data.workout_suggestion.distance} mi`
+                  ? ` · ${data.workout_suggestion.distance} ${distUnit}`
                   : ''}
               </p>
             </div>
@@ -69,7 +73,7 @@ export default function DailyBriefArtifact({ data }) {
                   Pace
                 </p>
                 <p className="text-sm font-mono font-semibold text-navy">
-                  {data.workout_suggestion.pace}/mi
+                  {data.workout_suggestion.pace}/{distUnit}
                 </p>
               </div>
             )}

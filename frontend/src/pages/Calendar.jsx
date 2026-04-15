@@ -11,7 +11,7 @@ import AppPageHero from '../components/ui/AppPageHero';
 import MetricStrip from '../components/ui/MetricStrip';
 import WorkoutCard from '../components/ui/WorkoutCard';
 import { useUnits } from '../context/UnitsContext';
-import { formatDistance, distanceLabel, formatPace } from '../utils/units';
+import { formatDistance, distanceLabel } from '../utils/units';
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -415,7 +415,7 @@ const Calendar = () => {
     const totalDist = entries.reduce(
       (sum, e) => sum + (e.planned_distance_meters || 0), 0
     );
-    return { completed, planned, totalMiles: (totalDist * 0.000621371).toFixed(1) };
+    return { completed, planned };
   }, [entries]);
 
   const fetchMonthEntries = useCallback(async () => {

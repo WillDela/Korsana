@@ -19,11 +19,11 @@ const RunTypeBreakdown = ({ activities = [], targetPaceSecondsPerKm }) => {
     const target = targetPaceSecondsPerKm || 360;
 
     activities.forEach((a) => {
-      const distMiles = (a.distance_meters || 0) * 0.000621371;
+      const distMeters = a.distance_meters || 0;
       const pace = a.average_pace_seconds_per_km;
 
-      // Long run: distance > 8 miles regardless of pace
-      if (distMiles > 8) {
+      // Long run: distance > 8 miles (12875m) regardless of pace
+      if (distMeters > 12875) {
         counts.long++;
       } else if (pace && pace > target * 1.2) {
         counts.easy++;
