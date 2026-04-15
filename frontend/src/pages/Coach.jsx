@@ -6,6 +6,7 @@ import { goalsAPI } from '../api/goals';
 import { getErrorMessage } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import AppPageHero from '../components/ui/AppPageHero';
+import EvidenceCard from '../components/ui/EvidenceCard';
 import ContextRail from '../components/coach/ContextRail';
 import CoachStartSurface from '../components/coach/CoachStartSurface';
 import WeeklyReviewArtifact from '../components/coach/artifacts/WeeklyReviewArtifact';
@@ -221,7 +222,7 @@ const Coach = () => {
         return sortMsgs([
           ...without,
           { role: 'user', content: msg, created_at: ts, session_id: session.id },
-          { role: 'assistant', content: data.response, artifact: data.artifact ?? null, created_at: new Date().toISOString(), session_id: session.id },
+          { role: 'assistant', content: data.response, artifact: data.artifact ?? null, evidence: data.evidence ?? null, created_at: new Date().toISOString(), session_id: session.id },
         ]);
       });
 
@@ -387,6 +388,16 @@ const Coach = () => {
                           }}>
                             {s.title}
                           </div>
+                          {s.summary && (
+                            <div style={{
+                              fontFamily: 'var(--font-sans)', fontSize: '11px',
+                              color: 'rgba(255,255,255,0.42)',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                              marginBottom: '2px', lineHeight: 1.3,
+                            }}>
+                              {s.summary}
+                            </div>
+                          )}
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
                             {relativeDay(s.created_at)}
                           </div>
@@ -636,49 +647,83 @@ function WorkoutPill({ type }) {
 }
 
 function Bubble({ msg, userEmail }) {
-  const isUser  = msg.role === 'user';
-  const initial = (userEmail?.[0] ?? 'U').toUpperCase();
-  const time    = msg.created_at && !isNaN(new Date(msg.created_at))
+  const [showEvidence, setShowEvidence] = useState(false);
+  const isUser      = msg.role === 'user';
+  const hasEvidence = !isUser && msg.evidence?.length > 0;
+  const initial     = (userEmail?.[0] ?? 'U').toUpperCase();
+  const time        = msg.created_at && !isNaN(new Date(msg.created_at))
     ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '';
 
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexDirection: isUser ? 'row-reverse' : 'row' }}>
-      <div style={{
-        width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
-        background: isUser ? C.navy : C.coral,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: C.white,
-        fontSize: isUser ? '10px' : '12px',
-        fontWeight: isUser ? 700 : 400,
-        marginBottom: '2px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-      }}>
-        {isUser ? initial : '✦'}
+    <div>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexDirection: isUser ? 'row-reverse' : 'row' }}>
+        <div style={{
+          width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
+          background: isUser ? C.navy : C.coral,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: C.white,
+          fontSize: isUser ? '10px' : '12px',
+          fontWeight: isUser ? 700 : 400,
+          marginBottom: '2px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        }}>
+          {isUser ? initial : '✦'}
+        </div>
+        <div style={{
+          maxWidth: '80%', padding: '10px 14px',
+          fontFamily: 'var(--font-sans)', fontSize: '14px', lineHeight: 1.65,
+          background: isUser ? C.navy : (msg.isError ? 'rgba(232,74,74,0.06)' : C.white),
+          color: isUser ? C.white : (msg.isError ? C.red : '#1a1a1a'),
+          borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+          border: isUser ? 'none' : `1px solid ${msg.isError ? 'rgba(232,74,74,0.2)' : C.gray100}`,
+          boxShadow: '0 1px 3px rgba(27,37,89,0.05)',
+        }}>
+          {isUser
+            ? <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+            : <div className="space-y-2"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+          }
+          {time && (
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: '10px',
+              color: isUser ? 'rgba(255,255,255,0.35)' : C.gray400,
+              marginTop: '4px', textAlign: isUser ? 'right' : 'left',
+            }}>
+              {time}
+            </div>
+          )}
+        </div>
       </div>
-      <div style={{
-        maxWidth: '80%', padding: '10px 14px',
-        fontFamily: 'var(--font-sans)', fontSize: '14px', lineHeight: 1.65,
-        background: isUser ? C.navy : (msg.isError ? 'rgba(232,74,74,0.06)' : C.white),
-        color: isUser ? C.white : (msg.isError ? C.red : '#1a1a1a'),
-        borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-        border: isUser ? 'none' : `1px solid ${msg.isError ? 'rgba(232,74,74,0.2)' : C.gray100}`,
-        boxShadow: '0 1px 3px rgba(27,37,89,0.05)',
-      }}>
-        {isUser
-          ? <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
-          : <div className="space-y-2"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
-        }
-        {time && (
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: '10px',
-            color: isUser ? 'rgba(255,255,255,0.35)' : C.gray400,
-            marginTop: '4px', textAlign: isUser ? 'right' : 'left',
-          }}>
-            {time}
-          </div>
-        )}
-      </div>
+
+      {/* "Why?" evidence expander — assistant messages only */}
+      {hasEvidence && (
+        <div style={{ marginLeft: '34px', marginTop: '4px' }}>
+          <button
+            onClick={() => setShowEvidence(v => !v)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '4px',
+              padding: '3px 10px', borderRadius: '12px',
+              border: `1px solid ${C.gray200}`, background: C.white,
+              fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600,
+              color: C.gray600, cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = C.gray50; }}
+            onMouseLeave={e => { e.currentTarget.style.background = C.white; }}
+          >
+            <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="10" cy="10" r="8" />
+              <path d="M10 9v5M10 6.5v.5" />
+            </svg>
+            {showEvidence ? 'Hide context' : 'Why?'}
+          </button>
+          {showEvidence && (
+            <div style={{ marginTop: '6px', maxWidth: '340px' }}>
+              <EvidenceCard items={msg.evidence} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

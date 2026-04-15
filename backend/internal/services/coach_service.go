@@ -153,6 +153,79 @@ type ArtifactResult struct {
 	Data json.RawMessage `json:"data"`
 }
 
+// EvidenceItem is a single data point attached to a chat response as context.
+type EvidenceItem struct {
+	Label  string `json:"label"`
+	Value  string `json:"value"`
+	Signal string `json:"signal"` // "positive" | "warning" | "neutral"
+}
+
+// buildEvidenceItems assembles 2 quick context data points for the "Why?" block.
+// Two fast DB reads only — no AI call, no added latency to the chat response.
+func (s *CoachService) buildEvidenceItems(ctx context.Context, userID uuid.UUID) []EvidenceItem {
+	var items []EvidenceItem
+
+	if goal, err := s.goalsService.GetActiveGoal(ctx, userID); err == nil {
+		daysUntil := int(time.Until(goal.RaceDate).Hours() / 24)
+		weeksOut := daysUntil / 7
+		signal := "positive"
+		if weeksOut < 6 {
+			signal = "warning"
+		}
+		items = append(items, EvidenceItem{
+			Label:  "Weeks to " + goal.RaceName,
+			Value:  fmt.Sprintf("%d weeks", weeksOut),
+			Signal: signal,
+		})
+	}
+
+	var latest models.WeeklySummary
+	if err := s.db.GetContext(ctx, &latest, `
+		SELECT * FROM weekly_summaries
+		WHERE user_id = $1
+		ORDER BY week_start DESC
+		LIMIT 1
+	`, userID); err == nil {
+		distMi := latest.TotalDistanceMeters / 1000.0 * 0.621371
+		runWord := "run"
+		if latest.RunCount != 1 {
+			runWord = "runs"
+		}
+		signal := "neutral"
+		if latest.RunCount >= 4 {
+			signal = "positive"
+		} else if latest.RunCount <= 1 {
+			signal = "warning"
+		}
+		items = append(items, EvidenceItem{
+			Label:  "Last week",
+			Value:  fmt.Sprintf("%.0f mi · %d %s", distMi, latest.RunCount, runWord),
+			Signal: signal,
+		})
+	}
+
+	return items
+}
+
+// sessionSummary derives a ≤140-char summary from the first assistant response.
+func sessionSummary(response string) string {
+	response = strings.TrimSpace(response)
+	for _, sep := range []string{". ", "! ", "? "} {
+		if idx := strings.Index(response, sep); idx > 0 && idx < 140 {
+			return response[:idx+1]
+		}
+	}
+	const max = 140
+	if len(response) <= max {
+		return response
+	}
+	candidate := response[:max]
+	if lastSpace := strings.LastIndex(candidate, " "); lastSpace > 50 {
+		return candidate[:lastSpace] + "…"
+	}
+	return candidate + "…"
+}
+
 // detectIntent matches the user's message against known artifact trigger phrases.
 // Returns the artifact type string or "" if no match.
 func detectIntent(message string) string {
@@ -258,7 +331,8 @@ func extractArtifact(response string) (string, *ArtifactResult) {
 // SendMessage sends a message to the AI coach and gets a response.
 // sessionID is optional — if provided messages are stored under that session.
 // mode is "copilot" (proactive) or "guide" (reactive); defaults to "copilot".
-func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage, mode string) (string, *ArtifactResult, string, error) {
+// Returns: cleanResponse, artifact, evidence, generatedTitle, error.
+func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage, mode string) (string, *ArtifactResult, []EvidenceItem, string, error) {
 	// Build context about user's training
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
@@ -330,16 +404,23 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 		log.Printf("[Coach] Calling Claude API with %d messages (mode=%s, intent=%q)", len(messages), mode, intent)
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
-		return "", nil, "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
+		return "", nil, nil, "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
 	if err != nil {
 		log.Printf("[Coach] ERROR from AI API: %v", err)
-		return "", nil, "", err
+		return "", nil, nil, "", err
 	}
 	log.Printf("[Coach] Got response (%d chars)", len(response))
 
 	// Extract structured artifact from response (strips artifact block from stored text)
 	cleanResponse, artifact := extractArtifact(response)
+
+	// Build evidence data points when there is no structured artifact.
+	// Two fast DB reads, no AI call — used for the "Why?" expander in the UI.
+	var evidence []EvidenceItem
+	if artifact == nil {
+		evidence = s.buildEvidenceItems(ctx, userID)
+	}
 
 	now := time.Now()
 	userMsg := &models.CoachConversation{
@@ -365,13 +446,14 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 			SELECT COUNT(*) FROM coach_conversations WHERE session_id = $1 AND role = 'user'
 		`, *sessionID); dbErr == nil && count == 1 {
 			generatedTitle = s.GenerateSessionTitle(ctx, userMessage)
+			summary := sessionSummary(cleanResponse)
 			_, _ = s.db.ExecContext(ctx, `
-				UPDATE coach_sessions SET title = $1, updated_at = NOW() WHERE id = $2
-			`, generatedTitle, *sessionID)
+				UPDATE coach_sessions SET title = $1, summary = $2, updated_at = NOW() WHERE id = $3
+			`, generatedTitle, summary, *sessionID)
 		}
 	}
 
-	return cleanResponse, artifact, generatedTitle, nil
+	return cleanResponse, artifact, evidence, generatedTitle, nil
 }
 
 // callClaudeAPI calls the Anthropic Claude API

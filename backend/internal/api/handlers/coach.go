@@ -99,7 +99,7 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		}
 	}
 
-	response, artifact, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message, req.Mode)
+	response, artifact, evidence, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message, req.Mode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -107,6 +107,9 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 	result := gin.H{"response": response}
 	if artifact != nil {
 		result["artifact"] = artifact
+	}
+	if len(evidence) > 0 {
+		result["evidence"] = evidence
 	}
 	if sessionTitle != "" {
 		result["session_title"] = sessionTitle
