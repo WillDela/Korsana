@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
 import SessionDetailsModal, { WORKOUT_TYPES } from './SessionDetailsModal';
+import { useUnits } from '../context/UnitsContext';
+import { formatDistance } from '../utils/units';
 
 // Get Monday of the current week
 const getMonday = (date = new Date()) => {
@@ -24,6 +26,7 @@ const formatDateKey = (date) => {
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const WeekCalendar = ({ compact = false }) => {
+  const { unit } = useUnits();
   const [weekStart, setWeekStart] = useState(getMonday());
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -228,11 +231,12 @@ const WeekCalendar = ({ compact = false }) => {
                               width: '14px',
                               height: '14px',
                               borderRadius: '50%',
-                              border: entry.status === 'completed' ? 'none'
+                              border: entry.status === 'completed' || entry.status === 'synced' ? 'none'
                                 : entry.status === 'missed' ? 'none'
                                 : `2px solid ${typeInfo?.color || '#D1D5DB'}`,
-                              background: entry.status === 'completed' ? '#10B981'
-                                : entry.status === 'missed' ? '#DC2626'
+                              background: entry.status === 'completed' || entry.status === 'synced'
+                                ? 'var(--color-success, #10B981)'
+                                : entry.status === 'missed' ? 'var(--color-danger, #DC2626)'
                                 : 'transparent',
                               cursor: 'pointer',
                               display: 'flex',
@@ -247,15 +251,18 @@ const WeekCalendar = ({ compact = false }) => {
                               : entry.status === 'missed' ? 'Restore to planned'
                               : 'Mark as done'}
                           >
-                            {entry.status === 'completed' && '✓'}
+                            {(entry.status === 'completed' || entry.status === 'synced') && '✓'}
                             {entry.status === 'missed' && '✕'}
                           </button>
                         )}
-                        {compact && entry.status === 'completed' && (
-                          <span style={{ fontSize: '0.5rem', color: '#10B981' }}>✓</span>
+                        {compact && (entry.status === 'completed' || entry.status === 'synced') && (
+                          <span style={{ fontSize: '0.5rem', color: 'var(--color-success, #10B981)' }}>✓</span>
                         )}
                         {compact && entry.status === 'missed' && (
-                          <span style={{ fontSize: '0.5rem', color: '#DC2626' }}>✕</span>
+                          <span style={{ fontSize: '0.5rem', color: 'var(--color-danger, #DC2626)' }}>✕</span>
+                        )}
+                        {entry.status === 'adapted' && (
+                          <span style={{ fontSize: '0.5rem', color: 'var(--color-amber, #E5A830)', flexShrink: 0 }} title={entry.adaptation_note || 'Adapted'}>✦</span>
                         )}
                         <span style={{
                           fontSize: compact ? '0.5625rem' : '0.6875rem',
@@ -298,11 +305,11 @@ const WeekCalendar = ({ compact = false }) => {
                           fontSize: compact ? '0.5625rem' : '0.6875rem',
                           color: '#6B7280',
                         }}>
-                          {(entry.planned_distance_meters * 0.000621371).toFixed(1)} mi
+                          {formatDistance(entry.planned_distance_meters, unit)}
                         </span>
                       )}
                       {entry.status === 'missed' && (
-                        <span style={{ fontSize: '0.5625rem', color: '#DC2626', fontWeight: 500 }}>
+                        <span style={{ fontSize: '0.5625rem', color: 'var(--color-danger, #DC2626)', fontWeight: 500 }}>
                           Missed
                         </span>
                       )}
@@ -354,9 +361,9 @@ const WeekCalendar = ({ compact = false }) => {
           )}
           <div style={{ textAlign: 'center' }}>
             <span className="font-mono" style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#374151' }}>
-              {(totalDistance / 1000).toFixed(1)}
+              {totalDistance > 0 ? formatDistance(totalDistance, unit) : '—'}
             </span>
-            <span style={{ fontSize: '0.6875rem', color: '#6B7280', display: 'block' }}>km total</span>
+            <span style={{ fontSize: '0.6875rem', color: '#6B7280', display: 'block' }}>total</span>
           </div>
         </div>
       )}

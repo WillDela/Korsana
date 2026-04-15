@@ -9,10 +9,36 @@ import ManualActivityModal from '../components/ManualActivityModal';
 import WeekCalendar from '../components/WeekCalendar';
 import AppPageHero from '../components/ui/AppPageHero';
 import MetricStrip from '../components/ui/MetricStrip';
+import WorkoutCard from '../components/ui/WorkoutCard';
 import { useUnits } from '../context/UnitsContext';
 import { formatDistance, distanceLabel, formatPace } from '../utils/units';
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+// Maps backend workout_type values to WorkoutCard display types
+const WORKOUT_TYPE_TO_CARD = {
+  easy:        'Easy',
+  long:        'Long Run',
+  tempo:       'Tempo',
+  interval:    'Intervals',
+  cycling:     'Cycling',
+  swimming:    'Swimming',
+  lifting:     'Cross-Train',
+  walking:     'Easy',
+  cross_train: 'Cross-Train',
+  recovery:    'Recovery',
+  rest:        'Rest',
+  race:        'Long Run',
+};
+
+// Returns raw "M:SS" pace string (without unit suffix) for WorkoutCard
+const rawPace = (secPerKm, unit) => {
+  if (!secPerKm || secPerKm <= 0) return null;
+  const total = unit === 'imperial' ? secPerKm * 1.60934 : secPerKm;
+  const min = Math.floor(total / 60);
+  const sec = Math.floor(total % 60);
+  return `${min}:${String(sec).padStart(2, '0')}`;
+};
 
 const formatDateKey = (date) => {
   if (typeof date === 'string' && date.length >= 10) {
@@ -50,23 +76,6 @@ const getGridDates = (gridStart, gridEnd) => {
   }
   return dates;
 };
-
-const getBadgeColor = (type) => {
-  const t = WORKOUT_TYPES.find((w) => w.value === type);
-  return t?.color || '#6B7280';
-};
-
-const getBadgeLabel = (type) => {
-  const t = WORKOUT_TYPES.find((w) => w.value === type);
-  return t?.badge || type?.toUpperCase() || '';
-};
-
-const getBadgeClasses = (type) => {
-  const t = WORKOUT_TYPES.find((w) => w.value === type);
-  if (!t) return 'bg-gray-100 text-gray-600';
-  return `${t.badgeBg} ${t.badgeText}`;
-};
-
 
 const MiniCard = ({ entry, unit = 'imperial' }) => {
   const status = entry.status || 'planned';
@@ -187,8 +196,8 @@ const DayDetailModal = ({
               </button>
             </div>
 
-            {/* Entries list */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+            {/* Entries list — agenda style */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {entries.length === 0 && (
                 <div className="text-center py-10">
                   <div className="w-12 h-12 rounded-full bg-bg-app flex items-center justify-center mx-auto mb-3">
@@ -203,109 +212,120 @@ const DayDetailModal = ({
                   <p className="text-xs text-text-muted/60 mt-1">Add a workout or log an activity</p>
                 </div>
               )}
-              {entries.map((entry) => {
-                const color = getBadgeColor(entry.workout_type);
-                const distDisplay = entry.planned_distance_meters > 0
-                  ? formatDistance(entry.planned_distance_meters, unit)
-                  : null;
-                const durMin = entry.planned_duration_minutes;
-                let paceStr = null;
-                if (entry.planned_pace_per_km) {
-                  paceStr = formatPace(entry.planned_pace_per_km, unit);
-                }
 
-                const isComplete = entry.status === 'completed';
-
-                return (
-                  <motion.div
-                    key={entry.id}
-                    className="rounded-xl transition-shadow hover:shadow-md"
-                    style={{
-                      backgroundColor: `${color}08`,
-                      border: `1px solid ${color}25`,
-                    }}
-                  >
-                    <div
-                      className="p-3.5 cursor-pointer"
-                      onClick={() => onEditEntry(entry)}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${getBadgeClasses(entry.workout_type)}`}
-                        >
-                          {entry.workout_type === 'cross_train' ? (entry.title || 'Cross Train').toUpperCase() : getBadgeLabel(entry.workout_type)}
-                        </span>
-                        <span
-                          className={`px-1.5 py-0.5 rounded-md text-[9px] font-semibold ${isComplete
-                            ? 'bg-green-100 text-green-700'
-                            : entry.status === 'missed'
-                              ? 'bg-red-100 text-red-600'
-                              : 'bg-blue-50 text-blue-600'
-                            }`}
-                        >
-                          {entry.status}
-                        </span>
-                        {entry.source && entry.source !== 'manual' && (
-                          <span
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${entry.source === 'strava'
-                              ? 'bg-orange-100 text-orange-600'
-                              : 'bg-sage/20 text-sage'
-                              }`}
-                          >
-                            {entry.source === 'ai_coach'
-                              ? 'AI'
-                              : entry.source.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-semibold text-text-primary">
-                        {entry.title}
-                      </p>
-                      {(distDisplay || paceStr || durMin) && (
-                        <div className="flex items-center gap-3 mt-1.5">
-                          {distDisplay && (
-                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                              {distDisplay}
-                            </span>
-                          )}
-                          {paceStr && (
-                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                              {paceStr}
-                            </span>
-                          )}
-                          {durMin && (
-                            <span className="text-[11px] font-mono text-text-secondary bg-white/80 px-1.5 py-0.5 rounded">
-                              {durMin} min
-                            </span>
-                          )}
+              {/* Planned / upcoming section */}
+              {entries.filter(e => e.status === 'planned' || e.status === 'adapted').length > 0 && (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)] mb-2 px-0.5">
+                    Upcoming
+                  </p>
+                  <div className="space-y-2">
+                    {entries.filter(e => e.status === 'planned' || e.status === 'adapted').map(entry => {
+                      const distValue = entry.planned_distance_meters > 0
+                        ? parseFloat((entry.planned_distance_meters / (unit === 'imperial' ? 1609.34 : 1000)).toFixed(1))
+                        : null;
+                      return (
+                        <div key={entry.id} className="flex flex-col gap-1.5">
+                          <WorkoutCard
+                            type={WORKOUT_TYPE_TO_CARD[entry.workout_type] || 'Easy'}
+                            title={entry.title}
+                            purpose={entry.description || null}
+                            distance={distValue}
+                            unit={unit === 'imperial' ? 'mi' : 'km'}
+                            pace={rawPace(entry.planned_pace_per_km, unit)}
+                            duration={entry.planned_duration_minutes ? `${entry.planned_duration_minutes}m` : null}
+                            status={entry.status}
+                            source={entry.source}
+                            adaptationNote={entry.adaptation_note || null}
+                            onClick={() => onEditEntry(entry)}
+                          />
+                          <div className="flex gap-2 px-0.5">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onMarkComplete(entry.id); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-success)] text-[11px] font-bold border border-[var(--color-success)]/30 cursor-pointer hover:bg-[var(--color-success)]/10 transition-colors"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                              Mark Complete
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onLogActivity(); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white text-[var(--color-text-secondary)] text-[11px] font-bold border border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-bg-elevated)] transition-colors"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                              </svg>
+                              Log Activity
+                            </button>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    {!isComplete && (
-                      <div className="px-3.5 pb-3 flex gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onMarkComplete(entry.id); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-50 text-green-700 text-[11px] font-bold border border-green-200 cursor-pointer hover:bg-green-100 transition-colors"
-                        >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          Mark Complete
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onLogActivity(); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white text-text-secondary text-[11px] font-bold border border-border cursor-pointer hover:bg-bg-app transition-colors"
-                        >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                          </svg>
-                          Log Activity
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Completed / synced section */}
+              {entries.filter(e => e.status === 'completed' || e.status === 'synced').length > 0 && (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)] mb-2 px-0.5">
+                    Completed
+                  </p>
+                  <div className="space-y-2">
+                    {entries.filter(e => e.status === 'completed' || e.status === 'synced').map(entry => {
+                      const distValue = entry.planned_distance_meters > 0
+                        ? parseFloat((entry.planned_distance_meters / (unit === 'imperial' ? 1609.34 : 1000)).toFixed(1))
+                        : null;
+                      return (
+                        <WorkoutCard
+                          key={entry.id}
+                          type={WORKOUT_TYPE_TO_CARD[entry.workout_type] || 'Easy'}
+                          title={entry.title}
+                          purpose={entry.description || null}
+                          distance={distValue}
+                          unit={unit === 'imperial' ? 'mi' : 'km'}
+                          pace={rawPace(entry.planned_pace_per_km, unit)}
+                          duration={entry.planned_duration_minutes ? `${entry.planned_duration_minutes}m` : null}
+                          status={entry.status}
+                          source={entry.source}
+                          adaptationNote={entry.adaptation_note || null}
+                          onClick={() => onEditEntry(entry)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Missed section */}
+              {entries.filter(e => e.status === 'missed').length > 0 && (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)] mb-2 px-0.5">
+                    Missed
+                  </p>
+                  <div className="space-y-2">
+                    {entries.filter(e => e.status === 'missed').map(entry => {
+                      const distValue = entry.planned_distance_meters > 0
+                        ? parseFloat((entry.planned_distance_meters / (unit === 'imperial' ? 1609.34 : 1000)).toFixed(1))
+                        : null;
+                      return (
+                        <WorkoutCard
+                          key={entry.id}
+                          type={WORKOUT_TYPE_TO_CARD[entry.workout_type] || 'Easy'}
+                          title={entry.title}
+                          purpose={entry.description || null}
+                          distance={distValue}
+                          unit={unit === 'imperial' ? 'mi' : 'km'}
+                          status="missed"
+                          source={entry.source}
+                          onClick={() => onEditEntry(entry)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
