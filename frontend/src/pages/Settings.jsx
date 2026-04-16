@@ -12,7 +12,6 @@ import TrainingZonesCard from '../components/profile/TrainingZonesCard';
 import ConnectedServicesCard from '../components/profile/ConnectedServicesCard';
 import ChangePasswordForm from '../components/profile/ChangePasswordForm';
 
-// New components
 import UnitsPreferenceCard from '../components/profile/UnitsPreferenceCard';
 import NotificationsCard from '../components/profile/NotificationsCard';
 import DataExportCard from '../components/profile/DataExportCard';
@@ -23,7 +22,7 @@ const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'integrations' | 'notifications' | 'account'
+  const [activeTab, setActiveTab] = useState('identity'); // 'identity' | 'performance' | 'integrations' | 'notifications' | 'account'
   const [generalError, setGeneralError] = useState('');
   const [stravaMessage, setStravaMessage] = useState({ type: '', text: '' });
 
@@ -91,21 +90,23 @@ const Settings = () => {
         </motion.div>
       )}
 
-      {/* Profile Banner */}
-      <ProfileBanner profileData={profileData} onUpdate={handleProfileUpdate} />
-
       {/* Tabs */}
       <div className="flex flex-wrap items-center gap-6 border-b border-border my-8">
-        {['profile', 'integrations', 'notifications', 'account'].map((tab) => (
+        {[
+          { key: 'identity',     label: 'Identity' },
+          { key: 'performance',  label: 'Performance' },
+          { key: 'integrations', label: 'Integrations' },
+          { key: 'notifications',label: 'Notifications' },
+          { key: 'account',      label: 'Account & Security' },
+        ].map(({ key, label }) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-[0.9375rem] font-semibold transition-colors relative capitalize ${activeTab === tab ? 'text-navy' : 'text-text-muted hover:text-text-secondary'
-              }`}
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`pb-3 text-[0.9375rem] font-semibold transition-colors relative ${activeTab === key ? 'text-navy' : 'text-text-muted hover:text-text-secondary'}`}
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            {tab}
-            {activeTab === tab && (
+            {label}
+            {activeTab === key && (
               <motion.div
                 layoutId="settingsTabIndicator"
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy"
@@ -117,9 +118,26 @@ const Settings = () => {
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
-        {activeTab === 'profile' && (
+
+        {/* ── Identity ── */}
+        {activeTab === 'identity' && (
           <motion.div
-            key="profile"
+            key="identity"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col gap-8"
+          >
+            <ProfileBanner profileData={profileData} onUpdate={handleProfileUpdate} />
+            <UnitsPreferenceCard profileData={profileData} onUpdate={handleProfileUpdate} />
+          </motion.div>
+        )}
+
+        {/* ── Performance Profile ── */}
+        {activeTab === 'performance' && (
+          <motion.div
+            key="performance"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -127,7 +145,6 @@ const Settings = () => {
             className="flex flex-col gap-8"
           >
             <PersonalRecords profileData={profileData} onUpdate={handleProfileUpdate} />
-
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div className="md:col-span-2">
                 <WeeklySummaryCard profileData={profileData} />
@@ -139,6 +156,7 @@ const Settings = () => {
           </motion.div>
         )}
 
+        {/* ── Integrations ── */}
         {activeTab === 'integrations' && (
           <motion.div
             key="integrations"
@@ -166,6 +184,7 @@ const Settings = () => {
           </motion.div>
         )}
 
+        {/* ── Notifications ── */}
         {activeTab === 'notifications' && (
           <motion.div
             key="notifications"
@@ -179,6 +198,7 @@ const Settings = () => {
           </motion.div>
         )}
 
+        {/* ── Account & Security ── */}
         {activeTab === 'account' && (
           <motion.div
             key="account"
@@ -188,42 +208,38 @@ const Settings = () => {
             transition={{ duration: 0.2 }}
             className="flex flex-col gap-8"
           >
+            {/* Account details */}
             <div className="card">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold">
-                  {profileData?.user?.email?.[0]?.toUpperCase() || '?'}
-                </div>
-                <h2 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Account Details</h2>
-              </div>
-              <div className="grid text-[0.9375rem]" style={{ gridTemplateColumns: 'minmax(120px, auto) 1fr', gap: '0.75rem 1rem' }}>
-                <span className="text-sm text-text-secondary">Email</span>
-                <span className="font-medium">{profileData?.user?.email}</span>
-
-                <span className="text-sm text-text-secondary">Member since</span>
-                <span className="font-medium">
-                  {profileData?.user?.created_at
-                    ? new Date(profileData.user.created_at).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
-                    : '\u2014'}
-                </span>
-
-                <span className="text-sm text-text-secondary">User ID</span>
-                <span className="font-mono text-sm text-text-muted">
-                  {profileData?.user?.id?.slice(0, 8)}...
-                </span>
+              <h2 className="text-base font-bold text-navy mb-5" style={{ fontFamily: 'var(--font-heading)' }}>
+                Account Details
+              </h2>
+              <div className="divide-y divide-border">
+                {[
+                  { label: 'Email',        value: profileData?.user?.email },
+                  { label: 'Member since', value: profileData?.user?.created_at
+                    ? new Date(profileData.user.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                    : '—' },
+                  { label: 'User ID',      value: profileData?.user?.id
+                    ? `${profileData.user.id.slice(0, 8)}…`
+                    : '—', mono: true },
+                ].map(({ label, value, mono }) => (
+                  <div key={label} className="flex items-center justify-between py-3 gap-4">
+                    <span className="text-sm text-text-secondary shrink-0">{label}</span>
+                    <span className={`text-sm font-medium text-right ${mono ? 'font-mono text-text-muted' : ''}`}>
+                      {value}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
             <ChangeEmailForm />
-            <UnitsPreferenceCard profileData={profileData} onUpdate={handleProfileUpdate} />
             <ChangePasswordForm />
             <DataExportCard />
             <DeleteAccountCard />
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   );
