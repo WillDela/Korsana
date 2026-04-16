@@ -59,6 +59,24 @@ const timeDiffSec = (targetSec, resultSec) => {
   return { faster: diff > 0, str: `${m}:${String(s).padStart(2, '0')}` };
 };
 
+const resultSummary = (targetSec, resultSec) => {
+  if (!resultSec) return null;
+  const time = secondsToHMS(resultSec);
+  if (!targetSec) return `Finished in ${time}`;
+  const diff = targetSec - resultSec;
+  const abs = Math.abs(diff);
+  const mins = Math.floor(abs / 60);
+  const secs = abs % 60;
+  const diffLabel = mins >= 60
+    ? `${Math.floor(mins / 60)}h ${mins % 60}m`
+    : mins > 0
+    ? `${mins} min${secs > 0 ? ` ${secs}s` : ''}`
+    : `${secs}s`;
+  return diff > 0
+    ? `Finished in ${time} — ${diffLabel} ahead of goal`
+    : `Finished in ${time} — ${diffLabel} over goal`;
+};
+
 // ── Section Label ─────────────────────────────────────────────────────────────
 
 const SLabel = ({ children, action }) => (
@@ -480,6 +498,90 @@ const Goals = () => {
                   <EvidenceCard items={readinessItems} />
                 </div>
               )}
+
+              {/* ③ Cross-Training — integrated as goal-program blocks */}
+              <div style={{ marginTop: 20 }}>
+                <SLabel action={
+                  <button
+                    onClick={() => setShowCrossModal(true)}
+                    style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: 'var(--color-coral)', cursor: 'pointer' }}
+                  >
+                    + Add Target
+                  </button>
+                }>
+                  Supporting {active.race_name}
+                </SLabel>
+
+                {ctGoals.length === 0 ? (
+                  <div style={{
+                    background: 'var(--navy-tint)', borderRadius: 14,
+                    padding: '16px 20px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between', gap: 12,
+                  }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8B93B0', margin: 0 }}>
+                      Add weekly cross-training targets to round out your program.
+                    </p>
+                    <button
+                      onClick={() => setShowCrossModal(true)}
+                      style={{ background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: '7px 16px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}
+                    >
+                      + Add Target
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                    {ctGoals.map((ct) => {
+                      const cfg = ACTIVITY_CONFIGS[ct.activity_type] || ACTIVITY_CONFIGS.workout;
+                      const done = ctProgress[ct.activity_type] || 0;
+                      const pct = Math.min(100, Math.round((done / ct.sessions_per_week) * 100));
+                      return (
+                        <div key={ct.id} style={{
+                          background: '#fff', borderRadius: 14,
+                          border: '1px solid #ECEEF4', padding: '14px 16px',
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          boxShadow: '0 1px 4px rgba(27,37,89,0.04)',
+                        }}>
+                          <div style={{
+                            width: 40, height: 40, borderRadius: 10,
+                            background: '#F8F9FC', border: '1px solid #ECEEF4',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 20, flexShrink: 0,
+                          }}>
+                            {cfg.icon}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 700, color: 'var(--color-navy)' }}>
+                                {cfg.label}
+                              </span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: pct >= 100 ? 'var(--color-sage)' : '#8B93B0' }}>
+                                {done}/{ct.sessions_per_week}
+                              </span>
+                            </div>
+                            <div style={{ height: 4, background: '#ECEEF4', borderRadius: 99, overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? 'var(--color-sage)' : cfg.color, borderRadius: 99, transition: 'width 0.3s' }} />
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteCT(ct.id)}
+                            style={{ background: 'none', border: 'none', color: '#C8CCE0', fontSize: 14, cursor: 'pointer', padding: 4, flexShrink: 0, lineHeight: 1 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <button
+                      onClick={() => setShowCrossModal(true)}
+                      style={{ background: 'transparent', border: '2px dashed #D4D8E8', borderRadius: 14, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 72, transition: 'all 0.15s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.background = '#F8F9FC'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D4D8E8'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#8B93B0' }}>+ Add Target</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -656,76 +758,65 @@ const Goals = () => {
             </div>
           </div>
 
-          {/* ③ Weekly Cross-Training Targets */}
-          <div>
-            <SLabel action={
-              <button
-                onClick={() => setShowCrossModal(true)}
-                style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: 'var(--color-coral)', cursor: 'pointer' }}
-              >
-                + Add Target
-              </button>
-            }>
-              Weekly Cross-Training Targets
-            </SLabel>
-
-            {ctGoals.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '24px 0' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🏋️</div>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8B93B0', marginBottom: 14 }}>
-                  No cross-training targets yet. Add one above!
-                </p>
+          {/* Cross-Training fallback — shown only when there is no active goal */}
+          {!active && (ctGoals.length > 0 || true) && (
+            <div>
+              <SLabel action={
                 <button
                   onClick={() => setShowCrossModal(true)}
-                  style={{ background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: '8px 20px', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: 'var(--color-coral)', cursor: 'pointer' }}
                 >
                   + Add Target
                 </button>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-                {ctGoals.map((ct) => {
-                  const cfg = ACTIVITY_CONFIGS[ct.activity_type] || ACTIVITY_CONFIGS.workout;
-                  const done = ctProgress[ct.activity_type] || 0;
-                  const pct = Math.min(100, Math.round((done / ct.sessions_per_week) * 100));
-                  return (
-                    <div key={ct.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: '#F8F9FC', border: '1px solid #ECEEF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                        {cfg.icon}
+              }>
+                Weekly Cross-Training
+              </SLabel>
+              {ctGoals.length === 0 ? (
+                <div className="card" style={{ textAlign: 'center', padding: '24px 0' }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#8B93B0', marginBottom: 14 }}>
+                    No cross-training targets yet.
+                  </p>
+                  <button
+                    onClick={() => setShowCrossModal(true)}
+                    style={{ background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: '8px 20px', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+                  >
+                    + Add Target
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                  {ctGoals.map((ct) => {
+                    const cfg = ACTIVITY_CONFIGS[ct.activity_type] || ACTIVITY_CONFIGS.workout;
+                    const done = ctProgress[ct.activity_type] || 0;
+                    const pct = Math.min(100, Math.round((done / ct.sessions_per_week) * 100));
+                    return (
+                      <div key={ct.id} style={{
+                        background: '#fff', borderRadius: 14, border: '1px solid #ECEEF4',
+                        padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
+                        boxShadow: '0 1px 4px rgba(27,37,89,0.04)',
+                      }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F8F9FC', border: '1px solid #ECEEF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                          {cfg.icon}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                            <span style={{ fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 700, color: 'var(--color-navy)' }}>{cfg.label}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: pct >= 100 ? 'var(--color-sage)' : '#8B93B0' }}>{done}/{ct.sessions_per_week}</span>
+                          </div>
+                          <div style={{ height: 4, background: '#ECEEF4', borderRadius: 99, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? 'var(--color-sage)' : cfg.color, borderRadius: 99, transition: 'width 0.3s' }} />
+                          </div>
+                        </div>
+                        <button onClick={() => handleDeleteCT(ct.id)} style={{ background: 'none', border: 'none', color: '#C8CCE0', fontSize: 14, cursor: 'pointer', padding: 4, flexShrink: 0 }}>✕</button>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, color: 'var(--color-navy)', marginBottom: 2 }}>
-                          {cfg.label}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0', marginBottom: 6 }}>
-                          {done}/{ct.sessions_per_week} this week
-                        </div>
-                        <div style={{ height: 4, background: '#ECEEF4', borderRadius: 99, overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? 'var(--color-sage)' : cfg.color, borderRadius: 99, transition: 'width 0.3s' }} />
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteCT(ct.id)}
-                        style={{ background: 'none', border: 'none', color: '#8B93B0', fontSize: 16, cursor: 'pointer', padding: 4, flexShrink: 0 }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  );
-                })}
-                <button
-                  onClick={() => setShowCrossModal(true)}
-                  style={{ background: 'transparent', border: '2px dashed #D4D8E8', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 84, transition: 'all 0.15s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.background = '#F8F9FC'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D4D8E8'; e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#8B93B0' }}>+ Add Target</span>
-                </button>
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* ④ Completed Goals */}
+          {/* ④ Completed Goals — Race Archive */}
           <div>
             <button
               onClick={() => setCompletedOpen((v) => !v)}
@@ -733,7 +824,7 @@ const Goals = () => {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: '#8B93B0', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Completed Goals
+                  Race Archive
                 </span>
                 <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 99, padding: '1px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
                   {completed.length}
@@ -765,150 +856,151 @@ const Goals = () => {
                     const page = Math.min(completedPage, totalPages - 1);
                     const pageItems = completed.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
                     return (
-                    <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
-                      {pageItems.map((c, i) => {
-                        const hasDiff = c.target_time_seconds && c.result_time_seconds;
-                        const diff = hasDiff ? timeDiffSec(c.target_time_seconds, c.result_time_seconds) : null;
-                        const needsResult = !c.result_time_seconds;
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                          {pageItems.map((c, i) => {
+                            const hasDiff = c.target_time_seconds && c.result_time_seconds;
+                            const diff = hasDiff ? timeDiffSec(c.target_time_seconds, c.result_time_seconds) : null;
+                            const summary = resultSummary(c.target_time_seconds, c.result_time_seconds);
+                            const needsResult = !c.result_time_seconds;
 
-                        // Border and accent color based on outcome
-                        let accentColor = '#D4D8E8'; // default: no result
-                        let accentBg = '#F8F9FC';
-                        if (diff) {
-                          accentColor = diff.faster ? '#2ECC8B' : 'var(--color-coral)';
-                          accentBg = diff.faster ? '#F0FBF6' : '#FEF4F2';
-                        } else if (c.result_time_seconds && !c.target_time_seconds) {
-                          accentColor = 'var(--color-sage)';
-                          accentBg = '#F2F7EF';
-                        }
+                            // Outcome config
+                            let accentColor = '#D4D8E8';
+                            let accentBg = '#F8F9FC';
+                            let outcomeLabel = 'No result';
+                            let outcomeLabelColor = '#B8860B';
+                            let outcomeLabelBg = 'rgba(229,168,48,0.12)';
 
-                        return (
-                          <motion.div
-                            key={c.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.25, delay: i * 0.04 }}
-                            style={{
-                              background: accentBg,
-                              borderRadius: 16,
-                              border: `1.5px solid ${accentColor}`,
-                              padding: '20px 22px',
-                              position: 'relative',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {/* Left accent bar */}
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: accentColor, borderRadius: '16px 0 0 16px' }} />
+                            if (diff) {
+                              if (diff.faster) {
+                                accentColor = '#2ECC8B'; accentBg = '#F0FBF6';
+                                outcomeLabel = 'Beat Goal'; outcomeLabelColor = '#0E9060'; outcomeLabelBg = 'rgba(46,204,139,0.12)';
+                              } else {
+                                accentColor = 'var(--color-coral)'; accentBg = '#FEF4F2';
+                                outcomeLabel = 'Missed Goal'; outcomeLabelColor = 'var(--color-coral)'; outcomeLabelBg = 'rgba(232,114,90,0.10)';
+                              }
+                            } else if (c.result_time_seconds && !c.target_time_seconds) {
+                              accentColor = 'var(--color-sage)'; accentBg = '#F2F7EF';
+                              outcomeLabel = 'Finished'; outcomeLabelColor = 'var(--color-sage)'; outcomeLabelBg = 'rgba(91,140,62,0.10)';
+                            }
 
-                            {/* Top row: name + badges */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                                  <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                                    {distanceLabel(c.distance_meters || c.race_distance_meters, unit)}
-                                  </span>
-                                  {c.is_pr && (
-                                    <span style={{ background: '#FFF3CD', color: '#856404', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                                      PR
-                                    </span>
-                                  )}
-                                  {needsResult && (
-                                    <span style={{ background: 'rgba(229,168,48,0.15)', color: '#B8860B', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                                      No result
-                                    </span>
+                            return (
+                              <motion.div
+                                key={c.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.25, delay: i * 0.04 }}
+                                style={{ background: accentBg, borderRadius: 16, border: `1.5px solid ${accentColor}`, padding: '20px 22px', position: 'relative', overflow: 'hidden' }}
+                              >
+                                {/* Left accent bar */}
+                                <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: accentColor, borderRadius: '16px 0 0 16px' }} />
+
+                                {/* Header: name, date, outcome badge */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                                      <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                        {distanceLabel(c.distance_meters || c.race_distance_meters, unit)}
+                                      </span>
+                                      <span style={{ background: outcomeLabelBg, color: outcomeLabelColor, borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                        {outcomeLabel}
+                                      </span>
+                                      {c.is_pr && (
+                                        <span style={{ background: '#FFF3CD', color: '#856404', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
+                                          ★ PR
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, color: 'var(--color-navy)', margin: 0, lineHeight: 1.2 }}>
+                                      {c.race_name}
+                                    </h3>
+                                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0', marginTop: 3 }}>
+                                      {fmtDate(c.race_date)}
+                                    </p>
+                                  </div>
+
+                                  {/* Result time — hero number */}
+                                  {c.result_time_seconds && (
+                                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: accentColor === '#D4D8E8' ? 'var(--color-navy)' : accentColor, lineHeight: 1 }}>
+                                        {secondsToHMS(c.result_time_seconds)}
+                                      </div>
+                                      {diff && (
+                                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: accentColor, marginTop: 3 }}>
+                                          {diff.faster ? '−' : '+'}{diff.str}
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700, color: 'var(--color-navy)', margin: 0, lineHeight: 1.2 }}>
-                                  {c.race_name}
-                                </h3>
-                                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0', marginTop: 3 }}>
-                                  {fmtDate(c.race_date)}
-                                </p>
-                              </div>
-                              {diff && (
-                                <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: accentColor, lineHeight: 1 }}>
-                                    {diff.faster ? '−' : '+'}{diff.str}
-                                  </div>
-                                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#8B93B0', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 3 }}>
-                                    {diff.faster ? 'under goal' : 'over goal'}
+
+                                {/* Result summary sentence */}
+                                {summary && (
+                                  <p style={{
+                                    fontFamily: 'var(--font-sans)', fontSize: 12,
+                                    color: '#4A5173', margin: '0 0 14px',
+                                    paddingBottom: 12, borderBottom: `1px solid ${accentColor}33`,
+                                    lineHeight: 1.5,
+                                  }}>
+                                    {summary}
+                                  </p>
+                                )}
+
+                                {/* Goal time (if set) + actions */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                                  {c.target_time_seconds ? (
+                                    <div>
+                                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 600, color: '#8B93B0', lineHeight: 1 }}>
+                                        {secondsToHMS(c.target_time_seconds)}
+                                      </div>
+                                      <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                        Goal
+                                      </div>
+                                    </div>
+                                  ) : <div />}
+
+                                  <div style={{ display: 'flex', gap: 7, flexShrink: 0 }}>
+                                    <Link
+                                      to={`/goals/${c.id}/edit`}
+                                      style={{ background: '#ECEEF4', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#4A5173', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                    >
+                                      Edit
+                                    </Link>
+                                    <button
+                                      onClick={() => setLogGoal(c)}
+                                      style={{ background: needsResult ? 'var(--color-navy)' : '#ECEEF4', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: needsResult ? '#fff' : '#4A5173', cursor: 'pointer' }}
+                                    >
+                                      {c.result_time_seconds ? 'Edit result' : 'Log result'}
+                                    </button>
                                   </div>
                                 </div>
-                              )}
-                            </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
 
-                            {/* Times + actions row */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 14, borderTop: `1px solid ${accentColor}33`, gap: 12 }}>
-                              {/* Times */}
-                              <div style={{ display: 'flex', gap: 20 }}>
-                                {c.target_time_seconds && (
-                                  <div>
-                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 600, color: '#8B93B0', lineHeight: 1 }}>
-                                      {secondsToHMS(c.target_time_seconds)}
-                                    </div>
-                                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                      Goal
-                                    </div>
-                                  </div>
-                                )}
-                                {c.target_time_seconds && c.result_time_seconds && (
-                                  <div style={{ width: 1, background: `${accentColor}55`, alignSelf: 'stretch' }} />
-                                )}
-                                {c.result_time_seconds && (
-                                  <div>
-                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1 }}>
-                                      {secondsToHMS(c.result_time_seconds)}
-                                    </div>
-                                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                      Result
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Actions */}
-                              <div style={{ display: 'flex', gap: 7, flexShrink: 0 }}>
-                                <Link
-                                  to={`/goals/${c.id}/edit`}
-                                  style={{ background: '#ECEEF4', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#4A5173', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                                >
-                                  Edit
-                                </Link>
-                                <button
-                                  onClick={() => setLogGoal(c)}
-                                  style={{ background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: '7px 13px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-                                >
-                                  {c.result_time_seconds ? 'Edit result' : 'Log result'}
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                    {totalPages > 1 && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-                        <button
-                          onClick={() => setCompletedPage(p => Math.max(0, p - 1))}
-                          disabled={page === 0}
-                          style={{ background: page === 0 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === 0 ? '#8B93B0' : '#fff', cursor: page === 0 ? 'default' : 'pointer' }}
-                        >
-                          ← Prev
-                        </button>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#8B93B0' }}>
-                          {page + 1} / {totalPages}
-                        </span>
-                        <button
-                          onClick={() => setCompletedPage(p => Math.min(totalPages - 1, p + 1))}
-                          disabled={page === totalPages - 1}
-                          style={{ background: page === totalPages - 1 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === totalPages - 1 ? '#8B93B0' : '#fff', cursor: page === totalPages - 1 ? 'default' : 'pointer' }}
-                        >
-                          Next →
-                        </button>
-                      </div>
-                    )}
-                    </>
+                        {totalPages > 1 && (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+                            <button
+                              onClick={() => setCompletedPage(p => Math.max(0, p - 1))}
+                              disabled={page === 0}
+                              style={{ background: page === 0 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === 0 ? '#8B93B0' : '#fff', cursor: page === 0 ? 'default' : 'pointer' }}
+                            >
+                              ← Prev
+                            </button>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#8B93B0' }}>
+                              {page + 1} / {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setCompletedPage(p => Math.min(totalPages - 1, p + 1))}
+                              disabled={page === totalPages - 1}
+                              style={{ background: page === totalPages - 1 ? '#ECEEF4' : 'var(--color-navy)', border: 'none', borderRadius: 8, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: page === totalPages - 1 ? '#8B93B0' : '#fff', cursor: page === totalPages - 1 ? 'default' : 'pointer' }}
+                            >
+                              Next →
+                            </button>
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
                 </motion.div>
