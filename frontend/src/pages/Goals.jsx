@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LuCalendar, LuChevronRight } from 'react-icons/lu';
 import { goalsAPI } from '../api/goals';
 import { crossTrainingGoalsAPI } from '../api/crossTrainingGoals';
+import { dashboardAPI } from '../api/dashboard';
 import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
 import { useUnits } from '../context/UnitsContext';
-import { formatDistance, formatPace, distanceLabel as unitLabel } from '../utils/units';
+import { formatDistance, formatPace } from '../utils/units';
+import ActiveGoalHero from '../components/goals/ActiveGoalHero';
+import EvidenceCard from '../components/ui/EvidenceCard';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-const METERS_PER_MILE = 1609.34;
 
 const DIST_LABELS = [
   { label: 'Marathon',      meters: 42195, tolerance: 500 },
@@ -245,6 +247,7 @@ const Goals = () => {
   const [ctGoals, setCtGoals] = useState([]);
   const [ctProgress, setCtProgress] = useState({});
   const [toast, setToast] = useState({ visible: false, msg: '' });
+  const [dashData, setDashData] = useState(null);
 
   const showToast = (msg) => {
     setToast({ visible: true, msg });
@@ -276,6 +279,7 @@ const Goals = () => {
   useEffect(() => {
     fetchGoals();
     fetchCTGoals();
+    dashboardAPI.get().then(setDashData).catch(() => {});
   }, []);
 
   const handleSetActive = async (goalId) => {
@@ -353,6 +357,64 @@ const Goals = () => {
     return { active: activeGoal, upcoming: up, completed: done };
   }, [goals]);
 
+  const readinessItems = useMemo(() => {
+    if (!dashData || !active) return [];
+    const items = [];
+
+    // Race predictor vs. goal
+    if (active.target_time_seconds && dashData.predictor?.predictions?.length) {
+      const activeDistLabel = distanceLabel(
+        active.distance_meters || active.race_distance_meters, unit
+      );
+      const row = dashData.predictor.predictions.find(
+        p => p.distance === activeDistLabel || p.distance === 'Marathon'
+      );
+      if (row) {
+        const diff = active.target_time_seconds - row.seconds;
+        const abs = Math.abs(diff);
+        const m = Math.floor(abs / 60);
+        const s = Math.round(abs % 60);
+        const diffStr = `${m}:${String(s).padStart(2, '0')}`;
+        items.push({
+          label: 'Race predictor vs. goal',
+          value: diff > 0 ? `${diffStr} ahead` : `${diffStr} behind`,
+          signal: diff > 0 ? 'positive' : 'warning',
+        });
+      }
+    }
+
+    // Long run coverage
+    if (dashData.long_run?.coverage_pct != null) {
+      const pct = Math.round(dashData.long_run.coverage_pct);
+      items.push({
+        label: 'Long run coverage',
+        value: `${pct}% of race distance`,
+        signal: pct >= 70 ? 'positive' : 'warning',
+      });
+    }
+
+    // Recovery
+    if (dashData.recovery?.recovery_pct != null) {
+      const rec = Math.round(dashData.recovery.recovery_pct);
+      items.push({
+        label: 'Recovery',
+        value: `${rec}%`,
+        signal: rec >= 70 ? 'positive' : rec >= 50 ? 'neutral' : 'warning',
+      });
+    }
+
+    // Injury risk
+    if (dashData.injury_risk?.risk_level) {
+      items.push({
+        label: 'Injury risk',
+        value: dashData.injury_risk.risk_level,
+        signal: dashData.injury_risk.risk_level === 'Low' ? 'positive' : 'warning',
+      });
+    }
+
+    return items;
+  }, [dashData, active, unit]);
+
   if (loading) {
     return (
       <div className="card text-center py-12">
@@ -401,187 +463,196 @@ const Goals = () => {
           {active && (
             <div>
               <SLabel>Active Goal</SLabel>
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                style={{ background: 'var(--color-navy)', borderRadius: 20, padding: '28px 32px', boxShadow: '0 8px 40px rgba(27,37,89,0.22)', position: 'relative', overflow: 'hidden' }}
-              >
-                {/* Coral accent bar */}
-                <div style={{ position: 'absolute', top: 0, left: 0, width: 5, height: '100%', background: 'var(--color-coral)' }} />
+              <ActiveGoalHero
+                goal={active}
+                distLabel={distanceLabel(active.distance_meters || active.race_distance_meters, unit)}
+                targetTime={secondsToHMS(active.target_time_seconds)}
+                requiredPace={derivePace(active.target_time_seconds, active.distance_meters || active.race_distance_meters, unit)}
+                weeksOut={weeksUntil(active.race_date)}
+                onDeactivate={handleDeactivate}
+                onLogResult={setLogGoal}
+              />
 
-                {/* Top row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, gap: 24 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ background: 'var(--color-coral)', color: '#fff', borderRadius: 5, padding: '3px 10px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        {distanceLabel(active.distance_meters || active.race_distance_meters, unit)}
-                      </span>
-                      <span style={{ background: 'rgba(46,204,139,0.18)', color: '#2ECC8B', borderRadius: 5, padding: '3px 9px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                        Active
-                      </span>
-                    </div>
-                    <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 7 }}>
-                      {active.race_name}
-                    </h2>
-                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-                      {fmtDate(active.race_date)}
-                    </p>
-                  </div>
-
-                  {/* Stats row */}
-                  <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0 }}>
-                    {[
-                      {
-                        value: secondsToHMS(active.target_time_seconds) || 'Just finish',
-                        label: 'Target Time',
-                        size: 26,
-                        color: '#fff',
-                      },
-                      {
-                        value: derivePace(active.target_time_seconds, active.distance_meters || active.race_distance_meters, unit) || '—',
-                        label: 'Required Pace',
-                        size: 20,
-                        color: 'rgba(255,255,255,0.8)',
-                      },
-                      {
-                        value: `${weeksUntil(active.race_date)}w`,
-                        label: 'To Race Day',
-                        size: 30,
-                        color: 'var(--color-coral)',
-                      },
-                    ].map((s, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-                        {i > 0 && <div style={{ width: 1, height: 50, background: 'rgba(255,255,255,0.1)', margin: '0 20px' }} />}
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: s.size, fontWeight: 700, color: s.color, lineHeight: 1 }}>
-                            {s.value}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 5 }}>
-                            {s.label}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {/* ② Readiness Summary */}
+              {readinessItems.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <SLabel>Race Readiness</SLabel>
+                  <EvidenceCard items={readinessItems} />
                 </div>
-
-                {/* Bottom row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', gap: 16 }}>
-                  {new Date(active.race_date) < new Date() ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ background: 'rgba(232,114,90,0.2)', color: 'var(--color-coral)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                        Race day has passed
-                      </span>
-                      <button
-                        onClick={() => setLogGoal(active)}
-                        style={{ background: 'var(--color-coral)', border: 'none', borderRadius: 9, padding: '6px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-                      >
-                        Log your result
-                      </button>
-                    </div>
-                  ) : (
-                    active.notes ? (
-                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(255,255,255,0.32)', fontStyle: 'italic', maxWidth: 260, margin: 0 }}>
-                        "{active.notes}"
-                      </p>
-                    ) : <div />
-                  )}
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <Link
-                      to={`/goals/${active.id}/edit`}
-                      style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 9, padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDeactivate(active.id)}
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, padding: '8px 14px', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                    >
-                      Deactivate
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
+              )}
             </div>
           )}
 
-          {/* ② Upcoming Goals */}
+          {/* ② Upcoming Goals — Race Pipeline */}
           <div>
-            <SLabel action={<span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#8B93B0' }}>{upcoming.length} planned</span>}>
-              Upcoming Goals
+            <SLabel action={
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#8B93B0' }}>
+                {upcoming.length} planned
+              </span>
+            }>
+              Race Pipeline
             </SLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-              {upcoming.map((g, i) => {
-                const dist = distanceLabel(g.distance_meters || g.race_distance_meters, unit);
-                const pace = derivePace(g.target_time_seconds, g.distance_meters || g.race_distance_meters, unit);
-                const wks = weeksUntil(g.race_date);
-                return (
-                  <motion.div
-                    key={g.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className="goal-card"
-                    style={{ background: '#fff', borderRadius: 16, padding: '20px 22px', boxShadow: '0 1px 2px rgba(27,37,89,0.05),0 2px 12px rgba(27,37,89,0.04)', transition: 'transform 0.15s, box-shadow 0.15s' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                      <div>
-                        <span style={{ background: '#ECEEF4', color: '#4A5173', borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)' }}>
-                          {dist}
-                        </span>
-                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 15, fontWeight: 700, color: 'var(--color-navy)', marginTop: 8, marginBottom: 3, lineHeight: 1.2 }}>
-                          {g.race_name}
-                        </h3>
-                        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#8B93B0' }}>{fmtDate(g.race_date)}</p>
-                      </div>
-                      <div style={{ background: '#F8F9FC', borderRadius: 9, padding: '5px 10px', flexShrink: 0, marginTop: 2, textAlign: 'center' }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--color-navy)', lineHeight: 1 }}>{wks}w</div>
-                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#8B93B0', marginTop: 2 }}>out</div>
-                      </div>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: 18, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #ECEEF4' }}>
-                      {[
-                        g.target_time_seconds && { v: secondsToHMS(g.target_time_seconds), l: 'Target' },
-                        pace && { v: pace, l: 'Req. Pace' },
-                      ].filter(Boolean).map((s, j) => (
-                        <div key={j}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: 'var(--color-navy)' }}>{s.v}</div>
-                          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 2 }}>{s.l}</div>
+            {/* Horizontal scroll pipeline */}
+            <div style={{ overflowX: 'auto', paddingBottom: 8, marginRight: -4 }}>
+              <div style={{ display: 'flex', gap: 0, minWidth: 'max-content', alignItems: 'stretch', position: 'relative', paddingTop: 20 }}>
+
+                {/* Connecting line */}
+                {upcoming.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: 28, left: 32, right: 32,
+                    height: 2, background: '#ECEEF4', zIndex: 0,
+                  }} />
+                )}
+
+                {upcoming.map((g, i) => {
+                  const dist = distanceLabel(g.distance_meters || g.race_distance_meters, unit);
+                  const wks = weeksUntil(g.race_date);
+                  return (
+                    <div key={g.id} style={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+                      {/* Pipeline node */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 240 }}>
+                        {/* Dot on the line */}
+                        <div style={{
+                          width: 12, height: 12, borderRadius: '50%',
+                          background: '#fff', border: '2.5px solid var(--color-navy)',
+                          flexShrink: 0, marginBottom: 12, zIndex: 2,
+                        }} />
+
+                        {/* Card */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: i * 0.06 }}
+                          className="goal-card"
+                          style={{
+                            background: '#fff', borderRadius: 16, padding: '18px 20px',
+                            boxShadow: '0 1px 2px rgba(27,37,89,0.05),0 2px 12px rgba(27,37,89,0.04)',
+                            transition: 'transform 0.15s, box-shadow 0.15s',
+                            width: 220, flex: 1,
+                          }}
+                        >
+                          {/* Top: dist badge + weeks chip */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                            <span style={{
+                              background: '#ECEEF4', color: '#4A5173', borderRadius: 5,
+                              padding: '2px 8px', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-sans)',
+                            }}>
+                              {dist}
+                            </span>
+                            <div style={{
+                              background: 'var(--navy-tint)', borderRadius: 8,
+                              padding: '3px 8px', textAlign: 'center',
+                            }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--color-navy)' }}>
+                                {wks}w
+                              </span>
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#8B93B0', marginLeft: 2 }}>
+                                out
+                              </span>
+                            </div>
+                          </div>
+
+                          <h3 style={{
+                            fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700,
+                            color: 'var(--color-navy)', marginBottom: 4, lineHeight: 1.25,
+                          }}>
+                            {g.race_name}
+                          </h3>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 14 }}>
+                            <LuCalendar size={11} color="#8B93B0" />
+                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#8B93B0' }}>
+                              {fmtDate(g.race_date)}
+                            </span>
+                          </div>
+
+                          {g.target_time_seconds && (
+                            <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid #ECEEF4' }}>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--color-navy)' }}>
+                                {secondsToHMS(g.target_time_seconds)}
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#8B93B0', marginTop: 1 }}>
+                                Target Time
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', gap: 7 }}>
+                            <button
+                              onClick={() => handleSetActive(g.id)}
+                              disabled={settingActiveId === g.id}
+                              style={{
+                                flex: 1, background: 'var(--color-navy)', border: 'none',
+                                borderRadius: 8, padding: '7px 0', fontFamily: 'var(--font-sans)',
+                                fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer',
+                              }}
+                            >
+                              {settingActiveId === g.id ? '…' : 'Set Active'}
+                            </button>
+                            <Link
+                              to={`/goals/${g.id}/edit`}
+                              style={{
+                                background: '#F8F9FC', border: '1px solid #D4D8E8',
+                                borderRadius: 8, padding: '7px 12px', fontFamily: 'var(--font-sans)',
+                                fontSize: 11, fontWeight: 600, color: '#4A5173', textDecoration: 'none',
+                                display: 'inline-flex', alignItems: 'center',
+                              }}
+                            >
+                              Edit
+                            </Link>
+                          </div>
+                        </motion.div>
+                      </div>
+
+                      {/* Arrow connector between cards */}
+                      {i < upcoming.length - 1 && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 22, color: '#D4D8E8' }}>
+                          <LuChevronRight size={16} />
                         </div>
-                      ))}
+                      )}
                     </div>
+                  );
+                })}
 
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => handleSetActive(g.id)}
-                        disabled={settingActiveId === g.id}
-                        style={{ flex: 1, background: 'var(--color-navy)', border: 'none', borderRadius: 9, padding: 8, fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-                      >
-                        {settingActiveId === g.id ? 'Setting...' : 'Set as Active'}
-                      </button>
-                      <Link
-                        to={`/goals/${g.id}/edit`}
-                        style={{ flex: 1, background: '#F8F9FC', border: '1px solid #D4D8E8', borderRadius: 9, padding: 8, fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#4A5173', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        Edit
-                      </Link>
+                {/* Add Race Goal — pipeline terminus */}
+                <div style={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+                  {upcoming.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 22, color: '#D4D8E8' }}>
+                      <LuChevronRight size={16} />
                     </div>
-                  </motion.div>
-                );
-              })}
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 240 }}>
+                    <div style={{
+                      width: 12, height: 12, borderRadius: '50%',
+                      background: '#ECEEF4', border: '2.5px dashed #C8CCE0',
+                      flexShrink: 0, marginBottom: 12,
+                    }} />
+                    <Link
+                      to="/goals/new"
+                      style={{
+                        background: 'transparent', border: '2px dashed #D4D8E8',
+                        borderRadius: 16, padding: 20, width: 220,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        justifyContent: 'center', gap: 8, minHeight: 120,
+                        textDecoration: 'none', transition: 'border-color 0.15s, background 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.background = '#F8F9FC'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D4D8E8'; e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: 32, height: 32, borderRadius: '50%', background: '#ECEEF4',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 20, color: '#8B93B0',
+                      }}>+</div>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#8B93B0' }}>
+                        Add Race Goal
+                      </span>
+                    </Link>
+                  </div>
+                </div>
 
-              {/* Add Race Goal dashed card */}
-              <Link
-                to="/goals/new"
-                style={{ background: 'transparent', border: '2px dashed #D4D8E8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 160, textDecoration: 'none', transition: 'border-color 0.15s, background 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-navy)'; e.currentTarget.style.background = '#F8F9FC'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#D4D8E8'; e.currentTarget.style.background = 'transparent'; }}
-              >
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#ECEEF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#8B93B0' }}>+</div>
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#8B93B0' }}>Add Race Goal</span>
-              </Link>
+              </div>
             </div>
           </div>
 
