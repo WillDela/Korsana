@@ -227,6 +227,97 @@ func sessionSummary(response string) string {
 	return candidate + "…"
 }
 
+// coachState is the persisted per-user continuity blob stored in users.coach_state.
+type coachState struct {
+	FlaggedConcerns []flaggedConcern `json:"flagged_concerns,omitempty"`
+}
+
+// flaggedConcern is a single concern extracted from a coach response.
+type flaggedConcern struct {
+	Text string `json:"text"`
+	Date string `json:"date"`
+}
+
+// concernKeywords trigger concern extraction when found in a coach response.
+var concernKeywords = []string{
+	"knee", "pain", "injury", "injur", "overtraining", "too much", "too fast",
+	"be careful", "watch your", "risk of", "warning", "concerning", "concern",
+	"sharp increase", "mileage jump", "consecutive hard", "fatigue",
+}
+
+// extractConcern scans the response for flagged health or load signals.
+// Returns a short concern string (≤100 chars) or "" if nothing notable found.
+func extractConcern(response string) string {
+	lower := strings.ToLower(response)
+	for _, kw := range concernKeywords {
+		if !strings.Contains(lower, kw) {
+			continue
+		}
+		// Find the sentence containing the keyword and trim to ≤100 chars.
+		for _, sep := range []string{". ", "! ", "? ", "\n"} {
+			start := 0
+			for {
+				idx := strings.Index(lower[start:], kw)
+				if idx < 0 {
+					break
+				}
+				absIdx := start + idx
+				// Walk back to sentence start
+				sentStart := strings.LastIndexAny(lower[:absIdx], ".!?\n")
+				if sentStart < 0 {
+					sentStart = 0
+				} else {
+					sentStart += 2
+				}
+				sentEnd := strings.Index(lower[absIdx:], sep)
+				if sentEnd < 0 {
+					sentEnd = len(response) - absIdx
+				}
+				sentence := strings.TrimSpace(response[sentStart : absIdx+sentEnd])
+				if len(sentence) > 100 {
+					sentence = sentence[:100] + "…"
+				}
+				if sentence != "" {
+					return sentence
+				}
+				start = absIdx + len(kw)
+			}
+		}
+		// Fallback: keyword found but no clean sentence boundary
+		return kw + " concern noted"
+	}
+	return ""
+}
+
+// updateCoachState extracts any concern from the response and persists it to coach_state.
+// Keeps at most 5 concerns, rotating out the oldest. Fire-and-forget — never fails the chat.
+func (s *CoachService) updateCoachState(ctx context.Context, userID uuid.UUID, response string) {
+	concern := extractConcern(response)
+	if concern == "" {
+		return
+	}
+
+	var stateJSON []byte
+	_ = s.db.GetContext(ctx, &stateJSON, `SELECT COALESCE(coach_state, '{}') FROM users WHERE id = $1`, userID)
+
+	var state coachState
+	if len(stateJSON) > 0 {
+		_ = json.Unmarshal(stateJSON, &state)
+	}
+
+	newConcern := flaggedConcern{Text: concern, Date: time.Now().Format("Jan 2")}
+	state.FlaggedConcerns = append([]flaggedConcern{newConcern}, state.FlaggedConcerns...)
+	if len(state.FlaggedConcerns) > 5 {
+		state.FlaggedConcerns = state.FlaggedConcerns[:5]
+	}
+
+	updated, err := json.Marshal(state)
+	if err != nil {
+		return
+	}
+	_, _ = s.db.ExecContext(ctx, `UPDATE users SET coach_state = $1 WHERE id = $2`, updated, userID)
+}
+
 // coachRuleLayer is appended to every system prompt to enforce safety guardrails
 // regardless of model behaviour or user phrasing.
 const coachRuleLayer = `
@@ -425,6 +516,9 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 
 	// Extract structured artifact from response (strips artifact block from stored text)
 	cleanResponse, artifact := extractArtifact(response)
+
+	// Persist any flagged concern to coach_state for cross-session continuity.
+	go s.updateCoachState(context.Background(), userID, cleanResponse)
 
 	// Build evidence data points when there is no structured artifact.
 	// Two fast DB reads, no AI call — used for the "Why?" expander in the UI.
@@ -673,14 +767,35 @@ Training Phase: %s`,
 		))
 	}
 
-	// Last coach session summary for continuity
-	var lastSummary string
-	if dbErr := s.db.GetContext(ctx, &lastSummary, `
-		SELECT COALESCE(summary, '') FROM coach_sessions
+	// Last 2 coach session summaries for continuity
+	var sessionSummaries []string
+	if dbErr := s.db.SelectContext(ctx, &sessionSummaries, `
+		SELECT summary FROM coach_sessions
 		WHERE user_id = $1 AND summary IS NOT NULL AND summary != ''
-		ORDER BY updated_at DESC LIMIT 1
-	`, userID); dbErr == nil && lastSummary != "" {
-		parts = append(parts, "Last Coach Session: "+lastSummary)
+		ORDER BY updated_at DESC LIMIT 2
+	`, userID); dbErr == nil && len(sessionSummaries) > 0 {
+		for i, sum := range sessionSummaries {
+			label := "Last Coach Session"
+			if i == 1 {
+				label = "Previous Coach Session"
+			}
+			parts = append(parts, label+": "+sum)
+		}
+	}
+
+	// Flagged concerns from coach_state (persisted across sessions)
+	var stateJSON []byte
+	if dbErr := s.db.GetContext(ctx, &stateJSON, `
+		SELECT COALESCE(coach_state, '{}') FROM users WHERE id = $1
+	`, userID); dbErr == nil && len(stateJSON) > 0 {
+		var state coachState
+		if jsonErr := json.Unmarshal(stateJSON, &state); jsonErr == nil && len(state.FlaggedConcerns) > 0 {
+			concernLines := "Previously flagged concerns:"
+			for _, c := range state.FlaggedConcerns {
+				concernLines += fmt.Sprintf("\n- %s (%s)", c.Text, c.Date)
+			}
+			parts = append(parts, concernLines)
+		}
 	}
 
 	if len(activities) > 0 {
