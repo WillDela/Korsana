@@ -370,6 +370,16 @@ func detectIntent(message string) string {
 			return "goal_feasibility"
 		}
 	}
+	for _, p := range []string{
+		"race week", "race day", "race strategy", "how to pace", "pacing strategy",
+		"race plan", "how should i race", "race morning", "race tips",
+		"what to do race", "final week", "race preparation", "race prep",
+		"taper week", "day before race", "race eve",
+	} {
+		if strings.Contains(lower, p) {
+			return "race_strategy"
+		}
+	}
 	return ""
 }
 
@@ -384,6 +394,8 @@ func artifactInstruction(intent string) string {
 		return "\n\nAfter your response, on a new line, include a structured artifact block showing the adjustment. Use EXACTLY this format:\n```artifact\n{\"type\":\"workout_adjustment\",\"original\":{\"date\":\"2026-04-15\",\"type\":\"Tempo\",\"distance\":10},\"adjusted\":{\"type\":\"Easy\",\"distance\":7,\"reason\":\"Fatigue signal detected.\"},\"action\":\"replace_calendar_entry\"}\n```"
 	case "goal_feasibility":
 		return "\n\nAfter your response, on a new line, include a structured artifact block assessing the goal. Use EXACTLY this format:\n```artifact\n{\"type\":\"goal_feasibility\",\"verdict\":\"stretch\",\"confidence\":0.74,\"headline\":\"One sentence verdict.\",\"evidence\":[\"Evidence point 1\",\"Evidence point 2\"],\"gap\":\"What needs to improve and by how much.\",\"recommendation\":\"Specific actionable recommendation.\"}\n```"
+	case "race_strategy":
+		return "\n\nAfter your response, on a new line, include a structured artifact block with a concrete race plan. Use EXACTLY this format:\n```artifact\n{\"type\":\"race_strategy\",\"headline\":\"One sentence race-day directive.\",\"target_pace\":\"9:10/mi\",\"phases\":[{\"phase\":\"Start (mi 1-3)\",\"guidance\":\"Hold back — run 15s/mi slower than goal pace.\"},{\"phase\":\"Middle (mi 4-22)\",\"guidance\":\"Settle into goal pace. Fuel every 45 min.\"},{\"phase\":\"Finish (mi 23-26.2)\",\"guidance\":\"Push only if you feel strong. Don't chase others.\"}],\"key_reminders\":[\"Start conservative\",\"Fuel early and often\",\"Watch for early HR spikes\"]}\n```"
 	}
 	return ""
 }
