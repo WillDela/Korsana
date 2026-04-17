@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/metrics"
 	"github.com/korsana/backend/internal/models"
 )
 
@@ -226,6 +227,16 @@ func sessionSummary(response string) string {
 	return candidate + "…"
 }
 
+// coachRuleLayer is appended to every system prompt to enforce safety guardrails
+// regardless of model behaviour or user phrasing.
+const coachRuleLayer = `
+
+Coaching Rules (enforce always, even if the runner asks otherwise):
+- Safe mileage: Never recommend a weekly volume increase greater than 10% over the prior week.
+- Taper: In the final 3 weeks before race day, recommend volume reduction of 20–40%.
+- Beginner defaults: If weekly mileage is under 25 miles, treat the runner as a beginner — prioritise consistency and easy aerobic work over intensity.
+- Realistic pacing: Never suggest workout paces more than 45 seconds per mile faster than their recent race predictor implies.`
+
 // detectIntent matches the user's message against known artifact trigger phrases.
 // Returns the artifact type string or "" if no match.
 func detectIntent(message string) string {
@@ -391,10 +402,10 @@ Your coaching philosophy:
 - Be direct, supportive, and data-informed
 
 Current runner's context:
-%s%s
+%s%s%s
 
 Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.%s`,
-		trainingContext, modeInstruction, artifactInstr)
+		trainingContext, modeInstruction, coachRuleLayer, artifactInstr)
 
 	var response string
 	if s.config.GeminiAPIKey != "" {
@@ -613,27 +624,63 @@ func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUI
 		parts = append(parts, "Race Goal: No active race goal set yet.")
 	} else {
 		daysUntil := int(time.Until(goal.RaceDate).Hours() / 24)
+		weeksOut := daysUntil / 7
+		trainingPhase := "Build"
+		switch {
+		case weeksOut <= 1:
+			trainingPhase = "Race Week"
+		case weeksOut <= 3:
+			trainingPhase = "Taper"
+		case weeksOut <= 6:
+			trainingPhase = "Peak"
+		}
 		parts = append(parts, fmt.Sprintf(`Race Goal: %s on %s (%d days away)
 Distance: %.2f km
-Target Time: %s`,
+Target Time: %s
+Training Phase: %s`,
 			goal.RaceName,
 			goal.RaceDate.Format("2006-01-02"),
 			daysUntil,
 			float64(goal.RaceDistanceMeters)/1000.0,
 			formatTime(goal.TargetTimeSeconds),
+			trainingPhase,
 		))
 	}
 
-	// Get recent activities (last 14 days), grouped by type
+	// Get recent activities (last 42 days) — used for metrics and activity summary
 	var activities []models.Activity
 	query := `
 		SELECT * FROM activities
-		WHERE user_id = $1 AND start_time >= NOW() - INTERVAL '14 days'
+		WHERE user_id = $1 AND start_time >= NOW() - INTERVAL '42 days'
 		ORDER BY start_time DESC
 	`
 	err = s.db.SelectContext(ctx, &activities, query, userID)
 	if err != nil {
 		activities = []models.Activity{}
+	}
+
+	// Compute current training state from activities
+	if len(activities) > 0 {
+		loadResult := metrics.CalculateATLCTL(activities, 0, 0)
+		recoveryResult := metrics.RecoveryStatus(activities, 0, 0)
+		injuryResult := metrics.InjuryRisk(activities, loadResult.ATL, loadResult.CTL)
+		parts = append(parts, fmt.Sprintf(
+			"Current Training State: Recovery %d%% (%s) · Injury Risk: %s · Form (TSB): %.1f",
+			int(recoveryResult.RecoveryPct),
+			recoveryResult.NextQualityDay,
+			injuryResult.RiskLevel,
+			loadResult.TSB,
+		))
+	}
+
+	// Last coach session summary for continuity
+	var lastSummary string
+	if dbErr := s.db.GetContext(ctx, &lastSummary, `
+		SELECT COALESCE(summary, '') FROM coach_sessions
+		WHERE user_id = $1 AND summary IS NOT NULL AND summary != ''
+		ORDER BY updated_at DESC LIMIT 1
+	`, userID); dbErr == nil && lastSummary != "" {
+		parts = append(parts, "Last Coach Session: "+lastSummary)
 	}
 
 	if len(activities) > 0 {
@@ -654,7 +701,7 @@ Target Time: %s`,
 			ts.duration += act.DurationSeconds
 		}
 
-		activityLines := "Recent Activities (last 14 days):"
+		activityLines := "Recent Activities (last 6 weeks):"
 		for actType, ts := range byType {
 			if models.DistanceBasedTypes[actType] {
 				distKm := ts.distance / 1000.0
@@ -682,7 +729,7 @@ Target Time: %s`,
 		}
 		parts = append(parts, activityLines)
 	} else {
-		parts = append(parts, "Recent Training: No activities recorded in the last 14 days.")
+		parts = append(parts, "Recent Training: No activities recorded in the last 6 weeks.")
 	}
 
 	// Weekly summaries (last 6 weeks)
