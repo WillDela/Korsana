@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { LuArrowRight, LuCheck, LuShieldCheck, LuSlidersHorizontal } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import BrandIcon from '../components/BrandIcon';
@@ -7,7 +8,7 @@ import { stravaAPI } from '../api/strava';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-/* ─── Marathon Majors data ─────────────────────────────────────── */
+/* ─── Marathon Majors ──────────────────────────────────────────── */
 const MAJORS = [
   { city: 'Boston',  country: 'USA',     month: 'Apr', img: '/Boston.jpg' },
   { city: 'London',  country: 'UK',      month: 'Apr', img: '/London.jpg' },
@@ -17,22 +18,46 @@ const MAJORS = [
   { city: 'Tokyo',   country: 'Japan',   month: 'Mar', img: '/Tokyo.jpg' },
 ];
 
-/* ─── Feature cards ─────────────────────────────────────────────── */
+/* ─── How it works ─────────────────────────────────────────────── */
+const HOW_STEPS = [
+  {
+    num: '01',
+    title: 'Connect Strava',
+    desc: 'Your full training history — every run, pace, and heart rate — becomes the foundation. No manual entry.',
+  },
+  {
+    num: '02',
+    title: 'Set a race goal',
+    desc: 'Pick your race and target time. Every metric, recommendation, and coaching conversation orients around that day.',
+  },
+  {
+    num: '03',
+    title: 'Get daily coaching',
+    desc: 'Check your recovery score, training load, predicted finish time, and today\'s AI brief every morning.',
+  },
+  {
+    num: '04',
+    title: 'Adapt as you train',
+    desc: 'When your data changes, the coach adjusts. Accept a plan change, ask why, or override it — you\'re in charge.',
+  },
+];
+
+/* ─── Feature cards ────────────────────────────────────────────── */
 const FEATURES = [
   {
     label: 'Training Load',
-    desc: 'See your weekly training load trend — how hard you trained vs. your baseline — so you never ramp too fast or too slow.',
+    desc: 'Your 7-day acute load vs. 42-day fitness baseline — so you know exactly when you\'re building fitness vs. digging a hole.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
       </svg>
     ),
-    accent: 'text-garmin',
-    bg: 'bg-garmin/10 border-garmin/20',
+    accent: 'text-[var(--color-info)]',
+    bg: 'bg-[rgba(74,108,247,0.08)] border-[rgba(74,108,247,0.15)]',
   },
   {
     label: 'Recovery Score',
-    desc: "Know when to push and when to back off. Your daily recovery score is calculated from recent effort, sleep, and training history.",
+    desc: 'Calculated from your last hard session, hours elapsed, and HR history. Know if today is a push day or a rest day.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -43,7 +68,7 @@ const FEATURES = [
   },
   {
     label: 'Race Predictor',
-    desc: 'Get a realistic finish time prediction for any race distance based on your actual recent Strava efforts.',
+    desc: 'Predicts your 5K through marathon finish time from your actual Strava efforts — not age-grade tables or generic formulas.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
@@ -54,7 +79,30 @@ const FEATURES = [
   },
 ];
 
-/* ─── AI Coach benefits ─────────────────────────────────────────── */
+/* ─── Proof callouts ───────────────────────────────────────────── */
+const PROOF = [
+  {
+    icon: <LuShieldCheck size={22} className="text-coral" />,
+    headline: 'Predicts your finish time from real Strava data',
+    body: 'Not age-grade tables or VO₂ max estimates. Your actual recent efforts, plugged into a race model calibrated to your fitness.',
+  },
+  {
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-sage)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    ),
+    headline: 'Knows your HR zones, long run history, and injury signals',
+    body: 'Korsana tracks time-in-zone, cadence, mileage trends, and load spikes — the same signals a professional coach watches.',
+  },
+  {
+    icon: <LuSlidersHorizontal size={22} className="text-[var(--color-info)]" />,
+    headline: 'Plans are suggestions. You decide what runs.',
+    body: 'Accept a plan, tweak it, or ignore it. The coach adapts to what you actually do — not what you said you\'d do.',
+  },
+];
+
+/* ─── AI Coach benefits ────────────────────────────────────────── */
 const BENEFITS = [
   {
     icon: (
@@ -62,8 +110,8 @@ const BENEFITS = [
         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
       </svg>
     ),
-    title: 'Adapts to your training load',
-    desc: 'Your plan adjusts week to week based on how your body is actually responding — not a rigid template.',
+    title: 'Adapts to your actual training',
+    desc: 'Your plan adjusts week to week based on how your body is responding — not a rigid template built for someone else.',
   },
   {
     icon: (
@@ -72,7 +120,7 @@ const BENEFITS = [
       </svg>
     ),
     title: 'Race-day strategy built in',
-    desc: 'Pacing targets, taper schedules, and fuelling windows are all calculated from your real data.',
+    desc: 'Pacing targets, taper schedules, and fuelling windows — all calculated from your real data, not a generic race-day guide.',
   },
   {
     icon: (
@@ -81,7 +129,7 @@ const BENEFITS = [
       </svg>
     ),
     title: 'Ask anything, anytime',
-    desc: 'Questions about your splits, your recovery, your next long run — the coach always has context.',
+    desc: 'Questions about your splits, your recovery, your next long run — the coach always has context because it always has your data.',
   },
 ];
 
@@ -108,16 +156,10 @@ const Landing = () => {
 
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <section className="border-b border-border-light relative overflow-hidden">
-        {/* Background photo */}
         <div
           className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(/landing_run.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 70%',
-          }}
+          style={{ backgroundImage: 'url(/landing_run.jpg)', backgroundSize: 'cover', backgroundPosition: 'center 70%' }}
         />
-        {/* Overlay: left-heavy gradient so left copy is readable, right stays visible */}
         <div className="absolute inset-0 z-0 bg-gradient-to-r from-white/95 via-white/80 to-white/30" />
 
         <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-10 md:py-14 relative z-10">
@@ -142,18 +184,28 @@ const Landing = () => {
                 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.05] text-navy mb-6"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
-                Your <span className="text-garmin">plan</span>,<br />
-                our <span className="text-garmin">goal</span>.
+                Your <span className="text-coral">plan</span>,<br />
+                our <span className="text-coral">goal</span>.
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: 0.1 }}
-                className="text-lg md:text-xl text-text-secondary mb-10 leading-relaxed font-medium"
+                className="text-lg md:text-xl text-text-secondary mb-4 leading-relaxed font-medium"
               >
-                You've signed up for the race. Now you need a plan — one that fits your schedule,
-                your current fitness, and gets you to the finish line.
+                Pick your race. Connect Strava. Korsana reads your training history and builds
+                a coaching loop around you — daily readiness, injury risk, a predicted finish time,
+                and an AI coach who knows every run.
+              </motion.p>
+
+              <motion.p
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.15 }}
+                className="text-base text-text-muted mb-8 font-medium"
+              >
+                Serious coaching support. No coach pricing.
               </motion.p>
 
               <motion.div
@@ -167,12 +219,10 @@ const Landing = () => {
                   className="btn btn-primary btn-lg w-full sm:w-auto shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                 >
                   Get Started
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
+                  <LuArrowRight size={16} />
                 </Link>
                 <button
-                  onClick={() => document.getElementById('coach')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
                   className="btn bg-white border border-border text-navy hover:bg-bg-app btn-lg w-full sm:w-auto transition-colors"
                 >
                   See how it works
@@ -186,18 +236,15 @@ const Landing = () => {
                 className="mt-4 text-[11px] font-mono text-text-muted uppercase tracking-widest flex items-center gap-4"
               >
                 <span className="flex items-center gap-1.5">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                  No credit card required
+                  <LuCheck size={11} />No credit card required
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                  Free to get started
+                  <LuCheck size={11} />Free to get started
                 </span>
               </motion.p>
-
             </div>
 
-            {/* Right: Goal card */}
+            {/* Right: dashboard card mockup */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -205,7 +252,6 @@ const Landing = () => {
               className="hidden lg:flex flex-col items-center justify-center"
             >
               <div className="w-full max-w-[520px] bg-white rounded-2xl border border-border shadow-2xl overflow-hidden">
-                {/* Card header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-light bg-bg-app">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-coral" />
@@ -218,15 +264,9 @@ const Landing = () => {
                   <div />
                 </div>
 
-                {/* Projected time */}
                 <div className="px-6 pt-6 pb-4 text-center">
-                  <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-2">
-                    Projected Finish Time
-                  </p>
-                  <div
-                    className="text-7xl font-extrabold text-navy tracking-tight"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
+                  <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-2">Projected Finish Time</p>
+                  <div className="text-7xl font-extrabold text-navy tracking-tight" style={{ fontFamily: 'var(--font-mono)' }}>
                     2:59:59
                   </div>
                   <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-sage/10 border border-sage/20">
@@ -235,7 +275,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Metric row */}
                 <div className="grid grid-cols-2 gap-px bg-border-light mx-6 mb-4 rounded-xl overflow-hidden border border-border">
                   <div className="bg-white px-4 py-3">
                     <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-widest mb-1">Avg Pace</p>
@@ -247,7 +286,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Alert banners */}
                 <div className="mx-6 mb-3 flex items-start gap-3 bg-amber/10 border border-amber/20 rounded-xl px-4 py-3">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                   <div>
@@ -273,51 +311,78 @@ const Landing = () => {
             transition={{ duration: 0.45, delay: 0.5 }}
             className="flex flex-wrap items-center gap-12 mt-20 pt-10 border-t border-border-light"
           >
-            <div>
-              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>10+</span>
-              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Active Runners</span>
-            </div>
-            <div className="w-px h-8 bg-border-light hidden sm:block" />
-            <div>
-              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>15+</span>
-              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Plans Generated</span>
-            </div>
-            <div className="w-px h-8 bg-border-light hidden sm:block" />
-            <div>
-              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>500+</span>
-              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Miles Analyzed</span>
-            </div>
-            <div className="w-px h-8 bg-border-light hidden sm:block" />
-            <div>
-              <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>12+</span>
-              <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">Races Targeted</span>
-            </div>
+            {[
+              { stat: '10+',  label: 'Active Runners' },
+              { stat: '15+',  label: 'Plans Generated' },
+              { stat: '500+', label: 'Miles Analyzed' },
+              { stat: '12+',  label: 'Races Targeted' },
+            ].map(({ stat, label }, i) => (
+              <div key={label}>
+                {i > 0 && <div className="w-px h-8 bg-border-light hidden sm:block absolute" style={{ marginLeft: -24 }} />}
+                <span className="text-2xl md:text-3xl font-bold text-navy block mb-0.5" style={{ fontFamily: 'var(--font-heading)' }}>{stat}</span>
+                <span className="text-xs font-bold text-text-muted uppercase tracking-widest font-mono">{label}</span>
+              </div>
+            ))}
           </motion.div>
         </div>
       </section>
 
-      {/* ── Precision Metrics / Features ─────────────────────────── */}
-      <section id="features" className="py-14 bg-white border-b border-border-light">
+      {/* ── How Korsana works ─────────────────────────────────────── */}
+      <section id="how-it-works" className="py-20 bg-white border-b border-border-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Precision Metrics</p>
-            <h2
-              className="text-3xl md:text-4xl font-bold text-navy mb-4"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              A dashboard designed for clarity.
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <p className="text-xs font-mono font-bold text-coral uppercase tracking-widest mb-3">How it works</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-navy mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+              From first run to race day.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              Visualize your progress with metric-focused data that cuts through the noise of traditional trackers for multiple activities.
+              Four steps. One continuous loop that gets smarter as you train.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_STEPS.map((s, i) => (
+              <motion.div
+                key={s.num}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                className="relative"
+              >
+                {/* Connector line */}
+                {i < HOW_STEPS.length - 1 && (
+                  <div className="hidden lg:block absolute top-6 left-[calc(100%-1rem)] w-8 h-px bg-border z-10" />
+                )}
+                <div className="bg-bg-app rounded-2xl border border-border p-6 h-full">
+                  <div className="w-11 h-11 rounded-xl bg-navy flex items-center justify-center mb-4">
+                    <span className="font-mono font-bold text-sm text-white">{s.num}</span>
+                  </div>
+                  <h3 className="font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{s.title}</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">{s.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Precision Metrics ─────────────────────────────────────── */}
+      <section id="features" className="py-20 bg-bg-app border-b border-border-light">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <p className="text-xs font-mono font-bold text-coral uppercase tracking-widest mb-3">Precision Metrics</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-navy mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
+              Numbers that actually mean something.
+            </h2>
+            <p className="text-lg text-text-secondary leading-relaxed">
+              14 training metrics, all anchored to your race goal and the phase you're in.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {FEATURES.map((f) => (
-              <div
-                key={f.label}
-                className="card p-8 flex flex-col gap-5"
-              >
+              <div key={f.label} className="card p-8 flex flex-col gap-5">
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${f.bg} ${f.accent} shrink-0`}>
                   {f.icon}
                 </div>
@@ -326,6 +391,32 @@ const Landing = () => {
                   <p className="text-sm text-text-secondary leading-relaxed">{f.desc}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Proof / Trust callouts ────────────────────────────────── */}
+      <section className="py-16 bg-white border-b border-border-light">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {PROOF.map((p, i) => (
+              <motion.div
+                key={p.headline}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-30px' }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className="flex flex-col gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[var(--navy-tint)] border border-[rgba(27,37,89,0.08)] flex items-center justify-center shrink-0">
+                  {p.icon}
+                </div>
+                <h3 className="font-bold text-navy leading-snug" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {p.headline}
+                </h3>
+                <p className="text-sm text-text-secondary leading-relaxed">{p.body}</p>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -344,39 +435,35 @@ const Landing = () => {
               transition={{ duration: 0.6 }}
               className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden"
             >
-              {/* Chat header */}
               <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10 bg-white/5">
-                <div className="w-8 h-8 rounded-full bg-garmin/20 border border-garmin/30 flex items-center justify-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-garmin)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 8v4l3 3" /></svg>
+                <div className="w-8 h-8 rounded-full bg-coral/20 border border-coral/30 flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-coral)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 8v4l3 3" /></svg>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Korsana The Coach</p>
+                  <p className="text-sm font-bold text-white">Korsana Coach</p>
                   <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Analyzing your data</p>
                 </div>
                 <div className="ml-auto w-2 h-2 rounded-full bg-sage animate-pulse" />
               </div>
 
-              {/* Messages */}
               <div className="p-5 space-y-4">
                 <div className="flex justify-end">
-                  <div className="max-w-[75%] bg-garmin/20 border border-garmin/20 rounded-2xl rounded-tr-sm px-4 py-3">
+                  <div className="max-w-[75%] bg-navy/60 border border-white/15 rounded-2xl rounded-tr-sm px-4 py-3">
                     <p className="text-sm text-white/90">I've never run more than 5 miles. I signed up for a half marathon in 14 weeks — where do I even start?</p>
                   </div>
                 </div>
 
                 <div className="flex justify-start">
                   <div className="max-w-[80%] bg-white/10 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 space-y-2">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-mono font-bold text-garmin uppercase tracking-widest">Korsana</span>
-                    </div>
+                    <span className="text-[10px] font-mono font-bold text-coral uppercase tracking-widest block mb-2">Korsana</span>
                     <p className="text-sm text-white/85">
-                      14 weeks is plenty of time — I've seen your recent runs on Strava and your aerobic base is stronger than you think.
+                      14 weeks is plenty — I've seen your recent runs on Strava and your aerobic base is stronger than you think.
                     </p>
                     <p className="text-sm text-white/85">
-                      I've built you a <span className="text-sage font-bold">16-week plan</span> (starting conservatively this week) with 4 runs per week. Your long run grows by no more than 10% each week so you stay injury-free.
+                      I've built you a <span className="text-sage font-bold">14-week plan</span> with 4 runs per week. Your long run grows no more than 10% each week so you stay injury-free.
                     </p>
                     <p className="text-sm text-white/85">
-                      Your first goal is simple: finish comfortable. Target <span className="text-garmin font-bold font-mono">11:30/mi</span> for your long runs — slower than you think you need to go, which is exactly right.
+                      Start at <span className="text-coral font-bold font-mono">11:30/mi</span> for long runs — slower than you think you need to go, which is exactly right.
                     </p>
                   </div>
                 </div>
@@ -385,7 +472,7 @@ const Landing = () => {
                   <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
                     <p className="text-sm text-white/30">Ask about your training…</p>
                   </div>
-                  <button className="w-9 h-9 rounded-xl bg-garmin flex items-center justify-center shadow-lg">
+                  <button className="w-9 h-9 rounded-xl bg-coral flex items-center justify-center shadow-lg">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                   </button>
                 </div>
@@ -399,16 +486,13 @@ const Landing = () => {
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.6, delay: 0.1 }}
             >
-              <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-4">Your Own Personal Coach</p>
-              <h2
-                className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-6"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
+              <p className="text-xs font-mono font-bold text-coral uppercase tracking-widest mb-4">Your AI Training Copilot</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-6" style={{ fontFamily: 'var(--font-heading)' }}>
                 A coach that actually knows your training.
               </h2>
               <p className="text-white/60 text-lg leading-relaxed mb-10">
                 Most apps give you a plan and walk away. Korsana reads your Strava data, tracks how your body is
-                responding, and adjusts the plan — then lets you have a real conversation about it.
+                responding, and adjusts — then lets you have a real conversation about it.
               </p>
 
               <div className="space-y-6">
@@ -421,7 +505,7 @@ const Landing = () => {
                     transition={{ duration: 0.4, delay: i * 0.1 }}
                     className="flex items-start gap-4"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-garmin shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-coral shrink-0">
                       {b.icon}
                     </div>
                     <div>
@@ -435,10 +519,10 @@ const Landing = () => {
               <div className="mt-10">
                 <Link
                   to="/signup"
-                  className="btn bg-garmin hover:bg-[#0068a5] text-white btn-lg border-none shadow-xl hover:-translate-y-0.5 transition-all"
+                  className="btn btn-primary btn-lg border-none shadow-xl hover:-translate-y-0.5 transition-all"
                 >
                   Get started with Korsana
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  <LuArrowRight size={15} />
                 </Link>
               </div>
             </motion.div>
@@ -448,33 +532,21 @@ const Landing = () => {
 
       {/* ── Integrations ─────────────────────────────────────────── */}
       <section className="py-24 border-b border-border-light relative overflow-hidden">
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: 'url(/black&white_run.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <div className="absolute inset-0 z-0" style={{ backgroundImage: 'url(/black&white_run.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="absolute inset-0 z-0 bg-white/75" />
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
             <div>
-              <p className="text-xs font-mono font-bold text-[#FC4C02] uppercase tracking-widest mb-3">Integrations</p>
-              <h2
-                className="text-3xl md:text-4xl font-bold text-navy mb-5"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
+              <p className="text-xs font-mono font-bold text-coral uppercase tracking-widest mb-3">Integrations</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-navy mb-5" style={{ fontFamily: 'var(--font-heading)' }}>
                 Connect Strava and go.
               </h2>
               <p className="text-lg text-text-secondary leading-relaxed mb-8">
-                Link your Strava account and Korsana pulls your full activity history — runs, paces, heart rate, elevation, and more —
-                to immediately understand where you are in your fitness.
+                Link your Strava account and Korsana pulls your full activity history — runs, paces, heart rate,
+                elevation, and more — to immediately understand where you are in your fitness.
               </p>
 
               <div className="space-y-4">
-                {/* Strava - live */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-bg-app">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border shadow-sm flex items-center justify-center shrink-0">
                     <BrandIcon brand="strava" size={24} />
@@ -488,7 +560,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Garmin - coming soon */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border-light bg-bg-app opacity-70">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border-light shadow-sm flex items-center justify-center shrink-0">
                     <BrandIcon brand="garmin" size={32} />
@@ -502,7 +573,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Coros - coming soon */}
                 <div className="flex items-center gap-4 p-4 rounded-xl border border-border-light bg-bg-app opacity-70">
                   <div className="w-12 h-12 rounded-xl bg-white border border-border-light shadow-sm flex items-center justify-center shrink-0">
                     <BrandIcon brand="coros" size={48} />
@@ -518,7 +588,6 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Strava connect visual */}
             <div className="hidden lg:flex items-center justify-center">
               <div className="w-full max-w-[360px] bg-bg-app rounded-2xl border border-border p-8 shadow-lg text-center">
                 <div className="w-16 h-16 rounded-2xl bg-[#FC4C02]/10 border border-[#FC4C02]/20 flex items-center justify-center mx-auto mb-6">
@@ -526,7 +595,7 @@ const Landing = () => {
                 </div>
                 <h3 className="text-lg font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Connect with Strava</h3>
                 <p className="text-sm text-text-secondary mb-6 leading-relaxed">
-                  One click. Korsana reads your history and starts building your plan immediately.
+                  One click. Korsana reads your history and starts building your coaching loop immediately.
                 </p>
                 <button
                   onClick={handleConnectStrava}
@@ -546,30 +615,20 @@ const Landing = () => {
       <section className="py-14 bg-bg-app border-b border-border-light">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-xs font-mono font-bold text-garmin uppercase tracking-widest mb-3">Dream big</p>
-            <h2
-              className="text-3xl md:text-4xl font-bold text-navy mb-4"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
+            <p className="text-xs font-mono font-bold text-coral uppercase tracking-widest mb-3">Dream big</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-navy mb-4" style={{ fontFamily: 'var(--font-heading)' }}>
               Everyone starts somewhere.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
               Your first race might be a local 5K. But the plan you build today is the same foundation that gets
-              runners to any race you put your mind to including the World Major Marathons. It all starts with a goal and a training block.
+              runners to any finish line — including the World Majors.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {MAJORS.map((race) => (
-              <div
-                key={race.city}
-                className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default"
-              >
-                <img
-                  src={race.img}
-                  alt={`${race.city} Marathon`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+              <div key={race.city} className="group relative rounded-2xl overflow-hidden aspect-[3/4] border border-border shadow-sm cursor-default">
+                <img src={race.img} alt={`${race.city} Marathon`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-heading)' }}>{race.city}</p>
@@ -585,39 +644,34 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── Footer / CTA ──────────────────────────────────────────── */}
+      {/* ── Footer CTA ────────────────────────────────────────────── */}
       <footer className="py-14 bg-navy relative overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 opacity-10"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-            backgroundSize: '40px 40px',
-          }}
-        />
+        <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
         <div className="max-w-[800px] mx-auto px-4 sm:px-6 text-center relative z-10">
-            <h2
-              className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Don't know where to start?<br />That's exactly what we're for.
-            </h2>
-            <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
-              Connect Strava and tell us your race. We'll handle the rest — a plan built around your life, not someone else's template.
-            </p>
-            <div className="mt-10 flex flex-col items-center gap-3">
-              <div className="flex items-center gap-6">
-                <Link to="/terms" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">
-                  Terms of Service
-                </Link>
-                <span className="text-white/20 text-xs">·</span>
-                <Link to="/privacy" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">
-                  Privacy Policy
-                </Link>
-              </div>
-              <p className="text-xs font-mono text-white/25 tracking-wide uppercase">
-                &copy; {CURRENT_YEAR} Korsana Inc. All rights reserved.
-              </p>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
+            Your race. Your data.<br />Your coach.
+          </h2>
+          <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto leading-relaxed mb-10">
+            Connect Strava, set your race, and get a coaching loop that adapts as you train —
+            not a template built for someone else.
+          </p>
+          <Link
+            to="/signup"
+            className="btn btn-primary btn-lg shadow-xl hover:-translate-y-0.5 transition-all"
+          >
+            Get started free
+            <LuArrowRight size={16} />
+          </Link>
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-6">
+              <Link to="/terms" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">Terms of Service</Link>
+              <span className="text-white/20 text-xs">·</span>
+              <Link to="/privacy" className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors no-underline uppercase tracking-widest">Privacy Policy</Link>
             </div>
+            <p className="text-xs font-mono text-white/25 tracking-wide uppercase">
+              &copy; {CURRENT_YEAR} Korsana Inc. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
