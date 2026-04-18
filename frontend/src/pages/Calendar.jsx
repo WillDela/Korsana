@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calendarAPI } from '../api/calendar';
@@ -12,6 +12,11 @@ import MetricStrip from '../components/ui/MetricStrip';
 import WorkoutCard from '../components/ui/WorkoutCard';
 import { useUnits } from '../context/UnitsContext';
 import { formatDistance, distanceLabel } from '../utils/units';
+import {
+  getStravaRedirectState,
+  clearStravaRedirectParams,
+  formatStravaSyncMessage,
+} from '../lib/stravaRedirect';
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -375,10 +380,11 @@ const Calendar = () => {
   const [modalMode, setModalMode] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
   const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState('');
+  const [syncMessage, setSyncMessage] = useState({ text: '', type: '' });
   const [stravaConnected, setStravaConnected] = useState(null); // null=unknown, false=not connected
   const [activeGoal, setActiveGoal] = useState(null);
   const { unit } = useUnits();
+  const syncMessageTimerRef = useRef(null);
 
   const [view, setView] = useState(() => {
     const v = searchParams.get('view');
@@ -432,6 +438,21 @@ const Calendar = () => {
       setLoading(false);
     }
   }, [gridStart, gridEnd]);
+
+  const showSyncMessage = useCallback((text, type = 'success', timeoutMs = 5000) => {
+    if (syncMessageTimerRef.current) {
+      clearTimeout(syncMessageTimerRef.current);
+    }
+
+    setSyncMessage({ text, type });
+
+    if (timeoutMs > 0) {
+      syncMessageTimerRef.current = window.setTimeout(() => {
+        setSyncMessage({ text: '', type: '' });
+        syncMessageTimerRef.current = null;
+      }, timeoutMs);
+    }
+  }, []);
 
   useEffect(() => {
     fetchMonthEntries();
@@ -569,8 +590,7 @@ const Calendar = () => {
       const data = await stravaAPI.getAuthURL('/calendar');
       window.location.href = data.url;
     } catch {
-      setSyncError('Could not start Strava connect — try from Settings.');
-      setTimeout(() => setSyncError(''), 4000);
+      showSyncMessage('Could not start Strava connect. Try again from Settings.', 'error', 4000);
     }
   };
 
@@ -585,43 +605,48 @@ const Calendar = () => {
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
   };
 
-  const handleSync = async () => {
+  const syncStrava = useCallback(async ({ afterConnect = false } = {}) => {
     setSyncing(true);
-    setSyncError('');
     try {
       const result = await stravaAPI.syncActivities();
-      setStravaConnected(null); // confirmed connected
+      setStravaConnected(true);
       await fetchMonthEntries();
       const count = result?.count || 0;
-      if (count === 0) setSyncError('Already up to date');
-      else setSyncError(`Synced ${count} activit${count === 1 ? 'y' : 'ies'}`);
+      showSyncMessage(formatStravaSyncMessage(count, { afterConnect }), 'success', 5000);
     } catch (err) {
       const status = err?.response?.status;
       if (status === 404) {
         setStravaConnected(false);
-        setSyncError('');
+        showSyncMessage('Strava is not connected yet. Finish setup in Settings.', 'error', 5000);
       } else if (err?.code === 'ECONNABORTED') {
-        setSyncError('Sync timed out — try again');
+        showSyncMessage('Sync timed out. Try again.', 'error', 5000);
       } else {
-        setSyncError(err?.response?.data?.error || 'Sync failed');
+        showSyncMessage(err?.response?.data?.error || 'Sync failed.', 'error', 5000);
       }
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncError(''), 5000);
     }
-  };
+  }, [fetchMonthEntries, showSyncMessage]);
 
-  // After connecting Strava from this page, auto-sync and clear the param.
   useEffect(() => {
-    if (searchParams.get('strava_connected') === 'true') {
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.delete('strava_connected');
-        return next;
-      }, { replace: true });
-      handleSync();
+    const redirectState = getStravaRedirectState(searchParams);
+    if (!redirectState) return;
+
+    clearStravaRedirectParams(setSearchParams);
+
+    if (redirectState.type === 'success') {
+      showSyncMessage('Strava connected. Pulling in your latest activities...', 'success', 5000);
+      syncStrava({ afterConnect: true });
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    showSyncMessage(redirectState.text, 'error', 5000);
+  }, [searchParams, setSearchParams, showSyncMessage, syncStrava]);
+
+  useEffect(() => () => {
+    if (syncMessageTimerRef.current) {
+      clearTimeout(syncMessageTimerRef.current);
+    }
   }, []);
 
   const handleDayClick = (dateKey) => {
@@ -769,7 +794,7 @@ const Calendar = () => {
             </button>
           ) : (
             <button
-              onClick={handleSync}
+              onClick={() => syncStrava()}
               disabled={syncing}
               className={`w-8 h-8 flex items-center justify-center rounded-lg border border-border transition-colors ${syncing ? 'bg-bg-app text-text-muted cursor-not-allowed' : 'bg-white hover:bg-bg-app text-orange-500 hover:text-orange-600 hover:border-orange-200'
                 }`}
@@ -782,9 +807,9 @@ const Calendar = () => {
               </svg>
             </button>
           )}
-          {syncError && (
-            <span className={`text-xs font-medium ${syncError.startsWith('Synced') || syncError === 'Already up to date' ? 'text-green-600' : 'text-red-500'}`}>
-              {syncError}
+          {syncMessage.text && (
+            <span className={`text-xs font-medium ${syncMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+              {syncMessage.text}
             </span>
           )}
         </div>

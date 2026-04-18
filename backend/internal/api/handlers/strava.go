@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -73,21 +74,33 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	dest := "/settings"
+	if returnTo != "" && strings.HasPrefix(returnTo, "/") {
+		dest = returnTo
+	}
+
 	if err = h.stravaService.HandleCallback(c.Request.Context(), userID, code); err != nil {
 		errParam := "connection_failed"
 		if errors.Is(err, services.ErrStravaAlreadyConnected) {
 			errParam = "already_connected"
 		}
-		c.Redirect(http.StatusFound, h.frontendURL+"/settings?strava_error="+errParam)
+		c.Redirect(http.StatusFound, h.frontendURL+withRedirectParam(dest, "strava_error", errParam))
 		return
 	}
 
-	// Redirect to the page the user connected from, defaulting to settings.
-	dest := "/settings"
-	if returnTo != "" && strings.HasPrefix(returnTo, "/") {
-		dest = returnTo
+	c.Redirect(http.StatusFound, h.frontendURL+withRedirectParam(dest, "strava_connected", "true"))
+}
+
+func withRedirectParam(dest, key, value string) string {
+	u, err := url.Parse(dest)
+	if err != nil {
+		return dest
 	}
-	c.Redirect(http.StatusFound, h.frontendURL+dest+"?strava_connected=true")
+
+	query := u.Query()
+	query.Set(key, value)
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 // SyncActivities syncs activities from Strava for the authenticated user.

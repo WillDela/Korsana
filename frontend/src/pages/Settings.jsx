@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { userProfileAPI } from '../api/userProfile';
 import { stravaAPI } from '../api/strava';
 import { getErrorMessage } from '../api/client';
+import { getStravaRedirectState, clearStravaRedirectParams } from '../lib/stravaRedirect';
 
 import ProfileBanner from '../components/profile/ProfileBanner';
 import PersonalRecords from '../components/profile/PersonalRecords';
@@ -28,27 +29,27 @@ const Settings = () => {
 
   useEffect(() => {
     fetchProfile();
-
-    if (searchParams.get('strava_connected') === 'true') {
-      setStravaMessage({ type: 'success', text: 'Strava connected successfully!' });
-      setActiveTab('integrations');
-      fetchProfile();
-      setSearchParams({});
-    } else if (searchParams.get('strava_error')) {
-      const error = searchParams.get('strava_error');
-      const errorMessages = {
-        missing_code: 'Authorization code missing',
-        missing_state: 'Security validation failed',
-        invalid_state: 'Invalid or expired session',
-        connection_failed: 'Failed to connect to Strava',
-        already_connected: 'This Strava account is already linked to another Korsana account',
-      };
-      setStravaMessage({ type: 'error', text: errorMessages[error] || 'Failed to connect Strava' });
-      setActiveTab('integrations');
-      setSearchParams({});
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const redirectState = getStravaRedirectState(searchParams);
+    if (!redirectState) return;
+
+    setActiveTab('integrations');
+    setStravaMessage(
+      redirectState.type === 'success'
+        ? { type: 'success', text: 'Strava connected successfully. You can sync from here anytime.' }
+        : redirectState
+    );
+
+    if (redirectState.type === 'success') {
+      fetchProfile();
+    }
+
+    clearStravaRedirectParams(setSearchParams);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, setSearchParams]);
 
   const fetchProfile = async () => {
     try {

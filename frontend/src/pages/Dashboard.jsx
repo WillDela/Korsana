@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import {
   LuChartColumnBig as LuBarChart2, LuTarget, LuActivity, LuHeart, LuZap, LuHeartPulse,
   LuMountain, LuFootprints, LuFlame, LuDumbbell, LuCircleCheckBig as LuCheckCircle2,
@@ -40,6 +40,11 @@ import MetricStrip from '../components/ui/MetricStrip';
 import BriefingPanel from '../components/ui/BriefingPanel';
 import { coachAPI } from '../api/coach';
 import { chartTheme } from '../lib/chartTheme';
+import {
+  getStravaRedirectState,
+  clearStravaRedirectParams,
+  formatStravaSyncMessage,
+} from '../lib/stravaRedirect';
 
 // ─── Workout type colors ───────────────────────────────────────
 const WC = {
@@ -533,8 +538,9 @@ const WidgetGrid = memo(({ active, dashboardData, computedData, onRefresh, strav
 
 // ─── Dashboard ────────────────────────────────────────────────
 const Dashboard = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { unit } = useUnits();
+  const syncMessageTimerRef = useRef(null);
 
   // Unit-aware helpers (defined here so they close over `unit`)
   const MPU = unit === 'imperial' ? 1609.34 : 1000;            // meters per unit
@@ -567,6 +573,21 @@ const Dashboard = () => {
   ), []);
 
   const [dashboardData, setDashboardData] = useState(null);
+
+  const showSyncMessage = useCallback((text, type = 'success', timeoutMs = 4000) => {
+    if (syncMessageTimerRef.current) {
+      clearTimeout(syncMessageTimerRef.current);
+    }
+
+    setSyncMsg({ text, type });
+
+    if (timeoutMs > 0) {
+      syncMessageTimerRef.current = window.setTimeout(() => {
+        setSyncMsg({ text: '', type: '' });
+        syncMessageTimerRef.current = null;
+      }, timeoutMs);
+    }
+  }, []);
 
   const fetchActiveGoal = useCallback(async () => {
     try {
@@ -649,56 +670,63 @@ const Dashboard = () => {
     fetchWeekEntries();
   }, [fetchWeekEntries]);
 
+
   const handleConnectStrava = useCallback(async () => {
     try {
       const data = await stravaAPI.getAuthURL('/dashboard');
       window.location.href = data.url;
     } catch {
-      setSyncMsg({ text: 'Could not start Strava connect — try from Settings.', type: 'error' });
-      setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
+      showSyncMessage('Could not start Strava connect. Try again from Settings.', 'error', 4000);
     }
-  }, []);
+  }, [showSyncMessage]);
 
-  const handleSyncActivities = useCallback(async (provider = 'strava') => {
-    if (provider !== 'strava') {
-      const name = provider[0].toUpperCase() + provider.slice(1);
-      setSyncMsg({ text: `${name} coming soon!`, type: 'error' });
-      setTimeout(() => setSyncMsg({ text: '', type: '' }), 3000);
-      return;
-    }
+  const syncStravaActivities = useCallback(async ({ afterConnect = false } = {}) => {
     try {
-      setSyncMsg({ text: '', type: '' });
       setIsSyncing(true);
       const result = await stravaAPI.syncActivities();
       setLastSynced(new Date().toISOString());
+      setStravaConnected(true);
       const count = result?.count || 0;
-      setSyncMsg({
-        text: count > 0 ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}` : 'Already up to date',
-        type: 'success',
-      });
-      setTimeout(() => setSyncMsg({ text: '', type: '' }), 4000);
+      showSyncMessage(formatStravaSyncMessage(count, { afterConnect }), 'success', 4500);
       fetchActivities();
       fetchDashboardData();
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401 || status === 404) {
         setStravaConnected(false);
-        setSyncMsg({ text: 'Strava not connected — go to Settings to connect.', type: 'error' });
+        showSyncMessage('Strava is not connected yet. Finish setup in Settings.', 'error', 5000);
       } else {
-        setSyncMsg({ text: getErrorMessage(error), type: 'error' });
+        showSyncMessage(getErrorMessage(error), 'error', 5000);
       }
-      setTimeout(() => setSyncMsg({ text: '', type: '' }), 5000);
     } finally {
       setIsSyncing(false);
     }
-  }, [fetchActivities, fetchDashboardData]);
+  }, [fetchActivities, fetchDashboardData, showSyncMessage]);
+
+  const handleSyncActivities = useCallback(async (provider = 'strava') => {
+    if (provider !== 'strava') {
+      const name = provider[0].toUpperCase() + provider.slice(1);
+      showSyncMessage(`${name} support is coming soon.`, 'error', 3000);
+      return;
+    }
+
+    await syncStravaActivities();
+  }, [showSyncMessage, syncStravaActivities]);
 
   useEffect(() => {
-    if (searchParams.get('strava_connected') === 'true') {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      handleSyncActivities();
+    const redirectState = getStravaRedirectState(searchParams);
+    if (!redirectState) return;
+
+    clearStravaRedirectParams(setSearchParams);
+
+    if (redirectState.type === 'success') {
+      showSyncMessage('Strava connected. Pulling in your latest activities...', 'success', 4500);
+      syncStravaActivities({ afterConnect: true });
+      return;
     }
-  }, [searchParams, handleSyncActivities]);
+
+    showSyncMessage(redirectState.text, 'error', 5000);
+  }, [searchParams, setSearchParams, showSyncMessage, syncStravaActivities]);
 
   useEffect(() => {
     fetchActiveGoal();
@@ -706,6 +734,12 @@ const Dashboard = () => {
     fetchWeekEntries();
     fetchDashboardData();
     fetchInsight();
+  }, []);
+
+  useEffect(() => () => {
+    if (syncMessageTimerRef.current) {
+      clearTimeout(syncMessageTimerRef.current);
+    }
   }, []);
 
   const today = new Date();
