@@ -9,10 +9,7 @@ import AppPageHero from '../components/ui/AppPageHero';
 import EvidenceCard from '../components/ui/EvidenceCard';
 import ContextRail from '../components/coach/ContextRail';
 import CoachStartSurface from '../components/coach/CoachStartSurface';
-import WeeklyReviewArtifact from '../components/coach/artifacts/WeeklyReviewArtifact';
-import DailyBriefArtifact from '../components/coach/artifacts/DailyBriefArtifact';
-import WorkoutAdjustmentArtifact from '../components/coach/artifacts/WorkoutAdjustmentArtifact';
-import GoalFeasibilityArtifact from '../components/coach/artifacts/GoalFeasibilityArtifact';
+import ArtifactRenderer from '../components/coach/ArtifactRenderer';
 import PlanBoard from '../components/coach/PlanBoard';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -607,19 +604,6 @@ function ModeToggle({ mode, onChange }) {
       ))}
     </div>
   );
-}
-
-function ArtifactRenderer({ artifact }) {
-  if (!artifact) return null;
-  const { type, data } = artifact;
-  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-  const wrapperStyle = { marginTop: '8px', marginLeft: '34px' };
-
-  if (type === 'weekly_review')      return <div style={wrapperStyle}><WeeklyReviewArtifact data={parsed} /></div>;
-  if (type === 'daily_brief')        return <div style={wrapperStyle}><DailyBriefArtifact data={parsed} /></div>;
-  if (type === 'workout_adjustment') return <div style={wrapperStyle}><WorkoutAdjustmentArtifact data={parsed} /></div>;
-  if (type === 'goal_feasibility')   return <div style={wrapperStyle}><GoalFeasibilityArtifact data={parsed} /></div>;
-  return null;
 }
 
 const WORKOUT_COLORS = {

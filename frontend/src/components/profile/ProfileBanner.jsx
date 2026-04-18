@@ -3,11 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { userProfileAPI } from '../../api/userProfile';
 import { getErrorMessage } from '../../api/client';
 import EditProfileForm from './EditProfileForm';
+import InlineNotice from '../ui/InlineNotice';
+import { resolveApiAssetUrl } from '../../lib/assetUrls';
 
 const ProfileBanner = ({ profileData, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -19,21 +22,20 @@ const ProfileBanner = ({ profileData, onUpdate }) => {
 
     try {
       setUploadingAvatar(true);
+      setAvatarError('');
       await userProfileAPI.uploadAvatar(file);
       await onUpdate();
     } catch (error) {
       console.error('Failed to upload avatar:', getErrorMessage(error));
-      alert('Failed to upload avatar');
+      setAvatarError(getErrorMessage(error));
     } finally {
       setUploadingAvatar(false);
+      if (e.target) e.target.value = '';
     }
   };
 
   // Determine avatar source
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-  const avatarUrl = profileData?.profile?.profile_picture_url
-    ? `${apiBase}${profileData.profile.profile_picture_url}`
-    : null;
+  const avatarUrl = resolveApiAssetUrl(profileData?.profile?.profile_picture_url);
 
   const displayName = profileData?.profile?.display_name || 'Athlete Profile';
   const initial = profileData?.user?.email?.[0]?.toUpperCase() || '?';
@@ -101,6 +103,12 @@ const ProfileBanner = ({ profileData, onUpdate }) => {
           {isEditing ? 'Cancel Edit' : 'Edit Profile'}
         </button>
       </div>
+
+      {avatarError && (
+        <InlineNotice variant="error" className="relative z-10 mt-4 bg-white/95 text-[var(--color-danger)]">
+          {avatarError}
+        </InlineNotice>
+      )}
 
       <AnimatePresence>
         {isEditing && (

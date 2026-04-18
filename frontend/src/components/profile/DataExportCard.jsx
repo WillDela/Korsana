@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { userProfileAPI } from '../../api/userProfile';
+import { getErrorMessage } from '../../api/client';
+import InlineNotice from '../ui/InlineNotice';
 
 const DataExportCard = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleExport = async () => {
     try {
       setLoading(true);
+      setError('');
       const blob = await userProfileAPI.exportData();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -18,7 +22,7 @@ const DataExportCard = () => {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to export data', err);
-      alert('Failed to download data');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -38,6 +42,12 @@ const DataExportCard = () => {
       <p className="text-sm text-text-secondary mb-6">
         Download a copy of your Korsana profile, personal records, and training zones in JSON format.
       </p>
+
+      {error && (
+        <InlineNotice variant="error" className="mb-4">
+          {error}
+        </InlineNotice>
+      )}
 
       <button
         onClick={handleExport}

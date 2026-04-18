@@ -3,23 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userProfileAPI } from '../../api/userProfile';
 import { supabase } from '../../context/AuthContext';
+import { getErrorMessage } from '../../api/client';
+import InlineNotice from '../ui/InlineNotice';
 
 const DeleteAccountCard = () => {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
   const [textVerify, setTextVerify] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     if (textVerify !== 'DELETE') return;
     try {
       setLoading(true);
+      setError('');
       await userProfileAPI.deleteAccount();
       await supabase.auth.signOut();
       navigate('/login');
     } catch (err) {
       console.error('Failed to delete account', err);
-      alert('Failed to delete account');
+      setError(getErrorMessage(err));
       setLoading(false);
     }
   };
@@ -37,6 +41,12 @@ const DeleteAccountCard = () => {
       <p className="text-sm text-error/80 mb-6">
         Permanently delete your account and all associated data. This action cannot be undone.
       </p>
+
+      {error && (
+        <InlineNotice variant="error" className="mb-4">
+          {error}
+        </InlineNotice>
+      )}
 
       <AnimatePresence mode="wait">
         {!confirming ? (
