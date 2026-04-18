@@ -162,10 +162,17 @@ type EvidenceItem struct {
 }
 
 const (
-	coachModeCopilot       = "copilot"
-	coachModeGuide         = "guide"
-	maxCoachConcernHistory = 5
-	coachStatePersistLimit = 3 * time.Second
+	coachModeCopilot           = "copilot"
+	coachModeGuide             = "guide"
+	maxCoachConcernHistory     = 5
+	coachStatePersistLimit     = 3 * time.Second
+	maxContextPersonalRecords  = 5
+	maxContextTrainingZones    = 5
+	maxContextActivities       = 30
+	maxContextSessionSummaries = 2
+	maxContextFlaggedConcerns  = 5
+	maxContextWeeklySummaries  = 6
+	maxContextUpcomingEntries  = 7
 )
 
 // ErrInvalidCoachMode is returned when the client sends an unsupported coach mode.
@@ -260,6 +267,11 @@ type flaggedConcern struct {
 	Date string `json:"date"`
 }
 
+type raceStrategyPhase struct {
+	Phase    string `json:"phase"`
+	Guidance string `json:"guidance"`
+}
+
 func normalizeConcernText(text string) string {
 	return strings.ToLower(strings.Join(strings.Fields(text), " "))
 }
@@ -293,6 +305,16 @@ func mergeFlaggedConcerns(existing []flaggedConcern, incoming flaggedConcern, li
 	}
 
 	return merged
+}
+
+func limitContextItems[T any](items []T, limit int) []T {
+	if limit <= 0 || len(items) == 0 {
+		return nil
+	}
+	if len(items) <= limit {
+		return items
+	}
+	return items[:limit]
 }
 
 // concernKeywords trigger concern extraction when found in a coach response.
@@ -472,9 +494,98 @@ func artifactInstruction(intent string) string {
 	return ""
 }
 
+func validateArtifactPayload(artifactType string, payload []byte) error {
+	switch artifactType {
+	case "daily_brief":
+		var artifact struct {
+			Type              string          `json:"type"`
+			Recommendation    string          `json:"recommendation"`
+			Headline          string          `json:"headline"`
+			Reason            string          `json:"reason"`
+			WorkoutSuggestion json.RawMessage `json:"workout_suggestion"`
+		}
+		if err := json.Unmarshal(payload, &artifact); err != nil {
+			return fmt.Errorf("decode daily_brief: %w", err)
+		}
+		if strings.TrimSpace(artifact.Recommendation) == "" || strings.TrimSpace(artifact.Headline) == "" || strings.TrimSpace(artifact.Reason) == "" {
+			return errors.New("daily_brief requires recommendation, headline, and reason")
+		}
+		if trimmed := bytes.TrimSpace(artifact.WorkoutSuggestion); len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+			return errors.New("daily_brief requires workout_suggestion")
+		}
+	case "weekly_review":
+		var artifact struct {
+			Type    string `json:"type"`
+			Week    string `json:"week"`
+			Summary string `json:"summary"`
+		}
+		if err := json.Unmarshal(payload, &artifact); err != nil {
+			return fmt.Errorf("decode weekly_review: %w", err)
+		}
+		if strings.TrimSpace(artifact.Week) == "" || strings.TrimSpace(artifact.Summary) == "" {
+			return errors.New("weekly_review requires week and summary")
+		}
+	case "workout_adjustment":
+		var artifact struct {
+			Type     string          `json:"type"`
+			Original json.RawMessage `json:"original"`
+			Adjusted json.RawMessage `json:"adjusted"`
+		}
+		if err := json.Unmarshal(payload, &artifact); err != nil {
+			return fmt.Errorf("decode workout_adjustment: %w", err)
+		}
+		original := bytes.TrimSpace(artifact.Original)
+		adjusted := bytes.TrimSpace(artifact.Adjusted)
+		if len(original) == 0 || bytes.Equal(original, []byte("null")) || len(adjusted) == 0 || bytes.Equal(adjusted, []byte("null")) {
+			return errors.New("workout_adjustment requires original and adjusted blocks")
+		}
+	case "goal_feasibility":
+		var artifact struct {
+			Type     string `json:"type"`
+			Verdict  string `json:"verdict"`
+			Headline string `json:"headline"`
+		}
+		if err := json.Unmarshal(payload, &artifact); err != nil {
+			return fmt.Errorf("decode goal_feasibility: %w", err)
+		}
+		if strings.TrimSpace(artifact.Verdict) == "" || strings.TrimSpace(artifact.Headline) == "" {
+			return errors.New("goal_feasibility requires verdict and headline")
+		}
+	case "race_strategy":
+		var artifact struct {
+			Type         string              `json:"type"`
+			Headline     string              `json:"headline"`
+			TargetPace   string              `json:"target_pace"`
+			Phases       []raceStrategyPhase `json:"phases"`
+			KeyReminders []string            `json:"key_reminders"`
+		}
+		if err := json.Unmarshal(payload, &artifact); err != nil {
+			return fmt.Errorf("decode race_strategy: %w", err)
+		}
+		if strings.TrimSpace(artifact.Headline) == "" || strings.TrimSpace(artifact.TargetPace) == "" {
+			return errors.New("race_strategy requires headline and target_pace")
+		}
+		if len(artifact.Phases) == 0 {
+			return errors.New("race_strategy requires at least one phase")
+		}
+		for _, phase := range artifact.Phases {
+			if strings.TrimSpace(phase.Phase) == "" || strings.TrimSpace(phase.Guidance) == "" {
+				return errors.New("race_strategy phases require phase and guidance")
+			}
+		}
+		if len(artifact.KeyReminders) == 0 {
+			return errors.New("race_strategy requires key_reminders")
+		}
+	default:
+		return fmt.Errorf("unsupported artifact type %q", artifactType)
+	}
+
+	return nil
+}
+
 // extractArtifact parses a ```artifact ... ``` block from the AI response.
 // Returns the cleaned response text (artifact block removed) and the parsed artifact.
-// If parsing fails, returns the original response and nil — never breaks the chat.
+// If parsing or validation fails, returns the cleaned response and nil — never breaks the chat.
 func extractArtifact(response string) (string, *ArtifactResult) {
 	before, after, found := strings.Cut(response, "```artifact")
 	if !found {
@@ -505,6 +616,14 @@ func extractArtifact(response string) (string, *ArtifactResult) {
 	}
 	var artifactType string
 	if err := json.Unmarshal(typeBytes, &artifactType); err != nil {
+		return cleanResponse, nil
+	}
+	artifactType = strings.TrimSpace(artifactType)
+	if artifactType == "" {
+		return cleanResponse, nil
+	}
+	if err := validateArtifactPayload(artifactType, []byte(artifactJSON)); err != nil {
+		log.Printf("[Coach] Artifact validation error (%s): %v", artifactType, err)
 		return cleanResponse, nil
 	}
 
@@ -772,6 +891,7 @@ func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUI
 		}
 
 		if prs, err := s.userProfileService.GetPersonalRecords(ctx, userID); err == nil && len(prs) > 0 {
+			prs = limitContextItems(prs, maxContextPersonalRecords)
 			profileStr += "Personal Records:\n"
 			for _, pr := range prs {
 				profileStr += fmt.Sprintf("- %s: %s\n", pr.Label, formatTime(&pr.TimeSeconds))
@@ -779,6 +899,7 @@ func (s *CoachService) buildTrainingContext(ctx context.Context, userID uuid.UUI
 		}
 
 		if zones, err := s.userProfileService.GetTrainingZones(ctx, userID, "hr"); err == nil && len(zones) > 0 {
+			zones = limitContextItems(zones, maxContextTrainingZones)
 			profileStr += "Current HR Training Zones:\n"
 			for _, z := range zones {
 				minV := 0
@@ -841,6 +962,7 @@ Training Phase: %s`,
 	if err != nil {
 		activities = []models.Activity{}
 	}
+	activities = limitContextItems(activities, maxContextActivities)
 
 	// Compute current training state from activities
 	if len(activities) > 0 {
@@ -863,6 +985,7 @@ Training Phase: %s`,
 		WHERE user_id = $1 AND summary IS NOT NULL AND summary != ''
 		ORDER BY updated_at DESC LIMIT 2
 	`, userID); dbErr == nil && len(sessionSummaries) > 0 {
+		sessionSummaries = limitContextItems(sessionSummaries, maxContextSessionSummaries)
 		for i, sum := range sessionSummaries {
 			label := "Last Coach Session"
 			if i == 1 {
@@ -879,8 +1002,9 @@ Training Phase: %s`,
 	`, userID); dbErr == nil && len(stateJSON) > 0 {
 		var state coachState
 		if jsonErr := json.Unmarshal(stateJSON, &state); jsonErr == nil && len(state.FlaggedConcerns) > 0 {
+			flaggedConcerns := limitContextItems(state.FlaggedConcerns, maxContextFlaggedConcerns)
 			concernLines := "Previously flagged concerns:"
-			for _, c := range state.FlaggedConcerns {
+			for _, c := range flaggedConcerns {
 				concernLines += fmt.Sprintf("\n- %s (%s)", c.Text, c.Date)
 			}
 			parts = append(parts, concernLines)
@@ -946,6 +1070,7 @@ Training Phase: %s`,
 	`
 	err = s.db.SelectContext(ctx, &summaries, summaryQuery, userID)
 	if err == nil && len(summaries) > 0 {
+		summaries = limitContextItems(summaries, maxContextWeeklySummaries)
 		weeklyInfo := "Weekly Summaries (recent weeks):"
 		for _, ws := range summaries {
 			distKm := ws.TotalDistanceMeters / 1000.0
@@ -1012,6 +1137,7 @@ Training Phase: %s`,
 		now := time.Now()
 		upcoming, calErr := s.calendarService.GetWeekEntries(ctx, userID, now)
 		if calErr == nil && len(upcoming) > 0 {
+			upcoming = limitContextItems(upcoming, maxContextUpcomingEntries)
 			calInfo := "Upcoming Planned Workouts (next 7 days):"
 			for _, entry := range upcoming {
 				distInfo := ""

@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"testing"
+
+	"github.com/korsana/backend/internal/models"
 )
 
 func TestNormalizeCoachMode(t *testing.T) {
@@ -78,5 +80,52 @@ func TestMergeFlaggedConcernsAppliesLimit(t *testing.T) {
 	}
 	if merged[0].Text != "Concern 4" || merged[1].Text != "Concern 1" {
 		t.Fatalf("unexpected merge order: %#v", merged)
+	}
+}
+
+func TestLimitContextItems(t *testing.T) {
+	activities := []models.Activity{
+		{Name: "Newest"},
+		{Name: "Second"},
+		{Name: "Third"},
+	}
+
+	limited := limitContextItems(activities, 2)
+	if len(limited) != 2 {
+		t.Fatalf("expected 2 activities after capping, got %d", len(limited))
+	}
+	if limited[0].Name != "Newest" || limited[1].Name != "Second" {
+		t.Fatalf("expected capping to preserve recency order, got %#v", limited)
+	}
+
+	if got := limitContextItems(activities, 0); got != nil {
+		t.Fatalf("expected zero limit to return nil, got %#v", got)
+	}
+}
+
+func TestExtractArtifactAcceptsValidRaceStrategy(t *testing.T) {
+	response := "Stay calm early.\n```artifact\n{\"type\":\"race_strategy\",\"headline\":\"Run the first 5K easy.\",\"target_pace\":\"9:10/mi\",\"phases\":[{\"phase\":\"Start\",\"guidance\":\"Stay relaxed.\"}],\"key_reminders\":[\"Fuel early\"]}\n```"
+
+	clean, artifact := extractArtifact(response)
+	if clean != "Stay calm early." {
+		t.Fatalf("expected cleaned response, got %q", clean)
+	}
+	if artifact == nil {
+		t.Fatal("expected valid artifact to be returned")
+	}
+	if artifact.Type != "race_strategy" {
+		t.Fatalf("expected race_strategy artifact, got %q", artifact.Type)
+	}
+}
+
+func TestExtractArtifactRejectsInvalidRaceStrategyShape(t *testing.T) {
+	response := "Plan below.\n```artifact\n{\"type\":\"race_strategy\",\"headline\":\"Race smart.\",\"target_pace\":\"9:10/mi\",\"phases\":[],\"key_reminders\":[]}\n```"
+
+	clean, artifact := extractArtifact(response)
+	if clean != "Plan below." {
+		t.Fatalf("expected cleaned response, got %q", clean)
+	}
+	if artifact != nil {
+		t.Fatalf("expected invalid artifact to be dropped, got %#v", artifact)
 	}
 }

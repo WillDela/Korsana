@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -9,6 +10,13 @@ import (
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
 )
+
+type calendarQuerier interface {
+	NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error)
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+	SelectContext(ctx context.Context, dest any, query string, args ...any) error
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
 
 // AutoMatchActivity finds a planned calendar entry on the activity's date
 // and marks it completed if the activity type is compatible.
@@ -144,7 +152,7 @@ func isActivityCompatibleWithWorkout(activityType, workoutType string) bool {
 
 // CalendarService handles training calendar business logic
 type CalendarService struct {
-	db *database.DB
+	db calendarQuerier
 }
 
 // NewCalendarService creates a new calendar service
@@ -215,7 +223,7 @@ func (s *CalendarService) CreateEntry(ctx context.Context, userID uuid.UUID, ent
 
 	var result models.CalendarEntry
 	err = s.db.GetContext(ctx, &result,
-		"SELECT * FROM training_calendar WHERE id = $1", entry.ID)
+		"SELECT * FROM training_calendar WHERE id = $1 AND user_id = $2", entry.ID, userID)
 	if err != nil {
 		return nil, err
 	}
