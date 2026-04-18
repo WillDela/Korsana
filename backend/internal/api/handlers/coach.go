@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -87,10 +88,6 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Message too long (max 1000 characters)"})
 		return
 	}
-	if req.Mode == "" {
-		req.Mode = "copilot"
-	}
-
 	var sessionID *uuid.UUID
 	if req.SessionID != nil && *req.SessionID != "" {
 		parsed, err := uuid.Parse(*req.SessionID)
@@ -101,6 +98,10 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 
 	response, artifact, evidence, sessionTitle, err := h.coachService.SendMessage(c.Request.Context(), userID, sessionID, req.Message, req.Mode)
 	if err != nil {
+		if errors.Is(err, services.ErrInvalidCoachMode) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -197,7 +198,7 @@ func (h *CoachHandler) GetQuota(c *gin.Context) {
 	if remaining < 0 {
 		remaining = 0
 	}
-	reset := time.Now().UTC().Truncate(24*time.Hour).Add(24 * time.Hour).Unix()
+	reset := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour).Unix()
 	c.JSON(http.StatusOK, gin.H{
 		"used": used, "limit": limit, "remaining": remaining, "reset_at": reset,
 	})

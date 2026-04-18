@@ -161,6 +161,28 @@ type EvidenceItem struct {
 	Signal string `json:"signal"` // "positive" | "warning" | "neutral"
 }
 
+const (
+	coachModeCopilot       = "copilot"
+	coachModeGuide         = "guide"
+	maxCoachConcernHistory = 5
+	coachStatePersistLimit = 3 * time.Second
+)
+
+// ErrInvalidCoachMode is returned when the client sends an unsupported coach mode.
+var ErrInvalidCoachMode = errors.New("invalid coach mode")
+
+func normalizeCoachMode(mode string) (string, error) {
+	normalized := strings.ToLower(strings.TrimSpace(mode))
+	switch normalized {
+	case "", coachModeCopilot:
+		return coachModeCopilot, nil
+	case coachModeGuide:
+		return coachModeGuide, nil
+	default:
+		return "", fmt.Errorf("%w: %q", ErrInvalidCoachMode, mode)
+	}
+}
+
 // buildEvidenceItems assembles 2 quick context data points for the "Why?" block.
 // Two fast DB reads only — no AI call, no added latency to the chat response.
 func (s *CoachService) buildEvidenceItems(ctx context.Context, userID uuid.UUID) []EvidenceItem {
@@ -238,6 +260,41 @@ type flaggedConcern struct {
 	Date string `json:"date"`
 }
 
+func normalizeConcernText(text string) string {
+	return strings.ToLower(strings.Join(strings.Fields(text), " "))
+}
+
+func mergeFlaggedConcerns(existing []flaggedConcern, incoming flaggedConcern, limit int) []flaggedConcern {
+	if limit <= 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(existing)+1)
+	merged := make([]flaggedConcern, 0, min(limit, len(existing)+1))
+
+	if normalized := normalizeConcernText(incoming.Text); normalized != "" {
+		seen[normalized] = struct{}{}
+		merged = append(merged, incoming)
+	}
+
+	for _, concern := range existing {
+		normalized := normalizeConcernText(concern.Text)
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		merged = append(merged, concern)
+		if len(merged) == limit {
+			break
+		}
+	}
+
+	return merged
+}
+
 // concernKeywords trigger concern extraction when found in a coach response.
 var concernKeywords = []string{
 	"knee", "pain", "injury", "injur", "overtraining", "too much", "too fast",
@@ -290,32 +347,47 @@ func extractConcern(response string) string {
 }
 
 // updateCoachState extracts any concern from the response and persists it to coach_state.
-// Keeps at most 5 concerns, rotating out the oldest. Fire-and-forget — never fails the chat.
-func (s *CoachService) updateCoachState(ctx context.Context, userID uuid.UUID, response string) {
+// Keeps a bounded, deduplicated concern history. Errors are returned for logging only.
+func (s *CoachService) updateCoachState(ctx context.Context, userID uuid.UUID, response string) error {
 	concern := extractConcern(response)
 	if concern == "" {
-		return
+		return nil
 	}
 
 	var stateJSON []byte
-	_ = s.db.GetContext(ctx, &stateJSON, `SELECT COALESCE(coach_state, '{}') FROM users WHERE id = $1`, userID)
+	if err := s.db.GetContext(ctx, &stateJSON, `SELECT COALESCE(coach_state, '{}') FROM users WHERE id = $1`, userID); err != nil {
+		return fmt.Errorf("load coach_state: %w", err)
+	}
 
 	var state coachState
 	if len(stateJSON) > 0 {
-		_ = json.Unmarshal(stateJSON, &state)
+		if err := json.Unmarshal(stateJSON, &state); err != nil {
+			return fmt.Errorf("decode coach_state: %w", err)
+		}
 	}
 
 	newConcern := flaggedConcern{Text: concern, Date: time.Now().Format("Jan 2")}
-	state.FlaggedConcerns = append([]flaggedConcern{newConcern}, state.FlaggedConcerns...)
-	if len(state.FlaggedConcerns) > 5 {
-		state.FlaggedConcerns = state.FlaggedConcerns[:5]
-	}
+	state.FlaggedConcerns = mergeFlaggedConcerns(state.FlaggedConcerns, newConcern, maxCoachConcernHistory)
 
 	updated, err := json.Marshal(state)
 	if err != nil {
-		return
+		return fmt.Errorf("encode coach_state: %w", err)
 	}
-	_, _ = s.db.ExecContext(ctx, `UPDATE users SET coach_state = $1 WHERE id = $2`, updated, userID)
+	if _, err := s.db.ExecContext(ctx, `UPDATE users SET coach_state = $1 WHERE id = $2`, updated, userID); err != nil {
+		return fmt.Errorf("update coach_state: %w", err)
+	}
+
+	return nil
+}
+
+func (s *CoachService) persistCoachStateAsync(ctx context.Context, userID uuid.UUID, response string) {
+	persistCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), coachStatePersistLimit)
+	go func() {
+		defer cancel()
+		if err := s.updateCoachState(persistCtx, userID, response); err != nil {
+			log.Printf("[Coach] Failed to update coach_state for user %s: %v", userID, err)
+		}
+	}()
 }
 
 // coachRuleLayer is appended to every system prompt to enforce safety guardrails
@@ -447,6 +519,11 @@ func extractArtifact(response string) (string, *ArtifactResult) {
 // mode is "copilot" (proactive) or "guide" (reactive); defaults to "copilot".
 // Returns: cleanResponse, artifact, evidence, generatedTitle, error.
 func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessionID *uuid.UUID, userMessage, mode string) (string, *ArtifactResult, []EvidenceItem, string, error) {
+	normalizedMode, err := normalizeCoachMode(mode)
+	if err != nil {
+		return "", nil, nil, "", err
+	}
+
 	// Build context about user's training
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
@@ -487,7 +564,7 @@ func (s *CoachService) SendMessage(ctx context.Context, userID uuid.UUID, sessio
 
 	// Mode instruction
 	modeInstruction := "\n\nCoaching Mode: COPILOT — Be proactive. Surface patterns you see before they ask. Suggest training adjustments even when not explicitly requested."
-	if mode == "guide" {
+	if normalizedMode == coachModeGuide {
 		modeInstruction = "\n\nCoaching Mode: GUIDE — Be reactive. Answer questions thoroughly. Avoid making changes or suggestions the runner didn't explicitly ask about."
 	}
 
@@ -512,10 +589,10 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 
 	var response string
 	if s.config.GeminiAPIKey != "" {
-		log.Printf("[Coach] Calling Gemini API with %d messages (mode=%s, intent=%q)", len(messages), mode, intent)
+		log.Printf("[Coach] Calling Gemini API with %d messages (mode=%s, intent=%q)", len(messages), normalizedMode, intent)
 		response, err = s.callGeminiAPI(messages, systemPrompt)
 	} else if s.config.ClaudeAPIKey != "" {
-		log.Printf("[Coach] Calling Claude API with %d messages (mode=%s, intent=%q)", len(messages), mode, intent)
+		log.Printf("[Coach] Calling Claude API with %d messages (mode=%s, intent=%q)", len(messages), normalizedMode, intent)
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
 		return "", nil, nil, "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
@@ -530,7 +607,7 @@ Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the 
 	cleanResponse, artifact := extractArtifact(response)
 
 	// Persist any flagged concern to coach_state for cross-session continuity.
-	go s.updateCoachState(context.Background(), userID, cleanResponse)
+	s.persistCoachStateAsync(ctx, userID, cleanResponse)
 
 	// Build evidence data points when there is no structured artifact.
 	// Two fast DB reads, no AI call — used for the "Why?" expander in the UI.
