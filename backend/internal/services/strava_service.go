@@ -17,6 +17,7 @@ import (
 	"github.com/korsana/backend/internal/models"
 	"github.com/korsana/backend/pkg/strava"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/sync/singleflight"
 )
 
 // stravaQuerier is the subset of database methods StravaService needs.
@@ -28,12 +29,45 @@ type stravaQuerier interface {
 	SelectContext(ctx context.Context, dest any, query string, args ...any) error
 }
 
+type stravaClient interface {
+	GetAuthorizationURL(state string) string
+	ExchangeToken(code string) (*strava.TokenResponse, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*strava.TokenResponse, error)
+	GetActivities(ctx context.Context, accessToken string, page int, perPage int) ([]strava.Activity, error)
+}
+
+type stravaSyncPolicy struct {
+	Mode     string
+	MaxPages int
+	PerPage  int
+}
+
+type StravaSyncResult struct {
+	Count        int    `json:"count"`
+	Status       string `json:"status"`
+	Message      string `json:"message"`
+	Partial      bool   `json:"partial"`
+	PagesFetched int    `json:"pages_fetched,omitempty"`
+}
+
+const (
+	stravaInitialSyncMaxPages   = 4
+	stravaRecurringSyncMaxPages = 2
+	stravaSyncPerPage           = 50
+	stravaRateLimitMaxRetries   = 2
+	stravaRateLimitBaseBackoff  = 2 * time.Second
+	stravaRateLimitMaxBackoff   = 8 * time.Second
+)
+
+var ErrStravaRateLimited = errors.New("strava sync is temporarily rate limited")
+
 // StravaService handles Strava business logic
 type StravaService struct {
 	db           stravaQuerier
-	stravaClient *strava.Client
+	stravaClient stravaClient
 	redis        *redis.Client
 	calendarSvc  *CalendarService
+	refreshGroup singleflight.Group
 }
 
 // NewStravaService creates a new Strava service
@@ -43,6 +77,21 @@ func NewStravaService(db *database.DB, client *strava.Client, redisClient *redis
 		stravaClient: client,
 		redis:        redisClient,
 		calendarSvc:  calendarService,
+	}
+}
+
+func syncPolicyForHistory(hasExistingActivities bool) stravaSyncPolicy {
+	if hasExistingActivities {
+		return stravaSyncPolicy{
+			Mode:     "incremental",
+			MaxPages: stravaRecurringSyncMaxPages,
+			PerPage:  stravaSyncPerPage,
+		}
+	}
+	return stravaSyncPolicy{
+		Mode:     "initial_backfill",
+		MaxPages: stravaInitialSyncMaxPages,
+		PerPage:  stravaSyncPerPage,
 	}
 }
 
@@ -235,6 +284,15 @@ func (s *StravaService) GetConnection(ctx context.Context, userID uuid.UUID) (*m
 	return &conn, nil
 }
 
+func (s *StravaService) getConnectionByID(ctx context.Context, connectionID uuid.UUID) (*models.StravaConnection, error) {
+	var conn models.StravaConnection
+	err := s.db.GetContext(ctx, &conn, "SELECT * FROM strava_connections WHERE id = $1", connectionID)
+	if err != nil {
+		return nil, err
+	}
+	return &conn, nil
+}
+
 // RefreshAccessToken refreshes the Strava access token if expired
 func (s *StravaService) RefreshAccessToken(ctx context.Context, conn *models.StravaConnection) (*models.StravaConnection, error) {
 	// Check if token is expired or about to expire (within 5 minutes)
@@ -243,31 +301,41 @@ func (s *StravaService) RefreshAccessToken(ctx context.Context, conn *models.Str
 		return conn, nil
 	}
 
-	// Refresh the token
-	tokenResp, err := s.stravaClient.RefreshToken(ctx, conn.RefreshToken)
+	result, err, _ := s.refreshGroup.Do(conn.ID.String(), func() (any, error) {
+		latest, loadErr := s.getConnectionByID(ctx, conn.ID)
+		if loadErr == nil {
+			conn = latest
+		}
+		if time.Now().Before(conn.TokenExpiresAt.Add(-5 * time.Minute)) {
+			return conn, nil
+		}
+
+		tokenResp, refreshErr := s.stravaClient.RefreshToken(ctx, conn.RefreshToken)
+		if refreshErr != nil {
+			return nil, refreshErr
+		}
+
+		query := `
+			UPDATE strava_connections
+			SET access_token = $1, refresh_token = $2, token_expires_at = $3, updated_at = NOW()
+			WHERE id = $4
+		`
+		expiresAt := time.Unix(tokenResp.ExpiresAt, 0)
+		if _, execErr := s.db.ExecContext(ctx, query, tokenResp.AccessToken, tokenResp.RefreshToken, expiresAt, conn.ID); execErr != nil {
+			return nil, execErr
+		}
+
+		updated := *conn
+		updated.AccessToken = tokenResp.AccessToken
+		updated.RefreshToken = tokenResp.RefreshToken
+		updated.TokenExpiresAt = expiresAt
+		updated.UpdatedAt = time.Now()
+		return &updated, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Update connection in database
-	query := `
-		UPDATE strava_connections
-		SET access_token = $1, refresh_token = $2, token_expires_at = $3, updated_at = NOW()
-		WHERE id = $4
-	`
-	expiresAt := time.Unix(tokenResp.ExpiresAt, 0)
-	_, err = s.db.ExecContext(ctx, query, tokenResp.AccessToken, tokenResp.RefreshToken, expiresAt, conn.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return updated connection
-	conn.AccessToken = tokenResp.AccessToken
-	conn.RefreshToken = tokenResp.RefreshToken
-	conn.TokenExpiresAt = expiresAt
-	conn.UpdatedAt = time.Now()
-
-	return conn, nil
+	return result.(*models.StravaConnection), nil
 }
 
 // mapStravaType converts Strava activity types to internal types
@@ -302,25 +370,187 @@ func mapStravaType(stravaType, sportType string) string {
 	}
 }
 
-// SyncActivities fetches and stores recent activities from Strava
-func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (int, error) {
+func parseStravaActivityTime(act strava.Activity) (time.Time, error) {
+	candidate := act.StartDateLocal
+	if candidate == "" {
+		candidate = act.StartDate
+	}
+	return time.Parse(time.RFC3339, candidate)
+}
+
+func stravaRateLimitBackoff(attempt int, retryAfter time.Duration) time.Duration {
+	if retryAfter > 0 {
+		if retryAfter > stravaRateLimitMaxBackoff {
+			return stravaRateLimitMaxBackoff
+		}
+		return retryAfter
+	}
+
+	delay := stravaRateLimitBaseBackoff
+	for i := 0; i < attempt; i++ {
+		delay *= 2
+		if delay >= stravaRateLimitMaxBackoff {
+			return stravaRateLimitMaxBackoff
+		}
+	}
+	return delay
+}
+
+func waitForBackoff(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func (s *StravaService) fetchActivitiesPageWithRetry(ctx context.Context, accessToken string, page, perPage int) ([]strava.Activity, error) {
+	var lastErr error
+
+	for attempt := 0; attempt <= stravaRateLimitMaxRetries; attempt++ {
+		activities, err := s.stravaClient.GetActivities(ctx, accessToken, page, perPage)
+		if err == nil {
+			return activities, nil
+		}
+
+		var apiErr *strava.APIError
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != 429 {
+			return nil, err
+		}
+
+		lastErr = err
+		if attempt == stravaRateLimitMaxRetries {
+			break
+		}
+
+		if waitErr := waitForBackoff(ctx, stravaRateLimitBackoff(attempt, apiErr.RetryAfter)); waitErr != nil {
+			return nil, waitErr
+		}
+	}
+
+	return nil, fmt.Errorf("%w: %v", ErrStravaRateLimited, lastErr)
+}
+
+func (s *StravaService) latestStravaActivityTime(ctx context.Context, userID uuid.UUID) (*time.Time, error) {
+	var latest sql.NullTime
+	if err := s.db.GetContext(ctx, &latest, `
+		SELECT MAX(start_time) FROM activities
+		WHERE user_id = $1 AND source = 'strava'
+	`, userID); err != nil {
+		return nil, err
+	}
+	if !latest.Valid {
+		return nil, nil
+	}
+	return &latest.Time, nil
+}
+
+func (s *StravaService) collectActivitiesForSync(ctx context.Context, accessToken string, latestSyncedAt *time.Time, policy stravaSyncPolicy) ([]strava.Activity, bool, int, error) {
+	collected := make([]strava.Activity, 0, policy.MaxPages*policy.PerPage)
+	partial := false
+
+	for page := 1; page <= policy.MaxPages; page++ {
+		pageActivities, err := s.fetchActivitiesPageWithRetry(ctx, accessToken, page, policy.PerPage)
+		if err != nil {
+			if errors.Is(err, ErrStravaRateLimited) && len(collected) > 0 {
+				return collected, true, page - 1, nil
+			}
+			return nil, false, page - 1, err
+		}
+		if len(pageActivities) == 0 {
+			return collected, partial, page, nil
+		}
+
+		reachedKnownBoundary := false
+		if latestSyncedAt == nil {
+			collected = append(collected, pageActivities...)
+		} else {
+			for _, act := range pageActivities {
+				startTime, parseErr := parseStravaActivityTime(act)
+				if parseErr != nil {
+					collected = append(collected, act)
+					continue
+				}
+				if !startTime.After(*latestSyncedAt) {
+					reachedKnownBoundary = true
+					break
+				}
+				collected = append(collected, act)
+			}
+		}
+
+		if reachedKnownBoundary {
+			return collected, partial, page, nil
+		}
+		if len(pageActivities) < policy.PerPage {
+			return collected, partial, page, nil
+		}
+	}
+
+	if latestSyncedAt == nil && len(collected) > 0 {
+		partial = true
+	}
+	return collected, partial, policy.MaxPages, nil
+}
+
+func pluralSuffix(count int) string {
+	if count == 1 {
+		return "y"
+	}
+	return "ies"
+}
+
+func buildStravaSyncResult(count int, partial bool, policy stravaSyncPolicy, pagesFetched int) StravaSyncResult {
+	result := StravaSyncResult{
+		Count:        count,
+		Partial:      partial,
+		PagesFetched: pagesFetched,
+	}
+
+	switch {
+	case partial && count > 0 && policy.Mode == "initial_backfill":
+		result.Status = "partial"
+		result.Message = fmt.Sprintf("Synced %d recent Strava activit%s. Older backlog will continue on later syncs.", count, pluralSuffix(count))
+	case partial && count > 0:
+		result.Status = "partial"
+		result.Message = fmt.Sprintf("Synced %d Strava activit%s before hitting a temporary API limit.", count, pluralSuffix(count))
+	case count == 0:
+		result.Status = "noop"
+		result.Message = "No new Strava activities found."
+	default:
+		result.Status = "success"
+		result.Message = fmt.Sprintf("Synced %d Strava activit%s successfully.", count, pluralSuffix(count))
+	}
+
+	return result
+}
+
+// SyncActivities fetches and stores recent activities from Strava using a bounded sync policy.
+func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*StravaSyncResult, error) {
 	// Get connection
 	conn, err := s.GetConnection(ctx, userID)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// Refresh token if needed
 	conn, err = s.RefreshAccessToken(ctx, conn)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	// Fetch the most recent 50 activities from Strava.
-	// Higher values cause excessive sequential DB round-trips on remote databases.
-	activities, err := s.stravaClient.GetActivities(ctx, conn.AccessToken, 1, 50)
+	latestSyncedAt, err := s.latestStravaActivityTime(ctx, userID)
 	if err != nil {
-		return 0, err
+		return nil, err
+	}
+	policy := syncPolicyForHistory(latestSyncedAt != nil)
+	activities, partial, pagesFetched, err := s.collectActivitiesForSync(ctx, conn.AccessToken, latestSyncedAt, policy)
+	if err != nil {
+		return nil, err
 	}
 
 	syncedCount := 0
@@ -329,13 +559,9 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 	for _, act := range activities {
 		// Use local date so calendar bucketing matches the athlete's timezone.
 		// start_date_local is formatted as RFC3339 but represents local time.
-		localDateStr := act.StartDateLocal
-		if localDateStr == "" {
-			localDateStr = act.StartDate
-		}
-		startTime, err := time.Parse(time.RFC3339, localDateStr)
+		startTime, err := parseStravaActivityTime(act)
 		if err != nil {
-			log.Printf("strava sync: skipping activity %d (%s): bad date format %q: %v", act.ID, act.Name, localDateStr, err)
+			log.Printf("strava sync: skipping activity %d (%s): bad date format: %v", act.ID, act.Name, err)
 			continue
 		}
 
@@ -471,21 +697,21 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (i
 	}
 
 	// If every activity failed to insert, surface the error so the caller
-	// doesn't silently report "0 synced" when the real issue is a DB problem
-	// (e.g. a missing unique index from a pending migration).
+	// does not silently report zero synced when the real issue is a DB problem.
 	if insertFailCount > 0 && syncedCount == 0 && len(activities) > 0 {
-		return 0, fmt.Errorf(
-			"all %d activities failed to save — check server logs for details (hint: ensure migration 005 has been applied to your database)",
+		return nil, fmt.Errorf(
+			"all %d activities failed to save - check server logs for details (hint: ensure migration 005 has been applied to your database)",
 			insertFailCount,
 		)
 	}
 
-	// After syncing, compute and upsert weekly summaries
+	// After syncing, compute and upsert weekly summaries.
 	if syncedCount > 0 {
 		_ = s.computeWeeklySummaries(ctx, userID)
 	}
 
-	return syncedCount, nil
+	result := buildStravaSyncResult(syncedCount, partial, policy, pagesFetched)
+	return &result, nil
 }
 
 // computeWeeklySummaries aggregates activity data into weekly_summaries

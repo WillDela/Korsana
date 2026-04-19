@@ -115,10 +115,14 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 90*time.Second)
 	defer cancel()
 
-	count, err := h.stravaService.SyncActivities(ctx, userID)
+	result, err := h.stravaService.SyncActivities(ctx, userID)
 	if err != nil {
 		if err.Error() == "strava connection not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Strava is not connected. Connect it from Settings first."})
+			return
+		}
+		if errors.Is(err, services.ErrStravaRateLimited) {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Strava is temporarily rate limited. Please try again shortly."})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -126,8 +130,11 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "activities synced successfully",
-		"count":   count,
+		"message":       result.Message,
+		"count":         result.Count,
+		"status":        result.Status,
+		"partial":       result.Partial,
+		"pages_fetched": result.PagesFetched,
 	})
 }
 

@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	baseURL      = "https://www.strava.com/api/v3"
-	authURL      = "https://www.strava.com/oauth/authorize"
-	tokenURL     = "https://www.strava.com/oauth/token"
-	scope        = "read,activity:read_all,profile:read_all"
+	baseURL  = "https://www.strava.com/api/v3"
+	authURL  = "https://www.strava.com/oauth/authorize"
+	tokenURL = "https://www.strava.com/oauth/token"
+	scope    = "read,activity:read_all,profile:read_all"
 )
 
 // Client handles Strava API communication
@@ -23,6 +25,49 @@ type Client struct {
 	ClientSecret string
 	RedirectURI  string
 	HTTPClient   *http.Client
+}
+
+// APIError captures Strava API failures with enough detail for bounded retry logic.
+type APIError struct {
+	StatusCode int
+	RetryAfter time.Duration
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.RetryAfter > 0 {
+		return fmt.Sprintf("strava api returned status %d (retry after %s)", e.StatusCode, e.RetryAfter)
+	}
+	return fmt.Sprintf("strava api returned status: %d", e.StatusCode)
+}
+
+func parseRetryAfter(header string) time.Duration {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return 0
+	}
+	if seconds, err := strconv.Atoi(header); err == nil && seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	if when, err := http.ParseTime(header); err == nil {
+		delay := time.Until(when)
+		if delay > 0 {
+			return delay
+		}
+	}
+	return 0
+}
+
+func readAPIError(resp *http.Response) error {
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+	return &APIError{
+		StatusCode: resp.StatusCode,
+		RetryAfter: parseRetryAfter(resp.Header.Get("Retry-After")),
+		Body:       strings.TrimSpace(string(body)),
+	}
 }
 
 // NewClient creates a new Strava API client
@@ -80,7 +125,7 @@ func (c *Client) ExchangeToken(code string) (*TokenResponse, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("strava api returned status: %d", resp.StatusCode)
+		return nil, readAPIError(resp)
 	}
 
 	var tokenResp TokenResponse
@@ -95,14 +140,14 @@ func (c *Client) ExchangeToken(code string) (*TokenResponse, error) {
 type Activity struct {
 	ID                 int64   `json:"id"`
 	Name               string  `json:"name"`
-	Distance           float64 `json:"distance"`           // meters
-	MovingTime         int     `json:"moving_time"`        // seconds
-	ElapsedTime        int     `json:"elapsed_time"`       // seconds
+	Distance           float64 `json:"distance"`             // meters
+	MovingTime         int     `json:"moving_time"`          // seconds
+	ElapsedTime        int     `json:"elapsed_time"`         // seconds
 	TotalElevationGain float64 `json:"total_elevation_gain"` // meters
-	Type               string  `json:"type"`               // "Run", "Ride", etc.
+	Type               string  `json:"type"`                 // "Run", "Ride", etc.
 	SportType          string  `json:"sport_type"`
-	StartDate          string  `json:"start_date"`          // ISO 8601 UTC
-	StartDateLocal     string  `json:"start_date_local"`    // ISO 8601 athlete's local time
+	StartDate          string  `json:"start_date"`       // ISO 8601 UTC
+	StartDateLocal     string  `json:"start_date_local"` // ISO 8601 athlete's local time
 	AverageHeartrate   float64 `json:"average_heartrate"`
 	MaxHeartrate       float64 `json:"max_heartrate"`
 	AverageCadence     float64 `json:"average_cadence"`
@@ -133,7 +178,7 @@ func (c *Client) GetActivities(ctx context.Context, accessToken string, page int
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("strava api returned status: %d", resp.StatusCode)
+		return nil, readAPIError(resp)
 	}
 
 	var activities []Activity
@@ -164,7 +209,7 @@ func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (*TokenR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("strava api returned status: %d", resp.StatusCode)
+		return nil, readAPIError(resp)
 	}
 
 	var tokenResp TokenResponse
