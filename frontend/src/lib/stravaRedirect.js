@@ -32,10 +32,16 @@ export function clearStravaRedirectParams(setSearchParams) {
   }, { replace: true });
 }
 
-export function formatStravaSyncMessage(count, { afterConnect = false } = {}) {
-  const base = count > 0
-    ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}.`
-    : 'Already up to date.';
+export function formatStravaSyncMessage(resultOrCount, { afterConnect = false } = {}) {
+  const count = typeof resultOrCount === 'number'
+    ? resultOrCount
+    : (resultOrCount?.count ?? 0);
+
+  const base = typeof resultOrCount === 'object' && resultOrCount?.message
+    ? resultOrCount.message
+    : (count > 0
+      ? `Synced ${count} activit${count === 1 ? 'y' : 'ies'}.`
+      : 'Already up to date.');
 
   return afterConnect ? `Strava connected. ${base}` : base;
 }

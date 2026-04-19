@@ -686,8 +686,7 @@ const Dashboard = () => {
       const result = await stravaAPI.syncActivities();
       setLastSynced(new Date().toISOString());
       setStravaConnected(true);
-      const count = result?.count || 0;
-      showSyncMessage(formatStravaSyncMessage(count, { afterConnect }), 'success', 4500);
+      showSyncMessage(formatStravaSyncMessage(result, { afterConnect }), 'success', 4500);
       fetchActivities();
       fetchDashboardData();
     } catch (error) {

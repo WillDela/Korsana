@@ -611,8 +611,7 @@ const Calendar = () => {
       const result = await stravaAPI.syncActivities();
       setStravaConnected(true);
       await fetchMonthEntries();
-      const count = result?.count || 0;
-      showSyncMessage(formatStravaSyncMessage(count, { afterConnect }), 'success', 5000);
+      showSyncMessage(formatStravaSyncMessage(result, { afterConnect }), 'success', 5000);
     } catch (err) {
       const status = err?.response?.status;
       if (status === 404) {

@@ -66,7 +66,7 @@ const ConnectedServicesCard = ({
       setSyncMessage('');
       setSyncError('');
       const res = await stravaAPI.syncActivities();
-      setSyncMessage(`Synced ${res.count} activities.`);
+      setSyncMessage(res?.message || `Synced ${res.count} activities.`);
       if (onUpdate) onUpdate();
     } catch {
       setSyncError('Sync failed. Please try again.');
