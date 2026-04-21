@@ -11,10 +11,12 @@ import (
 )
 
 type ProfileHandler struct {
-	authService        *services.AuthService
-	stravaService      *services.StravaService
-	goalsService       *services.GoalsService
-	userProfileService *services.UserProfileService
+	authService         *services.AuthService
+	stravaService       *services.StravaService
+	goalsService        *services.GoalsService
+	userProfileService  *services.UserProfileService
+	notificationService *services.NotificationService
+	integrationsService *services.IntegrationsService
 }
 
 func NewProfileHandler(
@@ -22,12 +24,16 @@ func NewProfileHandler(
 	stravaService *services.StravaService,
 	goalsService *services.GoalsService,
 	userProfileService *services.UserProfileService,
+	notificationService *services.NotificationService,
+	integrationsService *services.IntegrationsService,
 ) *ProfileHandler {
 	return &ProfileHandler{
-		authService:        authService,
-		stravaService:      stravaService,
-		goalsService:       goalsService,
-		userProfileService: userProfileService,
+		authService:         authService,
+		stravaService:       stravaService,
+		goalsService:        goalsService,
+		userProfileService:  userProfileService,
+		notificationService: notificationService,
+		integrationsService: integrationsService,
 	}
 }
 
@@ -69,6 +75,8 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	prs, _ := h.userProfileService.GetPersonalRecords(c.Request.Context(), userID)
 
 	weeklySummary, _ := h.userProfileService.GetCurrentWeekSummary(c.Request.Context(), userID)
+	recentDeliveries, _ := h.notificationService.GetRecentDeliveries(c.Request.Context(), userID, 5)
+	integrationInterest, _ := h.integrationsService.ListInterestRequests(c.Request.Context(), userID)
 
 	userInfo := gin.H{"id": userID, "email": "", "created_at": nil}
 	if user != nil {
@@ -85,6 +93,11 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 		"profile":          profile,
 		"personal_records": prs,
 		"weekly_summary":   weeklySummary,
+		"notifications": gin.H{
+			"email_enabled":     h.notificationService.IsEmailConfigured(),
+			"recent_deliveries": recentDeliveries,
+		},
+		"integration_interest": integrationInterest,
 	})
 }
 
@@ -158,6 +171,68 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, updated)
+}
+
+func (h *ProfileHandler) SendTestNotification(c *gin.Context) {
+	userIDVal, _ := c.Get("userID")
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Type string `json:"type" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "type is required"})
+		return
+	}
+
+	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user email"})
+		return
+	}
+
+	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
+		return
+	}
+
+	goal, _ := h.goalsService.GetActiveGoal(c.Request.Context(), userID)
+	delivery, err := h.notificationService.SendTestNotification(c.Request.Context(), user, profile, goal, req.Type)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, services.ErrNotificationTypeUnsupported) {
+			status = http.StatusBadRequest
+		}
+		if errors.Is(err, services.ErrEmailNotConfigured) {
+			status = http.StatusServiceUnavailable
+		}
+		c.JSON(status, gin.H{"error": err.Error(), "delivery": delivery})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "test notification sent", "delivery": delivery})
+}
+
+func (h *ProfileHandler) RequestIntegrationInterest(c *gin.Context) {
+	userIDVal, _ := c.Get("userID")
+	userID := userIDVal.(uuid.UUID)
+	source := c.Param("source")
+
+	request, err := h.integrationsService.UpsertInterestRequest(c.Request.Context(), userID, source)
+	if err != nil {
+		if errors.Is(err, services.ErrIntegrationSourceUnsupported) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record integration interest"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "integration interest recorded",
+		"request": request,
+	})
 }
 
 // UploadAvatar

@@ -50,14 +50,25 @@ func main() {
 	metricsService := services.NewMetricsService(db)
 	crossTrainingGoalsService := services.NewCrossTrainingGoalsService(db)
 	userProfileService := services.NewUserProfileService(db, cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
+	notificationService := services.NewNotificationService(
+		db,
+		cfg.FrontendURL,
+		cfg.SMTPHost,
+		cfg.SMTPPort,
+		cfg.SMTPUsername,
+		cfg.SMTPPassword,
+		cfg.SMTPFromEmail,
+		cfg.SMTPFromName,
+	)
+	integrationsService := services.NewIntegrationsService(db)
 	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
 
 	// 6. Initialize Handlers
-	stravaHandler := handlers.NewStravaHandler(stravaService, cfg.FrontendURL)
+	stravaHandler := handlers.NewStravaHandler(stravaService, authService, userProfileService, notificationService, cfg.FrontendURL)
 	goalsHandler := handlers.NewGoalsHandler(goalsService)
 	coachHandler := handlers.NewCoachHandler(coachService, db)
 	calendarHandler := handlers.NewCalendarHandler(calendarService)
-	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService, userProfileService)
+	profileHandler := handlers.NewProfileHandler(authService, stravaService, goalsService, userProfileService, notificationService, integrationsService)
 	activitiesHandler := handlers.NewActivitiesHandler(activityService)
 	dashboardHandler := handlers.NewDashboardHandler(metricsService)
 	crossTrainingHandler := handlers.NewCrossTrainingHandler(db)
@@ -145,6 +156,8 @@ func main() {
 				profile.DELETE("", profileHandler.DeleteAccount)
 				profile.GET("/export", profileHandler.ExportData)
 				profile.POST("/avatar", profileHandler.UploadAvatar)
+				profile.POST("/notifications/test", profileHandler.SendTestNotification)
+				profile.POST("/integrations/interest/:source", profileHandler.RequestIntegrationInterest)
 
 				profile.GET("/prs", profileHandler.GetPersonalRecords)
 				profile.PUT("/prs/:label", profileHandler.UpsertPersonalRecord)

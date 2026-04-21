@@ -15,14 +15,26 @@ import (
 )
 
 type StravaHandler struct {
-	stravaService *services.StravaService
-	frontendURL   string
+	stravaService       *services.StravaService
+	authService         *services.AuthService
+	userProfileService  *services.UserProfileService
+	notificationService *services.NotificationService
+	frontendURL         string
 }
 
-func NewStravaHandler(stravaService *services.StravaService, frontendURL string) *StravaHandler {
+func NewStravaHandler(
+	stravaService *services.StravaService,
+	authService *services.AuthService,
+	userProfileService *services.UserProfileService,
+	notificationService *services.NotificationService,
+	frontendURL string,
+) *StravaHandler {
 	return &StravaHandler{
-		stravaService: stravaService,
-		frontendURL:   frontendURL,
+		stravaService:       stravaService,
+		authService:         authService,
+		userProfileService:  userProfileService,
+		notificationService: notificationService,
+		frontendURL:         frontendURL,
 	}
 }
 
@@ -122,9 +134,11 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, services.ErrStravaRateLimited) {
+			h.maybeSendSyncFailureNotification(c, userID, "Strava is temporarily rate limited. Please try again shortly.")
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Strava is temporarily rate limited. Please try again shortly."})
 			return
 		}
+		h.maybeSendSyncFailureNotification(c, userID, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -136,6 +150,28 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 		"partial":       result.Partial,
 		"pages_fetched": result.PagesFetched,
 	})
+}
+
+func (h *StravaHandler) maybeSendSyncFailureNotification(c *gin.Context, userID uuid.UUID, syncError string) {
+	if h.notificationService == nil || !h.notificationService.IsEmailConfigured() {
+		return
+	}
+
+	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
+	if err != nil || user == nil {
+		return
+	}
+
+	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
+	if err != nil || profile == nil || !profile.NotifySyncFailures {
+		return
+	}
+
+	notifyCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := h.notificationService.SendSyncFailureNotification(notifyCtx, user, profile, syncError); err != nil && !errors.Is(err, services.ErrEmailNotConfigured) {
+		return
+	}
 }
 
 // GetActivities retrieves the user's synced activities with pagination.
