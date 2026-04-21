@@ -11,8 +11,8 @@ export default function CardiacDriftWidget() {
       </div>
       <DataEmptyState
         variant="nodata"
-        title="Coming soon"
-        description="HR stream data required — coming with Garmin integration"
+        title="Needs richer sensor data"
+        description="Cardiac drift unlocks once Garmin or Coros stream support lands. Beta interest is open in Settings."
       />
     </div>
   );

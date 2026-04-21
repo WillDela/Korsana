@@ -16,6 +16,7 @@ import { formatDistance, formatPace, distanceLabel } from '../utils/units';
 import { stravaAPI } from '../api/strava';
 import { activitiesAPI } from '../api/activities';
 import { calendarAPI } from '../api/calendar';
+import { userProfileAPI } from '../api/userProfile';
 import { getErrorMessage } from '../api/client';
 import ErrorBoundary from '../components/ErrorBoundary';
 import SessionDetailsModal from '../components/SessionDetailsModal';
@@ -237,14 +238,19 @@ const Gauge = ({ score }) => {
 };
 
 // ─── SyncDropdown ─────────────────────────────────────────────
-const SOURCES = [
+const BASE_SOURCES = [
   { id: 'strava', label: 'Strava', status: 'connected', color: '#FC4C02' },
   { id: 'garmin', label: 'Garmin', status: 'coming',    color: '#007DC5' },
   { id: 'coros',  label: 'Coros',  status: 'coming',    color: '#1B2559' },
 ];
 
-const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
+const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected, requestedSources = {} }) => {
   const [open, setOpen] = useState(false);
+  const sources = BASE_SOURCES.map((source) => (
+    source.id === 'strava'
+      ? source
+      : { ...source, requested: Boolean(requestedSources[source.id]) }
+  ));
   return (
     <div className="relative">
       <button
@@ -274,7 +280,7 @@ const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
             <div className="font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.1em] mb-[10px]">
               Data Sources
             </div>
-            {SOURCES.map(s => (
+            {sources.map(s => (
               <div
                 key={s.id}
                 className="flex items-center gap-[10px] px-[10px] py-[9px] rounded-[9px] mb-1"
@@ -305,7 +311,7 @@ const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
                   >
                     {s.status === 'connected'
                       ? (stravaConnected === false ? '○ Not connected' : '● Connected')
-                      : 'Coming soon'}
+                      : (s.requested ? 'Requested beta access' : 'Request beta access')}
                   </div>
                 </div>
                 {s.status === 'connected' && (
@@ -320,6 +326,14 @@ const SyncDropdown = ({ isSyncing, onSync, onConnect, stravaConnected }) => {
                       className="bg-navy border-0 rounded-[7px] px-[10px] py-[5px] font-sans text-[11px] font-bold text-white cursor-pointer"
                     >Sync</button>
                   )
+                )}
+                {s.status === 'coming' && (
+                  <button
+                    onClick={() => { onSync(s.id); setOpen(false); }}
+                    className={`border-0 rounded-[7px] px-[10px] py-[5px] font-sans text-[11px] font-bold whitespace-nowrap ${s.requested ? 'bg-[#E9FBF3] text-[#1A7A50]' : 'bg-[#ECEEF4] text-[#1B2559] cursor-pointer'}`}
+                  >
+                    {s.requested ? 'Requested' : 'Notify me'}
+                  </button>
                 )}
               </div>
             ))}
@@ -556,6 +570,7 @@ const Dashboard = () => {
   const [lastSynced, setLastSynced] = useState(null);
   const [stravaConnected, setStravaConnected] = useState(null);
   const [insight, setInsight] = useState(null);
+  const [requestedIntegrations, setRequestedIntegrations] = useState({});
 
   const [showFactors, setShowFactors] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -627,6 +642,17 @@ const Dashboard = () => {
       const data = await dashboardAPI.get();
       setDashboardData(data);
     } catch { /* dashboard data unavailable */ }
+  }, []);
+
+  const fetchIntegrationInterest = useCallback(async () => {
+    try {
+      const data = await userProfileAPI.getFullProfile();
+      setRequestedIntegrations(
+        Object.fromEntries((data?.integration_interest || []).map((item) => [item.source, true])),
+      );
+    } catch {
+      setRequestedIntegrations({});
+    }
   }, []);
 
   const fetchInsight = useCallback(async () => {
@@ -705,7 +731,13 @@ const Dashboard = () => {
   const handleSyncActivities = useCallback(async (provider = 'strava') => {
     if (provider !== 'strava') {
       const name = provider[0].toUpperCase() + provider.slice(1);
-      showSyncMessage(`${name} support is coming soon.`, 'error', 3000);
+      try {
+        await userProfileAPI.requestIntegrationInterest(provider);
+        setRequestedIntegrations((prev) => ({ ...prev, [provider]: true }));
+        showSyncMessage(`We'll keep you posted when ${name} beta access opens.`, 'success', 3500);
+      } catch (error) {
+        showSyncMessage(getErrorMessage(error), 'error', 4000);
+      }
       return;
     }
 
@@ -733,6 +765,7 @@ const Dashboard = () => {
     fetchWeekEntries();
     fetchDashboardData();
     fetchInsight();
+    fetchIntegrationInterest();
   }, []);
 
   useEffect(() => () => {
