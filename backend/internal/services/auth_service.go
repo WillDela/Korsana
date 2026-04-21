@@ -113,6 +113,7 @@ func (s *AuthService) UpdateEmail(ctx context.Context, userID uuid.UUID, current
 		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
+	req.Header.Set("apikey", s.supabaseServiceRoleKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.httpClient.Do(req)
@@ -147,6 +148,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, curr
 		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
+	req.Header.Set("apikey", s.supabaseServiceRoleKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.httpClient.Do(req)
@@ -173,6 +175,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 		return fmt.Errorf("create delete request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+s.supabaseServiceRoleKey)
+	req.Header.Set("apikey", s.supabaseServiceRoleKey)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
