@@ -69,6 +69,12 @@ const Settings = () => {
     await fetchProfile(); // Re-fetch the data to reflect changes
   };
 
+  const handleIntegrationInterest = async (source) => {
+    const response = await userProfileAPI.requestIntegrationInterest(source);
+    await fetchProfile();
+    return response;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
@@ -171,6 +177,7 @@ const Settings = () => {
               stravaConnected={profileData?.strava?.connected}
               stravaAthleteId={profileData?.strava?.athlete_id}
               stravaMessage={stravaMessage}
+              integrationInterest={profileData?.integration_interest}
               onConnectStrava={async () => {
                 try {
                   const response = await stravaAPI.getAuthURL();
@@ -181,6 +188,7 @@ const Settings = () => {
               }}
               onDisconnect={handleProfileUpdate}
               onUpdate={handleProfileUpdate}
+              onRequestIntegrationInterest={handleIntegrationInterest}
             />
           </motion.div>
         )}

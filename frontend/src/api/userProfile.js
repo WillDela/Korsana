@@ -11,6 +11,16 @@ export const userProfileAPI = {
     return response.data;
   },
 
+  sendTestNotification: async (type) => {
+    const response = await api.post('/profile/notifications/test', { type });
+    return response.data;
+  },
+
+  requestIntegrationInterest: async (source) => {
+    const response = await api.post(`/profile/integrations/interest/${encodeURIComponent(source)}`);
+    return response.data;
+  },
+
   changePassword: async (currentPassword, newPassword) => {
     const response = await api.put('/profile/password', {
       current_password: currentPassword,
