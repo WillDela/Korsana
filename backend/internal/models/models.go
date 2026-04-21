@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -159,6 +160,30 @@ type UserProfile struct {
 	NotifySyncFailures       bool      `json:"notify_sync_failures" db:"notify_sync_failures"`
 	CreatedAt                time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt                time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type NotificationDelivery struct {
+	ID               uuid.UUID       `json:"id" db:"id"`
+	UserID           uuid.UUID       `json:"user_id" db:"user_id"`
+	NotificationType string          `json:"notification_type" db:"notification_type"`
+	Channel          string          `json:"channel" db:"channel"`
+	Status           string          `json:"status" db:"status"`
+	Subject          *string         `json:"subject,omitempty" db:"subject"`
+	Recipient        *string         `json:"recipient,omitempty" db:"recipient"`
+	Provider         *string         `json:"provider,omitempty" db:"provider"`
+	ErrorMessage     *string         `json:"error_message,omitempty" db:"error_message"`
+	Metadata         json.RawMessage `json:"metadata,omitempty" db:"metadata"`
+	CreatedAt        time.Time       `json:"created_at" db:"created_at"`
+}
+
+type IntegrationInterestRequest struct {
+	ID        uuid.UUID `json:"id" db:"id"`
+	UserID    uuid.UUID `json:"user_id" db:"user_id"`
+	Source    string    `json:"source" db:"source"`
+	Status    string    `json:"status" db:"status"`
+	Notes     *string   `json:"notes,omitempty" db:"notes"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // PersonalRecord represents an athlete's best time for a given distance

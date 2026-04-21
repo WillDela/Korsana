@@ -26,6 +26,7 @@ func main() {
 		"009_profile_preferences.sql",
 		"010_coach_rate_limits.sql",
 		"011_coach_sessions.sql",
+		"019_notifications_and_integration_interest.sql",
 	}
 
 	for _, migrationFile := range migrations {
