@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LuCheck, LuArrowRight, LuFlag, LuCalendar, LuZap } from 'react-icons/lu';
 import { stravaAPI } from '../api/strava';
 import { goalsAPI } from '../api/goals';
+import { userProfileAPI } from '../api/userProfile';
 import BrandIcon from '../components/BrandIcon';
 
 const DISTANCES = [
@@ -55,6 +56,8 @@ const Onboarding = () => {
   const [direction, setDirection] = useState(1);
   const [stravaConnected, setStravaConnected] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
+  const [requestedIntegrations, setRequestedIntegrations] = useState({});
+  const [requestingIntegration, setRequestingIntegration] = useState('');
 
   const [raceName, setRaceName] = useState('');
   const [raceDate, setRaceDate] = useState('');
@@ -123,6 +126,18 @@ const Onboarding = () => {
       setError(err.response?.data?.error || 'Failed to create goal');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRequestIntegration = async (source) => {
+    try {
+      setRequestingIntegration(source);
+      await userProfileAPI.requestIntegrationInterest(source);
+      setRequestedIntegrations((prev) => ({ ...prev, [source]: true }));
+    } catch (err) {
+      console.error('Failed to request integration access:', err);
+    } finally {
+      setRequestingIntegration('');
     }
   };
 
@@ -314,23 +329,27 @@ const Onboarding = () => {
                     </button>
 
                     <div className="border-t border-border pt-3 flex flex-col gap-2">
-                      {[
+                      {[ 
                         { brand: 'garmin', label: 'Garmin Connect', color: 'var(--color-garmin)' },
                         { brand: 'coros',  label: 'Coros',          color: 'var(--color-coros)' },
-                      ].map(({ brand, label, color }) => (
+                      ].map(({ brand, label, color }) => {
+                        const requested = Boolean(requestedIntegrations[brand]);
+                        return (
                         <button
                           key={brand}
-                          disabled
-                          className="btn w-full py-2.5 font-semibold text-white border-none opacity-40 cursor-not-allowed flex items-center justify-center gap-2 text-sm"
-                          style={{ background: color }}
+                          onClick={() => handleRequestIntegration(brand)}
+                          disabled={requested || requestingIntegration === brand}
+                          className={`btn w-full py-2.5 font-semibold border-none flex items-center justify-center gap-2 text-sm ${requested ? 'text-navy' : 'text-white'}`}
+                          style={{ background: requested ? 'var(--navy-tint)' : color, opacity: requestingIntegration === brand ? 0.7 : 1 }}
                         >
                           <BrandIcon brand={brand} size={15} />
                           {label}
                           <span className="ml-auto text-[10px] tracking-widest uppercase opacity-80">
-                            Soon
+                            {requested ? 'Requested' : requestingIntegration === brand ? 'Saving' : 'Beta'}
                           </span>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <p className="text-xs text-text-muted text-center leading-relaxed pt-1">

@@ -1,19 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LuRefreshCw, LuUnlink, LuShieldCheck, LuBell } from 'react-icons/lu';
+import { LuRefreshCw, LuUnlink, LuShieldCheck, LuBell, LuCircleCheckBig } from 'react-icons/lu';
 import { stravaAPI } from '../../api/strava';
+import { getErrorMessage } from '../../api/client';
 import BrandIcon from '../BrandIcon';
 import StatusBadge from '../ui/StatusBadge';
 
-// ── Disconnect confirmation modal ─────────────────────────────────────────────
-
 const DisconnectModal = ({ onConfirm, onCancel, loading }) => (
   <div
-    style={{ position: 'fixed', inset: 0, background: 'rgba(27,37,89,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    className="fixed inset-0 z-[500] flex items-center justify-center bg-navy/50 px-4"
     onClick={onCancel}
   >
     <div
-      style={{ background: '#fff', borderRadius: 20, width: 440, padding: '28px 32px', boxShadow: '0 20px 60px rgba(27,37,89,0.25)' }}
+      className="w-full max-w-[440px] rounded-[20px] bg-white px-8 py-7 shadow-[0_20px_60px_rgba(27,37,89,0.25)]"
       onClick={(e) => e.stopPropagation()}
     >
       <h2 className="text-lg font-bold text-navy mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
@@ -23,11 +22,7 @@ const DisconnectModal = ({ onConfirm, onCancel, loading }) => (
         Your Strava activities will no longer sync. Existing activity data already imported into Korsana will not be removed.
       </p>
       <div className="flex gap-3 justify-end">
-        <button
-          onClick={onCancel}
-          className="btn btn-sm btn-outline"
-          disabled={loading}
-        >
+        <button onClick={onCancel} className="btn btn-sm btn-outline" disabled={loading}>
           Cancel
         </button>
         <button
@@ -43,15 +38,15 @@ const DisconnectModal = ({ onConfirm, onCancel, loading }) => (
   </div>
 );
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 const ConnectedServicesCard = ({
   stravaConnected,
   stravaAthleteId,
   stravaMessage,
+  integrationInterest = [],
   onConnectStrava,
   onDisconnect,
   onUpdate,
+  onRequestIntegrationInterest,
 }) => {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -59,6 +54,13 @@ const ConnectedServicesCard = ({
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState('');
+  const [requestingSource, setRequestingSource] = useState('');
+  const [interestMessage, setInterestMessage] = useState({ type: '', text: '' });
+
+  const interestBySource = useMemo(
+    () => Object.fromEntries((integrationInterest || []).map((item) => [item.source, item])),
+    [integrationInterest],
+  );
 
   const handleSync = async () => {
     try {
@@ -67,12 +69,15 @@ const ConnectedServicesCard = ({
       setSyncError('');
       const res = await stravaAPI.syncActivities();
       setSyncMessage(res?.message || `Synced ${res.count} activities.`);
-      if (onUpdate) onUpdate();
-    } catch {
-      setSyncError('Sync failed. Please try again.');
+      if (onUpdate) await onUpdate();
+    } catch (err) {
+      setSyncError(getErrorMessage(err));
     } finally {
       setSyncing(false);
-      setTimeout(() => { setSyncMessage(''); setSyncError(''); }, 5000);
+      setTimeout(() => {
+        setSyncMessage('');
+        setSyncError('');
+      }, 5000);
     }
   };
 
@@ -82,19 +87,34 @@ const ConnectedServicesCard = ({
       setDisconnectError('');
       await stravaAPI.disconnect();
       setConfirmDisconnect(false);
-      if (onDisconnect) onDisconnect();
-    } catch {
-      setDisconnectError('Failed to disconnect. Please try again.');
+      if (onDisconnect) await onDisconnect();
+    } catch (err) {
+      setDisconnectError(getErrorMessage(err));
       setDisconnecting(false);
+    }
+  };
+
+  const handleRequestInterest = async (source) => {
+    if (!onRequestIntegrationInterest) return;
+
+    try {
+      setRequestingSource(source);
+      setInterestMessage({ type: '', text: '' });
+      const response = await onRequestIntegrationInterest(source);
+      setInterestMessage({
+        type: 'success',
+        text: response?.message || `We'll keep you posted when ${source} opens up.`,
+      });
+    } catch (err) {
+      setInterestMessage({ type: 'error', text: getErrorMessage(err) });
+    } finally {
+      setRequestingSource('');
     }
   };
 
   return (
     <div className="flex flex-col gap-6">
-
-      {/* ── Strava card ───────────────────────────────────────── */}
       <div className="card">
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <BrandIcon brand="strava" size={24} />
@@ -113,7 +133,6 @@ const ConnectedServicesCard = ({
           />
         </div>
 
-        {/* Flash messages */}
         <AnimatePresence>
           {stravaMessage?.text && (
             <motion.div
@@ -152,7 +171,6 @@ const ConnectedServicesCard = ({
 
         {stravaConnected ? (
           <div>
-            {/* Connection details */}
             <div className="bg-[var(--navy-tint)] rounded-xl p-4 mb-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-text-secondary">
@@ -170,13 +188,8 @@ const ConnectedServicesCard = ({
               Activities sync automatically when you open the Dashboard. Use the button below to pull in the latest runs on demand.
             </p>
 
-            {/* Actions */}
             <div className="flex items-center gap-3 flex-wrap">
-              <button
-                onClick={handleSync}
-                disabled={syncing}
-                className="btn btn-sm btn-outline font-semibold flex items-center gap-2"
-              >
+              <button onClick={handleSync} disabled={syncing} className="btn btn-sm btn-outline font-semibold flex items-center gap-2">
                 <LuRefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
                 {syncing ? 'Syncing…' : 'Sync Now'}
               </button>
@@ -206,55 +219,62 @@ const ConnectedServicesCard = ({
         )}
       </div>
 
-      {/* ── Coming soon integrations ──────────────────────────── */}
+      {interestMessage.text && (
+        <div className={`rounded-lg px-4 py-3 text-sm font-medium ${interestMessage.type === 'success' ? 'bg-sage/10 border border-sage/30 text-navy' : 'bg-error text-white'}`}>
+          {interestMessage.text}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {[
           {
+            source: 'garmin',
             brand: 'garmin',
             name: 'Garmin Connect',
-            desc: 'Sync your Garmin watch runs and advanced running dynamics directly to Korsana.',
+            desc: 'Register interest for Garmin sync and we will reach out when beta access opens.',
           },
           {
-            brand: null,
+            source: 'coros',
+            brand: 'coros',
             name: 'Coros',
-            desc: 'Import GPS and heart rate data from your Coros pace watch.',
-            icon: (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            ),
+            desc: 'Join the Coros queue so we can prioritize rollout based on real demand.',
           },
-        ].map(({ brand, name, desc, icon }) => (
-          <div key={name} className="card border-dashed border-border opacity-70 relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="text-[10px] font-bold tracking-widest uppercase text-text-muted bg-border-light px-2 py-1 rounded">
-                Coming soon
-              </span>
+        ].map(({ source, brand, name, desc }) => {
+          const requested = Boolean(interestBySource[source]);
+          return (
+            <div key={source} className="card relative overflow-hidden">
+              <div className="absolute top-4 right-4">
+                <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded ${requested ? 'text-sage bg-sage/10' : 'text-text-muted bg-border-light'}`}>
+                  {requested ? 'Requested' : 'Beta queue'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5 mb-3 mt-1">
+                <BrandIcon brand={brand} size={20} />
+                <h3 className="font-semibold text-sm text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
+                  {name}
+                </h3>
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed mb-4">{desc}</p>
+              <button
+                onClick={() => handleRequestInterest(source)}
+                disabled={requested || requestingSource === source}
+                className={`btn btn-sm flex items-center gap-1.5 text-xs ${requested ? 'bg-sage/10 text-sage border border-sage/30 cursor-default' : 'btn-outline'}`}
+              >
+                {requested ? <LuCircleCheckBig size={12} /> : <LuBell size={12} />}
+                {requested ? 'Requested' : requestingSource === source ? 'Saving…' : 'Request access'}
+              </button>
             </div>
-            <div className="flex items-center gap-2.5 mb-3 mt-1">
-              {brand ? <BrandIcon brand={brand} size={20} /> : icon}
-              <h3 className="font-semibold text-sm text-text-primary" style={{ fontFamily: 'var(--font-heading)' }}>
-                {name}
-              </h3>
-            </div>
-            <p className="text-xs text-text-muted leading-relaxed mb-4">{desc}</p>
-            <button
-              disabled
-              className="btn btn-sm border border-border text-text-muted bg-transparent cursor-not-allowed flex items-center gap-1.5 text-xs"
-            >
-              <LuBell size={12} />
-              Notify me
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Disconnect confirmation modal */}
       {confirmDisconnect && (
         <DisconnectModal
           onConfirm={handleDisconnect}
-          onCancel={() => { setConfirmDisconnect(false); setDisconnectError(''); }}
+          onCancel={() => {
+            setConfirmDisconnect(false);
+            setDisconnectError('');
+          }}
           loading={disconnecting}
         />
       )}
