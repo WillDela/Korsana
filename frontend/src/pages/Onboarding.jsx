@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuCheck, LuArrowRight, LuFlag, LuCalendar, LuZap } from 'react-icons/lu';
 import { stravaAPI } from '../api/strava';
@@ -52,6 +53,7 @@ const stepVariants = {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { completeOnboarding } = useAuth();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [stravaConnected, setStravaConnected] = useState(false);
@@ -575,7 +577,10 @@ const Onboarding = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={async () => {
+                    await completeOnboarding();
+                    navigate('/dashboard');
+                  }}
                   className="btn btn-primary w-full py-3 flex items-center justify-center gap-2"
                 >
                   Open Dashboard

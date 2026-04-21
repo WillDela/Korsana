@@ -17,8 +17,8 @@ const Login = () => {
     setIsSubmitting(true);
     setServerError('');
     try {
-      await login(data.email, data.password);
-      navigate('/dashboard');
+      const result = await login(data.email, data.password);
+      navigate(result.onboarded ? '/dashboard' : '/onboarding');
     } catch (err) {
       setServerError(err);
     } finally {
