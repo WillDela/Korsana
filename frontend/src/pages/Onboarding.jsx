@@ -63,6 +63,73 @@ const INTEGRATION_OPTIONS = [
   { brand: 'coros', label: 'Coros', color: 'var(--color-coros)' },
 ];
 
+const StepFooter = ({
+  step,
+  totalSteps,
+  onBack,
+  backLabel = 'Back',
+  onSecondary,
+  secondaryLabel,
+  primaryLabel,
+  onPrimary,
+  primaryDisabled = false,
+  primaryBusy = false,
+  primaryMinWidth = 'sm:min-w-[190px]',
+}) => {
+  const isFirstStep = step === 0;
+  const actionLabel = primaryBusy ? primaryLabel : primaryLabel;
+
+  return (
+    <div className="border-t border-border-light/90 bg-white/88 px-5 py-4 sm:px-8">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border-light bg-bg-elevated px-4 py-3 lg:min-w-[240px]">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
+              Navigation
+            </p>
+            <p className="mt-1 text-sm font-semibold text-navy">
+              Step {step + 1} of {totalSteps}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isFirstStep}
+            className={`btn btn-outline min-w-[108px] px-4 py-2.5 text-sm ${
+              isFirstStep ? 'cursor-not-allowed opacity-40' : ''
+            }`}
+          >
+            {backLabel}
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          {secondaryLabel && onSecondary && (
+            <button
+              type="button"
+              onClick={onSecondary}
+              className="btn btn-ghost px-4 py-3 text-sm"
+            >
+              {secondaryLabel}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onPrimary}
+            disabled={primaryDisabled}
+            className={`btn btn-primary justify-center px-6 py-3 ${primaryMinWidth} ${
+              primaryDisabled ? 'cursor-not-allowed opacity-60' : ''
+            }`}
+          >
+            <span>{actionLabel}</span>
+            {!primaryBusy && <LuArrowRight size={16} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const stepVariants = {
   enter: (direction) => ({
     x: direction > 0 ? 48 : -48,
@@ -212,6 +279,43 @@ const Onboarding = () => {
 
   const selectedDistancePreview = selectedDistance || (customDistance ? `${customDistance} km` : 'Choose a distance');
 
+  const primaryButtonLabel =
+    step === 0
+      ? 'Get Started'
+      : step === 1
+        ? (stravaConnected ? 'Continue' : 'Skip for now')
+        : step === 2
+          ? (submitting ? 'Creating goal...' : 'Set Goal')
+          : 'Open Dashboard';
+
+  const secondaryButtonLabel = step === 2 ? 'Skip for now' : undefined;
+
+  const handlePrimaryAction = async () => {
+    if (step === 0) {
+      goNext();
+      return;
+    }
+
+    if (step === 1) {
+      goNext();
+      return;
+    }
+
+    if (step === 2) {
+      await handleCreateGoal();
+      return;
+    }
+
+    await completeOnboarding();
+    navigate('/dashboard');
+  };
+
+  const handleSecondaryAction = () => {
+    if (step === 2) {
+      goNext();
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg-app">
       <div
@@ -360,6 +464,56 @@ const Onboarding = () => {
               </div>
             </div>
 
+            <div className="border-b border-border-light/80 bg-bg-elevated/70 px-5 py-3 sm:px-8">
+              <div className="grid grid-cols-4 gap-2">
+                {STEPS.map((item, index) => {
+                  const isActive = index === step;
+                  const isReached = index <= step;
+
+                  return (
+                    <button
+                      key={`mobile-step-${item.title}`}
+                      type="button"
+                      onClick={() => {
+                        if (isReached) goToStep(index);
+                      }}
+                      className={`rounded-2xl border px-3 py-3 text-left transition-all ${
+                        isActive
+                          ? 'border-navy bg-white shadow-sm'
+                          : isReached
+                            ? 'border-border bg-white/85 hover:border-navy/30'
+                            : 'border-transparent bg-white/40 text-text-muted'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                            isActive
+                              ? 'bg-navy text-white'
+                              : isReached
+                                ? 'bg-[var(--navy-tint)] text-navy'
+                                : 'bg-border-light text-text-muted'
+                          }`}
+                        >
+                          {index < step ? <LuCheck size={13} strokeWidth={3} /> : index + 1}
+                        </div>
+                        <div className="min-w-0">
+                          <p
+                            className={`truncate text-sm font-semibold ${
+                              isActive ? 'text-navy' : isReached ? 'text-text-primary' : 'text-text-muted'
+                            }`}
+                            style={{ fontFamily: 'var(--font-heading)' }}
+                          >
+                            {item.title}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="px-5 py-5 sm:px-8 sm:py-8">
               <AnimatePresence mode="wait" custom={direction}>
                 {step === 0 && (
@@ -421,16 +575,6 @@ const Onboarding = () => {
                       </div>
                     </div>
 
-                    <div className="flex justify-end border-t border-border-light pt-5">
-                      <button
-                        type="button"
-                        onClick={goNext}
-                        className="btn btn-primary min-w-[190px] px-6 py-3"
-                      >
-                        Get Started
-                        <LuArrowRight size={16} />
-                      </button>
-                    </div>
                   </motion.section>
                 )}
 
@@ -551,19 +695,6 @@ const Onboarding = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center sm:justify-between">
-                      <button type="button" onClick={goBack} className="btn btn-outline px-5 py-3 sm:min-w-[120px]">
-                        Back
-                      </button>
-                      <button
-                        type="button"
-                        onClick={goNext}
-                        className="btn btn-primary px-6 py-3 sm:min-w-[190px]"
-                      >
-                        {stravaConnected ? 'Continue' : 'Skip for now'}
-                        <LuArrowRight size={15} />
-                      </button>
-                    </div>
                   </motion.section>
                 )}
 
@@ -757,31 +888,6 @@ const Onboarding = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center sm:justify-between">
-                      <button type="button" onClick={goBack} className="btn btn-outline px-5 py-3 sm:min-w-[120px]">
-                        Back
-                      </button>
-
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <button
-                          type="button"
-                          onClick={goNext}
-                          className="btn btn-ghost px-4 py-3 text-sm"
-                        >
-                          Skip for now
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCreateGoal}
-                          disabled={submitting}
-                          className="btn btn-primary px-6 py-3 sm:min-w-[190px]"
-                          style={{ opacity: submitting ? 0.72 : 1 }}
-                        >
-                          {submitting ? 'Creating goal...' : 'Set Goal'}
-                          {!submitting && <LuArrowRight size={15} />}
-                        </button>
-                      </div>
-                    </div>
                   </motion.section>
                 )}
 
@@ -836,26 +942,23 @@ const Onboarding = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 border-t border-border-light pt-5 sm:flex-row sm:items-center sm:justify-between">
-                      <button type="button" onClick={goBack} className="btn btn-outline px-5 py-3 sm:min-w-[120px]">
-                        Back
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await completeOnboarding();
-                          navigate('/dashboard');
-                        }}
-                        className="btn btn-primary px-6 py-3 sm:min-w-[210px]"
-                      >
-                        Open Dashboard
-                        <LuArrowRight size={16} />
-                      </button>
-                    </div>
                   </motion.section>
                 )}
               </AnimatePresence>
             </div>
+
+            <StepFooter
+              step={step}
+              totalSteps={totalSteps}
+              onBack={goBack}
+              secondaryLabel={secondaryButtonLabel}
+              onSecondary={secondaryButtonLabel ? handleSecondaryAction : undefined}
+              primaryLabel={primaryButtonLabel}
+              onPrimary={handlePrimaryAction}
+              primaryDisabled={submitting}
+              primaryBusy={step === 2 && submitting}
+              primaryMinWidth={step === 3 ? 'sm:min-w-[210px]' : 'sm:min-w-[190px]'}
+            />
           </main>
         </div>
       </div>
