@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuCheck, LuArrowRight, LuFlag, LuCalendar, LuZap } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
 import { stravaAPI } from '../api/strava';
 import { goalsAPI } from '../api/goals';
 import { userProfileAPI } from '../api/userProfile';
+import {
+  getOnboardingIntegrationFeedback,
+  getOnboardingPrimaryButtonLabel,
+  getOnboardingSecondaryButtonLabel,
+} from '../lib/onboardingFlow';
+import { clearStravaRedirectParams } from '../lib/stravaRedirect';
 import BrandIcon from '../components/BrandIcon';
 
 const DISTANCES = [
@@ -155,13 +161,15 @@ const getGoalTypeLabel = (goalType) => {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { completeOnboarding } = useAuth();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [stravaConnected] = useState(false);
+  const [stravaConnected, setStravaConnected] = useState(false);
   const [connectingStrava, setConnectingStrava] = useState(false);
   const [requestedIntegrations, setRequestedIntegrations] = useState({});
   const [requestingIntegration, setRequestingIntegration] = useState('');
+  const [integrationMessage, setIntegrationMessage] = useState(null);
 
   const [raceName, setRaceName] = useState('');
   const [raceDate, setRaceDate] = useState('');
@@ -176,6 +184,19 @@ const Onboarding = () => {
 
   const totalSteps = STEPS.length;
   const currentStep = STEPS[step];
+
+  useEffect(() => {
+    const feedback = getOnboardingIntegrationFeedback(searchParams);
+    if (!feedback) return;
+
+    setStravaConnected(feedback.stravaConnected);
+    setConnectingStrava(false);
+    setIntegrationMessage(feedback.message);
+    setDirection(1);
+    setStep((current) => Math.max(current, feedback.step));
+
+    clearStravaRedirectParams(setSearchParams);
+  }, [searchParams, setSearchParams]);
 
   const goToStep = (nextStep) => {
     if (nextStep === step) return;
@@ -279,16 +300,13 @@ const Onboarding = () => {
 
   const selectedDistancePreview = selectedDistance || (customDistance ? `${customDistance} km` : 'Choose a distance');
 
-  const primaryButtonLabel =
-    step === 0
-      ? 'Get Started'
-      : step === 1
-        ? (stravaConnected ? 'Continue' : 'Skip for now')
-        : step === 2
-          ? (submitting ? 'Creating goal...' : 'Set Goal')
-          : 'Open Dashboard';
+  const primaryButtonLabel = getOnboardingPrimaryButtonLabel({
+    step,
+    stravaConnected,
+    submitting,
+  });
 
-  const secondaryButtonLabel = step === 2 ? 'Skip for now' : undefined;
+  const secondaryButtonLabel = getOnboardingSecondaryButtonLabel(step);
 
   const handlePrimaryAction = async () => {
     if (step === 0) {
@@ -464,8 +482,8 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="border-b border-border-light/80 bg-bg-elevated/70 px-5 py-3 sm:px-8">
-              <div className="grid grid-cols-4 gap-2">
+            <div className="border-b border-border-light/80 bg-bg-elevated/70 px-5 py-3 sm:px-8 lg:hidden">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {STEPS.map((item, index) => {
                   const isActive = index === step;
                   const isReached = index <= step;
@@ -515,6 +533,20 @@ const Onboarding = () => {
             </div>
 
             <div className="px-5 py-5 sm:px-8 sm:py-8">
+              {integrationMessage && step === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mb-5 rounded-[20px] border px-4 py-3 text-sm ${
+                    integrationMessage.type === 'success'
+                      ? 'border-success/25 bg-success/10 text-navy'
+                      : 'border-error/25 bg-error/10 text-error'
+                  }`}
+                >
+                  {integrationMessage.text}
+                </motion.div>
+              )}
+
               <AnimatePresence mode="wait" custom={direction}>
                 {step === 0 && (
                   <motion.section
