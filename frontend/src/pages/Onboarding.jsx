@@ -86,9 +86,9 @@ const StepFooter = ({
   const actionLabel = primaryBusy ? primaryLabel : primaryLabel;
 
   return (
-    <div className="border-t border-border-light/90 bg-white/88 px-5 py-4 sm:px-8">
+    <div className="border-t border-border-light/90 bg-white/88 px-5 py-3 sm:px-7">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border-light bg-bg-elevated px-4 py-3 lg:min-w-[240px]">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border-light bg-bg-elevated px-4 py-2.5 lg:min-w-[228px]">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted">
               Navigation
@@ -101,7 +101,7 @@ const StepFooter = ({
             type="button"
             onClick={onBack}
             disabled={isFirstStep}
-            className={`btn btn-outline min-w-[108px] px-4 py-2.5 text-sm ${
+            className={`btn btn-outline min-w-[104px] px-4 py-2 text-sm ${
               isFirstStep ? 'cursor-not-allowed opacity-40' : ''
             }`}
           >
@@ -114,7 +114,7 @@ const StepFooter = ({
             <button
               type="button"
               onClick={onSecondary}
-              className="btn btn-ghost px-4 py-3 text-sm"
+              className="btn btn-ghost px-4 py-2.5 text-sm"
             >
               {secondaryLabel}
             </button>
@@ -123,7 +123,7 @@ const StepFooter = ({
             type="button"
             onClick={onPrimary}
             disabled={primaryDisabled}
-            className={`btn btn-primary justify-center px-6 py-3 ${primaryMinWidth} ${
+            className={`btn btn-primary justify-center px-6 py-2.5 ${primaryMinWidth} ${
               primaryDisabled ? 'cursor-not-allowed opacity-60' : ''
             }`}
           >
@@ -335,7 +335,7 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-bg-app">
+    <div className="relative min-h-screen overflow-hidden bg-bg-app lg:h-screen">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -345,10 +345,10 @@ const Onboarding = () => {
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-white/70 to-transparent" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-start px-4 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <div className="grid w-full gap-6 lg:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="overflow-hidden rounded-[28px] bg-navy text-white shadow-[0_24px_70px_rgba(17,25,64,0.24)]">
-            <div className="p-6 sm:p-7">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[1420px] items-start px-4 py-4 sm:px-6 sm:py-6 lg:h-full lg:min-h-0 lg:px-8 lg:py-4">
+        <div className="grid w-full gap-5 lg:h-full lg:grid-cols-[270px_minmax(0,1fr)] xl:grid-cols-[290px_minmax(0,1fr)]">
+          <aside className="overflow-hidden rounded-[28px] bg-navy text-white shadow-[0_24px_70px_rgba(17,25,64,0.24)] lg:flex lg:h-full lg:flex-col">
+            <div className="p-5 sm:p-6">
               <div className="flex items-center gap-3">
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-2xl bg-coral text-base font-bold text-white"
@@ -367,13 +367,13 @@ const Onboarding = () => {
                 </div>
               </div>
 
-              <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">
                 <span>Step {step + 1}</span>
                 <span className="text-white/35">/</span>
                 <span>{totalSteps}</span>
               </div>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-5 space-y-2.5">
                 {STEPS.map((item, index) => {
                   const isComplete = index < step;
                   const isCurrent = index === step;
@@ -384,7 +384,7 @@ const Onboarding = () => {
                       onClick={() => {
                         if (index <= step) goToStep(index);
                       }}
-                      className={`flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-all ${
+                      className={`flex w-full items-start gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${
                         isCurrent
                           ? 'bg-white text-navy shadow-lg'
                           : isComplete
@@ -422,26 +422,10 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="border-t border-white/10 bg-white/[0.04] p-6 sm:p-7">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                Quick setup
-              </p>
-              <div className="mt-4 space-y-3">
-                {SETUP_NOTES.map((note) => (
-                  <div
-                    key={note.label}
-                    className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3"
-                  >
-                    <p className="text-sm font-semibold text-white">{note.value}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/55">{note.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </aside>
 
-          <main className="overflow-hidden rounded-[30px] border border-white/70 bg-white/92 shadow-[0_20px_60px_rgba(27,37,89,0.12)] backdrop-blur-sm">
-            <div className="border-b border-border-light px-5 py-5 sm:px-8 sm:py-6">
+          <main className="overflow-hidden rounded-[30px] border border-white/70 bg-white/92 shadow-[0_20px_60px_rgba(27,37,89,0.12)] backdrop-blur-sm lg:flex lg:h-full lg:flex-col">
+            <div className="border-b border-border-light px-5 py-4 sm:px-7 sm:py-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="max-w-2xl">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-coral">
@@ -468,7 +452,7 @@ const Onboarding = () => {
                   </AnimatePresence>
                 </div>
 
-                <div className="rounded-[20px] border border-border-light bg-bg-elevated px-4 py-3 sm:min-w-[120px] sm:text-right">
+                <div className="rounded-[20px] border border-border-light bg-bg-elevated px-4 py-2.5 sm:min-w-[120px] sm:text-right">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
                     Current phase
                   </p>
@@ -482,7 +466,7 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="border-b border-border-light/80 bg-bg-elevated/70 px-5 py-3 sm:px-8 lg:hidden">
+            <div className="border-b border-border-light/80 bg-bg-elevated/70 px-5 py-3 sm:px-7 lg:hidden">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {STEPS.map((item, index) => {
                   const isActive = index === step;
@@ -532,7 +516,7 @@ const Onboarding = () => {
               </div>
             </div>
 
-            <div className="px-5 py-5 sm:px-8 sm:py-8">
+            <div className="px-5 py-4 sm:px-7 sm:py-5 lg:flex-1">
               {integrationMessage && step === 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -556,11 +540,11 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex min-h-[460px] flex-col justify-between gap-8"
+                    className="flex flex-col justify-between gap-6 lg:h-full"
                   >
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div
-                        className="rounded-[28px] border border-border-light p-6 sm:p-7"
+                        className="rounded-[28px] border border-border-light p-5 sm:p-6"
                         style={{
                           background:
                             'linear-gradient(135deg, rgba(255,240,237,0.92) 0%, rgba(250,251,255,0.98) 58%, rgba(232,240,222,0.72) 100%)',
@@ -569,7 +553,7 @@ const Onboarding = () => {
                         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-coral">
                           What you unlock
                         </p>
-                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
                           {WELCOME_POINTS.map(({ icon: Icon, label, desc }) => (
                             <div
                               key={label}
@@ -579,32 +563,50 @@ const Onboarding = () => {
                                 <Icon size={18} />
                               </div>
                               <p
-                                className="mt-4 text-sm font-semibold text-navy"
+                                className="mt-3 text-sm font-semibold text-navy"
                                 style={{ fontFamily: 'var(--font-heading)' }}
                               >
                                 {label}
                               </p>
-                              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                              <p className="mt-1.5 text-sm leading-relaxed text-text-secondary">
                                 {desc}
                               </p>
                             </div>
                           ))}
                         </div>
+
+                        <div className="mt-4 rounded-[24px] bg-navy px-4 py-4 text-white sm:px-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="max-w-none">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">
+                                Quick setup
+                              </p>
+                              <p
+                                className="mt-2 text-base font-semibold text-white"
+                                style={{ fontFamily: 'var(--font-heading)' }}
+                              >
+                                Everything you need is right here.
+                              </p>
+                              <p className="mt-1.5 text-sm leading-relaxed text-white/70">
+                                Finish setup in a couple of minutes, skip optional steps, and come back later from settings whenever you want.
+                              </p>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-3 sm:gap-2.5">
+                              {SETUP_NOTES.map((note) => (
+                                <div
+                                  key={note.value}
+                                  className="rounded-[18px] border border-white/10 bg-white/8 px-3 py-3"
+                                >
+                                  <p className="text-sm font-semibold text-white">{note.value}</p>
+                                  <p className="mt-1 text-xs leading-relaxed text-white/60">{note.label}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {SETUP_NOTES.map((note) => (
-                          <div
-                            key={note.value}
-                            className="rounded-[22px] border border-border-light bg-white px-4 py-4 shadow-[0_8px_20px_rgba(27,37,89,0.04)]"
-                          >
-                            <p className="text-sm font-semibold text-navy">{note.value}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-text-muted">
-                              {note.label}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
                     </div>
 
                   </motion.section>
@@ -618,11 +620,11 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex min-h-[460px] flex-col justify-between gap-8"
+                    className="flex flex-col justify-between gap-6 lg:h-full"
                   >
-                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_280px]">
-                      <div className="rounded-[28px] border border-border-light bg-white p-6 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-7">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_250px]">
+                      <div className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-coral">
                               Recommended
@@ -647,7 +649,7 @@ const Onboarding = () => {
                           <motion.div
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="mt-6 flex items-center gap-4 rounded-[22px] border border-success/20 bg-success/8 px-4 py-4"
+                            className="mt-5 flex items-center gap-4 rounded-[22px] border border-success/20 bg-success/8 px-4 py-3.5"
                           >
                             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-success/15 text-success">
                               <LuCheck size={20} strokeWidth={2.6} />
@@ -660,7 +662,7 @@ const Onboarding = () => {
                             </div>
                           </motion.div>
                         ) : (
-                          <div className="mt-6 rounded-[24px] border border-border-light bg-bg-elevated p-5">
+                          <div className="mt-5 rounded-[24px] border border-border-light bg-bg-elevated p-4">
                             <button
                               type="button"
                               onClick={handleConnectStrava}
@@ -674,7 +676,7 @@ const Onboarding = () => {
                               <BrandIcon brand="strava" size={16} />
                               {connectingStrava ? 'Redirecting to Strava...' : 'Connect Strava'}
                             </button>
-                            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                            <p className="mt-2.5 text-sm leading-relaxed text-text-secondary">
                               Your account stays read-only. Korsana never writes workouts back to Strava.
                             </p>
                           </div>
@@ -682,11 +684,11 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="rounded-[28px] border border-border-light bg-bg-elevated p-5">
+                        <div className="rounded-[28px] border border-border-light bg-bg-elevated p-4">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
                             Other platforms
                           </p>
-                          <div className="mt-4 flex flex-col gap-3">
+                          <div className="mt-3 flex flex-col gap-2.5">
                             {INTEGRATION_OPTIONS.map(({ brand, label, color }) => {
                               const requested = Boolean(requestedIntegrations[brand]);
                               return (
@@ -695,7 +697,7 @@ const Onboarding = () => {
                                   type="button"
                                   onClick={() => handleRequestIntegration(brand)}
                                   disabled={requested || requestingIntegration === brand}
-                                  className={`btn w-full justify-start border-none px-4 py-3 text-sm ${
+                                  className={`btn w-full justify-start border-none px-4 py-2.5 text-sm ${
                                     requested ? 'text-navy' : 'text-white'
                                   }`}
                                   style={{
@@ -718,7 +720,7 @@ const Onboarding = () => {
                           </div>
                         </div>
 
-                        <div className="rounded-[24px] border border-border-light bg-white p-5">
+                        <div className="rounded-[24px] border border-border-light bg-white p-4">
                           <p className="text-sm font-semibold text-navy">You can skip this step</p>
                           <p className="mt-2 text-sm leading-relaxed text-text-secondary">
                             The dashboard will still open. You can connect sources later from settings.
@@ -738,17 +740,17 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex min-h-[460px] flex-col justify-between gap-8"
+                    className="flex flex-col justify-between gap-6 lg:h-full"
                   >
-                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
-                      <div className="rounded-[28px] border border-border-light bg-white p-6 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-7">
+                    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.22fr)_240px]">
+                      <div className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-6">
                         {error && (
-                          <div className="mb-5 rounded-[18px] border border-error/25 bg-error/10 px-4 py-3 text-sm font-medium text-error">
+                          <div className="mb-4 rounded-[18px] border border-error/25 bg-error/10 px-4 py-2.5 text-sm font-medium text-error">
                             {error}
                           </div>
                         )}
 
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <label className="label block pb-1.5">Race name</label>
                             <input
@@ -771,7 +773,7 @@ const Onboarding = () => {
                           </div>
                         </div>
 
-                        <div className="mt-5">
+                        <div className="mt-4">
                           <label className="label block pb-1.5">Distance</label>
                           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             {DISTANCES.map((item) => (
@@ -805,7 +807,7 @@ const Onboarding = () => {
                           />
                         </div>
 
-                        <div className="mt-5">
+                        <div className="mt-4">
                           <label className="label block pb-1.5">Goal type</label>
                           <div className="grid gap-2 sm:grid-cols-3">
                             {[
@@ -834,7 +836,7 @@ const Onboarding = () => {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             transition={{ duration: 0.2 }}
-                            className="mt-5"
+                            className="mt-4"
                           >
                             <label className="label block pb-1.5">Target time</label>
                             <div className="grid grid-cols-3 gap-2">
@@ -873,26 +875,26 @@ const Onboarding = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="rounded-[28px] border border-border-light bg-bg-elevated p-5">
+                        <div className="rounded-[28px] border border-border-light bg-bg-elevated p-4">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
                             Goal preview
                           </p>
-                          <div className="mt-4 space-y-3">
-                            <div className="rounded-[18px] bg-white px-4 py-3">
+                          <div className="mt-3 space-y-2.5">
+                            <div className="rounded-[18px] bg-white px-4 py-2.5">
                               <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Race</p>
                               <p className="mt-1 text-sm font-semibold text-navy">
                                 {raceName || 'Choose your target race'}
                               </p>
                             </div>
-                            <div className="rounded-[18px] bg-white px-4 py-3">
+                            <div className="rounded-[18px] bg-white px-4 py-2.5">
                               <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Distance</p>
                               <p className="mt-1 text-sm font-semibold text-navy">{selectedDistancePreview}</p>
                             </div>
-                            <div className="rounded-[18px] bg-white px-4 py-3">
+                            <div className="rounded-[18px] bg-white px-4 py-2.5">
                               <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Goal</p>
                               <p className="mt-1 text-sm font-semibold text-navy">{getGoalTypeLabel(goalType)}</p>
                             </div>
-                            <div className="rounded-[18px] bg-white px-4 py-3">
+                            <div className="rounded-[18px] bg-white px-4 py-2.5">
                               <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Target time</p>
                               <p className="mt-1 text-sm font-semibold text-navy">{targetTimePreview}</p>
                             </div>
@@ -900,7 +902,7 @@ const Onboarding = () => {
                         </div>
 
                         {(raceName || raceDate) && (
-                          <div className="rounded-[24px] border border-border-light bg-white p-5">
+                          <div className="rounded-[24px] border border-border-light bg-white p-4">
                             <div className="flex items-start gap-3">
                               <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--navy-tint)] text-navy">
                                 <LuFlag size={15} />
@@ -931,11 +933,11 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex min-h-[460px] flex-col justify-between gap-8"
+                    className="flex flex-col justify-between gap-6 lg:h-full"
                   >
                     <div className="mx-auto flex w-full max-w-2xl flex-1 items-center">
                       <div
-                        className="w-full rounded-[30px] border border-border-light p-8 text-center shadow-[0_14px_40px_rgba(27,37,89,0.06)] sm:p-10"
+                        className="w-full rounded-[30px] border border-border-light p-6 text-center shadow-[0_14px_40px_rgba(27,37,89,0.06)] sm:p-8"
                         style={{
                           background:
                             'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(240,245,234,0.88) 100%)',
@@ -955,18 +957,18 @@ const Onboarding = () => {
                           and daily coaching insights.
                         </p>
 
-                        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-[20px] bg-white/90 px-4 py-4">
+                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-[20px] bg-white/90 px-4 py-3">
                             <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Race</p>
                             <p className="mt-1 text-sm font-semibold text-navy">
                               {raceName || 'Set later from goals'}
                             </p>
                           </div>
-                          <div className="rounded-[20px] bg-white/90 px-4 py-4">
+                          <div className="rounded-[20px] bg-white/90 px-4 py-3">
                             <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Distance</p>
                             <p className="mt-1 text-sm font-semibold text-navy">{selectedDistancePreview}</p>
                           </div>
-                          <div className="rounded-[20px] bg-white/90 px-4 py-4">
+                          <div className="rounded-[20px] bg-white/90 px-4 py-3">
                             <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Goal</p>
                             <p className="mt-1 text-sm font-semibold text-navy">{getGoalTypeLabel(goalType)}</p>
                           </div>
