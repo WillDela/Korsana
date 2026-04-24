@@ -17,6 +17,9 @@ const (
 	dailyUserLimit   = 10   // per-user daily cap (5–10 as spec'd)
 	hourlyUserLimit  = 5    // per-user hourly sub-limit
 	globalDailyLimit = 1400 // buffer under Gemini's 1,500 free tier
+
+	insightDailyUserLimit   = 5   // per-user daily insight cap (cached, so rarely hit)
+	insightGlobalDailyLimit = 200 // global insight cap, separate from chat budget
 )
 
 // CoachRateLimiter enforces AI coach usage limits at two layers:
@@ -141,6 +144,62 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 		}
 
 		setRateLimitHeaders(c, *newCount, dailyUserLimit)
+		c.Next()
+	}
+}
+
+// InsightRateLimiter enforces a Redis-only cap on daily insight generation.
+// It does NOT consume the PostgreSQL coach_rate_limits quota used for chat messages.
+func InsightRateLimiter(rdb *redis.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
+		userIDVal, exists := c.Get("userID")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		userID := userIDVal.(uuid.UUID)
+		userIDStr := userID.String()
+		today := time.Now().UTC().Format("2006-01-02")
+
+		// ── 1. Global daily limit (Redis) ────────────────────────────────────
+		globalKey := fmt.Sprintf("ratelimit:insight:global:%s", today)
+		globalCount, err := rdb.Incr(ctx, globalKey).Result()
+		if err != nil {
+			log.Printf("[RateLimit] Redis error on insight global check: %v", err)
+		} else {
+			if globalCount == 1 {
+				rdb.Expire(ctx, globalKey, 25*time.Hour)
+			}
+			if globalCount > insightGlobalDailyLimit {
+				rdb.Decr(ctx, globalKey)
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+					"error": "The daily insight limit has been reached. Try again tomorrow.",
+				})
+				return
+			}
+		}
+
+		// ── 2. Per-user daily limit (Redis) ──────────────────────────────────
+		userKey := fmt.Sprintf("ratelimit:insight:%s:%s", userIDStr, today)
+		userCount, err := rdb.Incr(ctx, userKey).Result()
+		if err != nil {
+			log.Printf("[RateLimit] Redis error on insight user check: %v", err)
+		} else {
+			if userCount == 1 {
+				rdb.Expire(ctx, userKey, 25*time.Hour)
+			}
+			if userCount > insightDailyUserLimit {
+				rdb.Decr(ctx, userKey)
+				rdb.Decr(ctx, globalKey)
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+					"error": "You've reached the daily insight limit. Try again tomorrow.",
+				})
+				return
+			}
+		}
+
 		c.Next()
 	}
 }

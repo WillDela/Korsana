@@ -31,8 +31,24 @@ export default function CoachStartSurface({ onPrompt, disabled, sessions, onSele
   const [insightLoaded, setInsightLoaded] = useState(false);
 
   useEffect(() => {
+    const CACHE_KEY = 'korsana_insight';
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached?.date === new Date().toDateString() && cached?.text) {
+        setInsight(cached.text);
+        setInsightLoaded(true);
+        return;
+      }
+    } catch { /* ignore bad cache */ }
+
     coachAPI.getInsight()
-      .then(d => setInsight(d?.insight ?? null))
+      .then(d => {
+        const text = d?.insight ?? null;
+        setInsight(text);
+        if (text) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ text, date: new Date().toDateString() }));
+        }
+      })
       .catch(() => {})
       .finally(() => setInsightLoaded(true));
   }, []);

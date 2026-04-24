@@ -61,7 +61,7 @@ func main() {
 		cfg.SMTPFromName,
 	)
 	integrationsService := services.NewIntegrationsService(db)
-	coachService := services.NewCoachService(db, cfg, goalsService, calendarService, userProfileService)
+	coachService := services.NewCoachService(db, redisClient, cfg, goalsService, calendarService, userProfileService)
 
 	// 6. Initialize Handlers
 	stravaHandler := handlers.NewStravaHandler(stravaService, authService, userProfileService, notificationService, cfg.FrontendURL)
@@ -137,10 +137,11 @@ func main() {
 			coach := protected.Group("/coach")
 			{
 				coachLimiter := middleware.CoachRateLimiter(redisClient, db)
+				insightLimiter := middleware.InsightRateLimiter(redisClient)
 				coach.POST("/message", coachLimiter, coachHandler.SendMessage)
 				coach.GET("/history", coachHandler.GetConversationHistory)
 				coach.GET("/quota", coachHandler.GetQuota)
-				coach.GET("/insight", coachLimiter, coachHandler.GetInsight)
+				coach.GET("/insight", insightLimiter, coachHandler.GetInsight)
 				coach.POST("/generate-plan", coachLimiter, coachHandler.GeneratePlan)
 				// Sessions
 				coach.POST("/sessions", coachHandler.CreateSession)

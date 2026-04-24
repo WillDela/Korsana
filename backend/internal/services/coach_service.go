@@ -17,11 +17,13 @@ import (
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/metrics"
 	"github.com/korsana/backend/internal/models"
+	"github.com/redis/go-redis/v9"
 )
 
 // CoachService handles AI coaching logic
 type CoachService struct {
 	db                 *database.DB
+	rdb                *redis.Client
 	config             *config.Config
 	httpClient         *http.Client
 	goalsService       *GoalsService
@@ -30,7 +32,7 @@ type CoachService struct {
 }
 
 // NewCoachService creates a new coach service
-func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService, userProfileService *UserProfileService) *CoachService {
+func NewCoachService(db *database.DB, rdb *redis.Client, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService, userProfileService *UserProfileService) *CoachService {
 	if cfg.GeminiAPIKey != "" {
 		log.Printf("[Coach] Gemini API key configured (length: %d)", len(cfg.GeminiAPIKey))
 	} else if cfg.ClaudeAPIKey != "" {
@@ -41,6 +43,7 @@ func NewCoachService(db *database.DB, cfg *config.Config, goalsService *GoalsSer
 
 	return &CoachService{
 		db:                 db,
+		rdb:                rdb,
 		config:             cfg,
 		httpClient:         &http.Client{Timeout: 60 * time.Second},
 		goalsService:       goalsService,
@@ -1233,8 +1236,18 @@ func formatTime(seconds *int) string {
 	return fmt.Sprintf("%d:%02d:%02d", hours, minutes, secs)
 }
 
-// GenerateInsight generates a short daily coaching insight for the dashboard sidebar
+// GenerateInsight generates a short daily coaching insight for the dashboard sidebar.
+// The result is cached in Redis for the rest of the day to avoid redundant AI calls.
 func (s *CoachService) GenerateInsight(ctx context.Context, userID uuid.UUID) (string, error) {
+	today := time.Now().UTC().Format("2006-01-02")
+	cacheKey := fmt.Sprintf("insight:%s:%s", userID.String(), today)
+
+	if s.rdb != nil {
+		if cached, err := s.rdb.Get(ctx, cacheKey).Result(); err == nil && cached != "" {
+			return cached, nil
+		}
+	}
+
 	trainingContext, err := s.buildTrainingContext(ctx, userID)
 	if err != nil {
 		trainingContext = "No training data available yet."
@@ -1268,6 +1281,11 @@ Rules:
 
 	if err != nil {
 		return "", err
+	}
+
+	if s.rdb != nil && response != "" {
+		ttl := time.Until(time.Now().UTC().Truncate(24 * time.Hour).Add(25 * time.Hour))
+		s.rdb.Set(ctx, cacheKey, response, ttl)
 	}
 
 	return response, nil
