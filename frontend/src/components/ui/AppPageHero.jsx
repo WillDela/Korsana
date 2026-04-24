@@ -7,19 +7,28 @@ export default function AppPageHero({
   primaryAction,
   secondaryAction,
   children,
+  size = 'default',
 }) {
+  const titleClass = size === 'lg'
+    ? "text-3xl md:text-4xl font-bold font-heading text-navy leading-tight tracking-tight"
+    : "text-2xl font-bold font-heading text-navy leading-tight";
+    
+  const subtitleClass = size === 'lg'
+    ? "text-[15px] md:text-[16px] text-[var(--color-text-muted)] font-sans mt-1"
+    : "text-[13px] text-[var(--color-text-muted)] font-sans";
+
   return (
     <div className="mb-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h1 className="text-2xl font-bold font-heading text-navy leading-tight">
+            <h1 className={titleClass}>
               {title}
             </h1>
-            {status && <StatusBadge {...status} size="sm" />}
+            {status && <StatusBadge {...status} size={size === 'lg' ? 'default' : 'sm'} />}
           </div>
           {subtitle && (
-            <p className="text-[13px] text-[var(--color-text-muted)] font-sans">
+            <p className={subtitleClass}>
               {subtitle}
             </p>
           )}

@@ -1236,6 +1236,7 @@ const Dashboard = () => {
         title={activeGoal?.race_name || 'Your Training'}
         subtitle={heroSubtitle}
         status={activeGoal ? { label: `${trainingPhase} Phase`, variant: PHASE_VARIANT[trainingPhase] || 'info' } : null}
+        size="lg"
         primaryAction={{
           label: isSyncing ? 'Syncing…' : (stravaConnected === false ? 'Connect Strava' : 'Sync Strava'),
           onClick: stravaConnected === false ? handleConnectStrava : handleSyncActivities,
