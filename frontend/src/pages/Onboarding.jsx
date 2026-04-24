@@ -540,11 +540,11 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex flex-col justify-between gap-6 lg:h-full"
+                    className="flex flex-col justify-center lg:h-full"
                   >
-                    <div className="space-y-3">
+                    <div className="mx-auto w-full max-w-5xl">
                       <div
-                        className="rounded-[28px] border border-border-light p-5 sm:p-6"
+                        className="rounded-[28px] border border-border-light px-5 py-6 sm:px-6 sm:py-7"
                         style={{
                           background:
                             'linear-gradient(135deg, rgba(255,240,237,0.92) 0%, rgba(250,251,255,0.98) 58%, rgba(232,240,222,0.72) 100%)',
@@ -596,7 +596,7 @@ const Onboarding = () => {
                               {SETUP_NOTES.map((note) => (
                                 <div
                                   key={note.value}
-                                  className="rounded-[18px] border border-white/10 bg-white/8 px-3 py-3"
+                                  className="rounded-[18px] border border-white/10 bg-white/8 px-3 py-3 text-center"
                                 >
                                   <p className="text-sm font-semibold text-white">{note.value}</p>
                                   <p className="mt-1 text-xs leading-relaxed text-white/60">{note.label}</p>
@@ -620,10 +620,10 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex flex-col justify-between gap-6 lg:h-full"
+                    className="flex flex-col justify-center lg:h-full"
                   >
-                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_250px]">
-                      <div className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-6">
+                    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+                      <div className="rounded-[28px] border border-border-light bg-white p-6 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-7">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-coral">
@@ -683,49 +683,47 @@ const Onboarding = () => {
                         )}
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="rounded-[28px] border border-border-light bg-bg-elevated p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
-                            Other platforms
-                          </p>
-                          <div className="mt-3 flex flex-col gap-2.5">
-                            {INTEGRATION_OPTIONS.map(({ brand, label, color }) => {
-                              const requested = Boolean(requestedIntegrations[brand]);
-                              return (
-                                <button
-                                  key={brand}
-                                  type="button"
-                                  onClick={() => handleRequestIntegration(brand)}
-                                  disabled={requested || requestingIntegration === brand}
-                                  className={`btn w-full justify-start border-none px-4 py-2.5 text-sm ${
-                                    requested ? 'text-navy' : 'text-white'
-                                  }`}
-                                  style={{
-                                    background: requested ? 'var(--navy-tint)' : color,
-                                    opacity: requestingIntegration === brand ? 0.72 : 1,
-                                  }}
-                                >
-                                  <BrandIcon brand={brand} size={15} />
-                                  <span>{label}</span>
-                                  <span className="ml-auto text-[10px] uppercase tracking-[0.18em] opacity-80">
-                                    {requested
-                                      ? 'Requested'
-                                      : requestingIntegration === brand
-                                        ? 'Saving'
-                                        : 'Beta'}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                      <div className="rounded-[28px] border border-border-light bg-bg-elevated p-5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">
+                          Other platforms
+                        </p>
+                        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                          {INTEGRATION_OPTIONS.map(({ brand, label, color }) => {
+                            const requested = Boolean(requestedIntegrations[brand]);
+                            return (
+                              <button
+                                key={brand}
+                                type="button"
+                                onClick={() => handleRequestIntegration(brand)}
+                                disabled={requested || requestingIntegration === brand}
+                                className={`btn w-full justify-start border-none px-4 py-3 text-sm ${
+                                  requested ? 'text-navy' : 'text-white'
+                                }`}
+                                style={{
+                                  background: requested ? 'var(--navy-tint)' : color,
+                                  opacity: requestingIntegration === brand ? 0.72 : 1,
+                                }}
+                              >
+                                <BrandIcon brand={brand} size={15} />
+                                <span>{label}</span>
+                                <span className="ml-auto text-[10px] uppercase tracking-[0.18em] opacity-80">
+                                  {requested
+                                    ? 'Requested'
+                                    : requestingIntegration === brand
+                                      ? 'Saving'
+                                      : 'Beta'}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
+                      </div>
 
-                        <div className="rounded-[24px] border border-border-light bg-white p-4">
-                          <p className="text-sm font-semibold text-navy">You can skip this step</p>
-                          <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-                            The dashboard will still open. You can connect sources later from settings.
-                          </p>
-                        </div>
+                      <div className="rounded-[24px] border border-border-light bg-white p-5">
+                        <p className="text-sm font-semibold text-navy">You can skip this step</p>
+                        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                          The dashboard will still open. You can connect sources later from settings.
+                        </p>
                       </div>
                     </div>
 
@@ -740,9 +738,9 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex flex-col justify-between gap-6 lg:h-full"
+                    className="flex flex-col justify-center lg:h-full"
                   >
-                    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.22fr)_240px]">
+                    <div className="mx-auto grid w-full max-w-5xl gap-5 xl:grid-cols-[minmax(0,1.22fr)_240px]">
                       <div className="rounded-[28px] border border-border-light bg-white p-5 shadow-[0_10px_30px_rgba(27,37,89,0.05)] sm:p-6">
                         {error && (
                           <div className="mb-4 rounded-[18px] border border-error/25 bg-error/10 px-4 py-2.5 text-sm font-medium text-error">
@@ -933,15 +931,11 @@ const Onboarding = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="flex flex-col justify-between gap-6 lg:h-full"
+                    className="flex flex-col justify-center lg:h-full"
                   >
-                    <div className="mx-auto flex w-full max-w-2xl flex-1 items-center">
+                    <div className="mx-auto flex w-full max-w-3xl items-center">
                       <div
-                        className="w-full rounded-[30px] border border-border-light p-6 text-center shadow-[0_14px_40px_rgba(27,37,89,0.06)] sm:p-8"
-                        style={{
-                          background:
-                            'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(240,245,234,0.88) 100%)',
-                        }}
+                        className="w-full rounded-[32px] border border-sage/20 bg-bg-sage p-8 text-center shadow-[0_16px_38px_rgba(27,37,89,0.08)] sm:p-10"
                       >
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
                           <LuCheck size={28} strokeWidth={2.5} />
