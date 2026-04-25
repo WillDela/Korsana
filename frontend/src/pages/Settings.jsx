@@ -154,7 +154,7 @@ const Settings = () => {
             <PersonalRecords profileData={profileData} onUpdate={handleProfileUpdate} />
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div className="md:col-span-2">
-                <WeeklySummaryCard profileData={profileData} />
+                <WeeklySummaryCard profileData={profileData} onUpdate={handleProfileUpdate} />
               </div>
               <div className="md:col-span-3">
                 <TrainingZonesCard profileData={profileData} onUpdate={handleProfileUpdate} />
