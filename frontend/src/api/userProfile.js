@@ -70,6 +70,11 @@ export const userProfileAPI = {
     return response.data;
   },
 
+  calculateZones: async (type) => {
+    const response = await api.post(`/profile/zones/calculate?type=${type}`);
+    return response.data;
+  },
+
   changeEmail: async (currentPassword, newEmail) => {
     const response = await api.put('/profile/email', { current_password: currentPassword, new_email: newEmail });
     return response.data;

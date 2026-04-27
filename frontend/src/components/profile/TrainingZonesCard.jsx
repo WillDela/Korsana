@@ -33,6 +33,7 @@ const TrainingZonesCard = ({ profileData, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editZones, setEditZones] = useState([]);
+  const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -62,6 +63,20 @@ const TrainingZonesCard = ({ profileData, onUpdate }) => {
       updated[index][field] = value === '' ? null : parseInt(value, 10);
     }
     setEditZones(updated);
+  };
+
+  const handleAutoCalculate = async () => {
+    try {
+      setCalculating(true);
+      setError('');
+      await userProfileAPI.calculateZones(activeTab);
+      await fetchZones();
+      onUpdate && onUpdate();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setCalculating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -127,9 +142,18 @@ const TrainingZonesCard = ({ profileData, onUpdate }) => {
           </p>
         </div>
         {!editing ? (
-          <button onClick={() => setEditing(true)} className="btn btn-outline text-xs px-3 py-1.5 text-text-secondary hover:text-navy hover:border-navy transition-colors">
-            Edit Zones
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAutoCalculate}
+              disabled={calculating}
+              className="btn btn-outline text-xs px-3 py-1.5 text-text-secondary hover:text-navy hover:border-navy transition-colors"
+            >
+              {calculating ? 'Calculating…' : 'Auto-Calculate'}
+            </button>
+            <button onClick={() => setEditing(true)} className="btn btn-outline text-xs px-3 py-1.5 text-text-secondary hover:text-navy hover:border-navy transition-colors">
+              Edit Zones
+            </button>
+          </div>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => { setEditing(false); setEditZones(zones); }} className="btn btn-outline text-xs px-3 py-1.5">

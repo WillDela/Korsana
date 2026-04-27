@@ -170,6 +170,7 @@ func main() {
 
 				profile.GET("/zones", profileHandler.GetTrainingZones)
 				profile.PUT("/zones", profileHandler.UpdateTrainingZones)
+				profile.POST("/zones/calculate", profileHandler.CalculateZones)
 			}
 
 			// Training Calendar

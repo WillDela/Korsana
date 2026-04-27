@@ -473,6 +473,91 @@ func (s *UserProfileService) CalculateHRZones(maxHR, restingHR int) []Calculated
 	}
 }
 
+// CalculateAndSaveZones re-derives zones from current profile data and persists them.
+// HR zones use the Karvonen formula from saved max/resting HR.
+// Pace zones derive threshold from the best available 10K or 5K PR.
+func (s *UserProfileService) CalculateAndSaveZones(ctx context.Context, userID uuid.UUID, zoneType string) ([]models.TrainingZone, error) {
+	profile, err := s.GetOrCreateProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var calcZones []CalculatedZone
+
+	switch zoneType {
+	case "hr":
+		maxHR := 190
+		restHR := 60
+		if profile.MaxHeartRate != nil {
+			maxHR = *profile.MaxHeartRate
+		}
+		if profile.RestingHeartRate != nil {
+			restHR = *profile.RestingHeartRate
+		}
+		calcZones = s.CalculateHRZones(maxHR, restHR)
+
+	case "pace":
+		threshold := s.thresholdPaceFromPRs(ctx, userID)
+		calcZones = s.CalculatePaceZones(threshold)
+
+	default:
+		return nil, fmt.Errorf("unknown zone type: %s", zoneType)
+	}
+
+	var saved []models.TrainingZone
+	for i, cz := range calcZones {
+		z := models.TrainingZone{
+			ID:               uuid.New(),
+			UserID:           userID,
+			ZoneType:         zoneType,
+			ZoneNumber:       i + 1,
+			IsAutoCalculated: true,
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+		}
+		lbl := cz.Label
+		desc := cz.Description
+		minVal := cz.Min
+		z.Label = &lbl
+		z.Description = &desc
+		z.MinValue = &minVal
+		if cz.Max != nil {
+			maxVal := *cz.Max
+			z.MaxValue = &maxVal
+		}
+		if err := s.UpsertTrainingZone(ctx, &z); err != nil {
+			return nil, err
+		}
+		saved = append(saved, z)
+	}
+	return saved, nil
+}
+
+// thresholdPaceFromPRs derives a threshold pace (sec/km) from the user's best PR.
+// Preference: 10K PR (threshold ≈ 10K pace + 15 s/km), then 5K (threshold ≈ 5K pace + 30 s/km).
+func (s *UserProfileService) thresholdPaceFromPRs(ctx context.Context, userID uuid.UUID) int {
+	prs, err := s.GetPersonalRecords(ctx, userID)
+	if err != nil || len(prs) == 0 {
+		return 300 // default 5:00/km
+	}
+
+	prMap := make(map[string]models.PersonalRecord, len(prs))
+	for _, pr := range prs {
+		prMap[pr.Label] = pr
+	}
+
+	if pr, ok := prMap["10K"]; ok && pr.TimeSeconds > 0 {
+		pacePerKm := pr.TimeSeconds / 10
+		return pacePerKm + 15
+	}
+	if pr, ok := prMap["5K"]; ok && pr.TimeSeconds > 0 {
+		pacePerKm := pr.TimeSeconds / 5
+		return pacePerKm + 30
+	}
+
+	return 300
+}
+
 // CalculatePaceZones maps threshold %s for Pace Zones. Minimum = Faster, Maximum = Slower.
 func (s *UserProfileService) CalculatePaceZones(thresholdPace int) []CalculatedZone {
 	th := float64(thresholdPace)

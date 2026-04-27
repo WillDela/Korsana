@@ -354,6 +354,26 @@ func (h *ProfileHandler) GetTrainingZones(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"zones": zones})
 }
 
+// CalculateZones rebuilds HR or Pace zones from current profile data and PRs.
+func (h *ProfileHandler) CalculateZones(c *gin.Context) {
+	userIDVal, _ := c.Get("userID")
+	userID := userIDVal.(uuid.UUID)
+
+	zoneType := c.Query("type")
+	if zoneType != "hr" && zoneType != "pace" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "type must be hr or pace"})
+		return
+	}
+
+	zones, err := h.userProfileService.CalculateAndSaveZones(c.Request.Context(), userID, zoneType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"zones": zones})
+}
+
 // UpdateTrainingZones
 func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 	userIDVal, _ := c.Get("userID")
