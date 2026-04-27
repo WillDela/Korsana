@@ -143,6 +143,15 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 		return
 	}
 
+	// Auto-detect PRs after every successful sync. Run best-effort — a PR scan
+	// failure must not roll back or obscure the sync result.
+	prCtx, prCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer prCancel()
+	if _, prErr := h.userProfileService.DetectPRsFromStrava(prCtx, userID); prErr != nil {
+		// Log but don't surface — sync already succeeded.
+		_ = prErr
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":       result.Message,
 		"count":         result.Count,

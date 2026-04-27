@@ -209,12 +209,14 @@ func (s *UserProfileService) DeletePersonalRecord(ctx context.Context, userID uu
 // DetectPRsFromStrava scans activities for standard distances and upserts new PRs.
 //
 // Two strategies per distance:
-//  1. Direct: activities whose total distance is within ±12% of the target — use total duration.
+//  1. Direct: activities whose total distance is within 95–112% of the target.
+//     Time is normalised to the exact target distance via avg_pace × target_km,
+//     so a 4.75 km run at 5:00/km is recorded as a 25:00 5K, not a 23:45.
 //  2. Split:  activities longer than 1.2× the target that have a recorded average pace —
 //     estimate the split time as avg_pace × target_km. This catches 10K splits inside a
 //     long run, half-marathon pace inside a marathon, etc.
 //
-// The faster time from either strategy wins.
+// The faster normalised time from either strategy wins.
 func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uuid.UUID) (int, error) {
 	targets := []struct {
 		Label   string
@@ -231,7 +233,8 @@ func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uui
 
 	detectedCount := 0
 	for _, t := range targets {
-		minDirect := t.Dist * 0.88
+		// Raised from 88% → 95% so a 4.4 km run can no longer masquerade as a 5K.
+		minDirect := t.Dist * 0.95
 		maxDirect := t.Dist * 1.12
 		minSplit := t.Dist * 1.20
 
@@ -239,8 +242,9 @@ func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uui
 		var bestActID uuid.UUID
 		var bestStart time.Time
 
-		// Strategy 1: activities whose total distance matches the target distance (±12%).
-		// Widened from the old ±500m/fixed window to handle GPS over-recording in races.
+		// Strategy 1: activities whose distance is within 95–112% of the target.
+		// Normalise to the exact target distance using average pace so that a slightly
+		// short or long GPS track doesn't produce an artificially fast/slow time.
 		var directActs []models.Activity
 		directQ := `
 			SELECT * FROM activities
@@ -248,12 +252,14 @@ func (s *UserProfileService) DetectPRsFromStrava(ctx context.Context, userID uui
 			  AND activity_type = ANY($2)
 			  AND distance_meters >= $3
 			  AND distance_meters <= $4
-			ORDER BY duration_seconds ASC
+			  AND average_pace_seconds_per_km > 0
+			ORDER BY average_pace_seconds_per_km ASC
 		`
 		_ = s.db.SelectContext(ctx, &directActs, directQ, userID, runTypes, minDirect, maxDirect)
 		for _, a := range directActs {
-			if a.DurationSeconds > 0 && (bestTime == 0 || a.DurationSeconds < bestTime) {
-				bestTime = a.DurationSeconds
+			normalised := int(a.AveragePaceSecondsPerKm * (t.Dist / 1000.0))
+			if normalised > 0 && (bestTime == 0 || normalised < bestTime) {
+				bestTime = normalised
 				bestActID = a.ID
 				bestStart = a.StartTime
 			}
