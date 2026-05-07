@@ -11,7 +11,10 @@ import (
 
 func main() {
 	_ = godotenv.Load()
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	db, err := database.NewPostgresDB(cfg.DatabaseURL)
 	if err != nil {

@@ -1,9 +1,17 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/korsana/backend/internal/api/handlers"
@@ -18,12 +26,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// shutdownTimeout bounds how long in-flight requests have to finish after a
+// SIGINT/SIGTERM before the server is forcibly closed.
+const shutdownTimeout = 15 * time.Second
+
 func main() {
 	// Load .env file (ignore error if not present, e.g. in production)
 	_ = godotenv.Load()
 
 	// 1. Load Configuration
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// 2. Initialize Database
 	db, err := database.NewPostgresDB(cfg.DatabaseURL)
@@ -83,11 +98,11 @@ func main() {
 	r := gin.Default()
 
 	// CORS Configuration
-	corsConfig := cors.DefaultConfig()
-	origins := strings.Split(cfg.AllowedOrigins, ",")
-	for i := range origins {
-		origins[i] = strings.TrimSpace(origins[i])
+	origins, err := parseAllowedOrigins(cfg.AllowedOrigins)
+	if err != nil {
+		log.Fatalf("Invalid ALLOWED_ORIGINS: %v", err)
 	}
+	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = origins
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(corsConfig))
@@ -216,9 +231,71 @@ func main() {
 		}
 	}
 
-	// Start Server
-	log.Printf("Korsana API server starting on port %s", cfg.Port)
-	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Start Server with graceful shutdown
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
 	}
+
+	serverErr := make(chan error, 1)
+	go func() {
+		log.Printf("Korsana API server starting on port %s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+		}
+		close(serverErr)
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErr:
+		if err != nil {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	case sig := <-quit:
+		log.Printf("Received signal %s, shutting down...", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Fatalf("Server forced to shutdown after %s: %v", shutdownTimeout, err)
+		}
+		log.Println("Server stopped cleanly")
+	}
+}
+
+// parseAllowedOrigins splits a comma-separated CORS origin list and validates
+// each entry. Every origin must either be the wildcard "*" or a URL with an
+// http/https scheme and a non-empty host. Returns an error pointing at the
+// first malformed entry so typos are caught at startup rather than surfacing
+// as confusing CORS failures in the browser.
+func parseAllowedOrigins(raw string) ([]string, error) {
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, p := range parts {
+		o := strings.TrimSpace(p)
+		if o == "" {
+			continue
+		}
+		if o == "*" {
+			origins = append(origins, o)
+			continue
+		}
+		u, err := url.Parse(o)
+		if err != nil {
+			return nil, fmt.Errorf("origin %q is not a valid URL: %w", o, err)
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return nil, fmt.Errorf("origin %q must use http or https scheme (got %q)", o, u.Scheme)
+		}
+		if u.Host == "" {
+			return nil, fmt.Errorf("origin %q must include a host (e.g. https://example.com)", o)
+		}
+		origins = append(origins, o)
+	}
+	if len(origins) == 0 {
+		return nil, errors.New("ALLOWED_ORIGINS must contain at least one origin")
+	}
+	return origins, nil
 }
