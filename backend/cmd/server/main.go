@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/korsana/backend/internal/api/middleware"
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/logger"
 	"github.com/korsana/backend/internal/services"
 	"github.com/korsana/backend/pkg/strava"
 
@@ -37,19 +37,26 @@ func main() {
 	// 1. Load Configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		// Logger isn't initialized yet — fall back to stderr.
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
 	}
 
-	// 2. Initialize Database
+	// 2. Initialize Logger
+	log := logger.Init(cfg.Environment, nil)
+
+	// 3. Initialize Database
 	db, err := database.NewPostgresDB(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 
-	// 3. Initialize Redis
+	// 4. Initialize Redis
 	opt, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("Failed to parse Redis URL: %v", err)
+		log.Error("Failed to parse Redis URL", "error", err)
+		os.Exit(1)
 	}
 	redisClient := redis.NewClient(opt)
 
@@ -95,12 +102,16 @@ func main() {
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Logger())
 
 	// CORS Configuration
 	origins, err := parseAllowedOrigins(cfg.AllowedOrigins)
 	if err != nil {
-		log.Fatalf("Invalid ALLOWED_ORIGINS: %v", err)
+		log.Error("Invalid ALLOWED_ORIGINS", "error", err)
+		os.Exit(1)
 	}
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = origins
@@ -239,7 +250,7 @@ func main() {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("Korsana API server starting on port %s", cfg.Port)
+		log.Info("Korsana API server starting", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
@@ -252,16 +263,18 @@ func main() {
 	select {
 	case err := <-serverErr:
 		if err != nil {
-			log.Fatalf("Server failed to start: %v", err)
+			log.Error("Server failed to start", "error", err)
+			os.Exit(1)
 		}
 	case sig := <-quit:
-		log.Printf("Received signal %s, shutting down...", sig)
+		log.Info("Received signal, shutting down", "signal", sig.String())
 		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			log.Fatalf("Server forced to shutdown after %s: %v", shutdownTimeout, err)
+			log.Error("Server forced to shutdown", "timeout", shutdownTimeout.String(), "error", err)
+			os.Exit(1)
 		}
-		log.Println("Server stopped cleanly")
+		log.Info("Server stopped cleanly")
 	}
 }
 

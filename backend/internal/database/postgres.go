@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -35,7 +35,7 @@ func NewPostgresDB(connectionString string) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Println("Successfully connected to PostgreSQL")
+	slog.Info("Successfully connected to PostgreSQL")
 	return &DB{db}, nil
 }
 

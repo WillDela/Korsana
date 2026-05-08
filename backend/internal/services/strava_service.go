@@ -7,17 +7,18 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/korsana/backend/internal/database"
-	"github.com/korsana/backend/internal/models"
-	"github.com/korsana/backend/pkg/strava"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/logger"
+	"github.com/korsana/backend/internal/models"
+	"github.com/korsana/backend/pkg/strava"
 )
 
 // stravaQuerier is the subset of database methods StravaService needs.
@@ -561,7 +562,11 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 		// start_date_local is formatted as RFC3339 but represents local time.
 		startTime, err := parseStravaActivityTime(act)
 		if err != nil {
-			log.Printf("strava sync: skipping activity %d (%s): bad date format: %v", act.ID, act.Name, err)
+			logger.FromContext(ctx).Warn("strava sync: skipping activity, bad date format",
+				"activity_id", act.ID,
+				"activity_name", act.Name,
+				"error", err,
+			)
 			continue
 		}
 
@@ -652,7 +657,11 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 		// separate SELECT that would otherwise double the DB calls per activity.
 		rows, err := s.db.NamedQueryContext(ctx, query+" RETURNING id", activity)
 		if err != nil {
-			log.Printf("strava sync: failed to upsert activity %d (%s): %v", act.ID, act.Name, err)
+			logger.FromContext(ctx).Error("strava sync: failed to upsert activity",
+				"activity_id", act.ID,
+				"activity_name", act.Name,
+				"error", err,
+			)
 			insertFailCount++
 			continue
 		}

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -40,18 +40,20 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 		userIDStr := userID.String()
 		today := time.Now().UTC().Format("2006-01-02")
 
+		log := logger.FromContext(ctx)
+
 		// ── 1. Global daily limit (Redis) ────────────────────────────────────
 		globalKey := fmt.Sprintf("ratelimit:coach:global:%s", today)
 		globalCount, err := rdb.Incr(ctx, globalKey).Result()
 		if err != nil {
-			log.Printf("[RateLimit] Redis error on global check: %v", err)
+			log.Warn("Redis error on global check", "error", err)
 			// Fail open — don't block if Redis is down, PG layer still protects
 		} else {
 			if globalCount == 1 {
 				rdb.Expire(ctx, globalKey, 25*time.Hour)
 			}
 			if globalCount > globalDailyLimit {
-				log.Printf("[RateLimit] Global daily limit reached (%d)", globalCount)
+				log.Warn("Global daily limit reached", "count", globalCount)
 				rdb.Decr(ctx, globalKey)
 				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 					"error": "The AI coach has reached its daily limit. Please try again tomorrow.",
@@ -64,13 +66,13 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 		hourKey := fmt.Sprintf("ratelimit:coach:%s:hour", userIDStr)
 		hourCount, err := rdb.Incr(ctx, hourKey).Result()
 		if err != nil {
-			log.Printf("[RateLimit] Redis error on hourly check: %v", err)
+			log.Warn("Redis error on hourly check", "error", err)
 		} else {
 			if hourCount == 1 {
 				rdb.Expire(ctx, hourKey, time.Hour)
 			}
 			if hourCount > hourlyUserLimit {
-				log.Printf("[RateLimit] User %s exceeded hourly limit (%d)", userIDStr, hourCount)
+				log.Warn("User exceeded hourly limit", "user_id", userIDStr, "count", hourCount)
 				rdb.Decr(ctx, hourKey)
 				rdb.Decr(ctx, globalKey)
 				ttl, _ := rdb.TTL(ctx, hourKey).Result()
@@ -94,7 +96,7 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 			userID, time.Now().UTC().Format("2006-01-02"),
 		).Scan(&newCount)
 		if err != nil {
-			log.Printf("[RateLimit] PG quota check error for user %s: %v", userIDStr, err)
+			log.Warn("PG quota check error", "user_id", userIDStr, "error", err)
 			// Fail open only on genuine DB error — Redis daily key is fallback
 			dayKey := fmt.Sprintf("ratelimit:coach:%s:%s", userIDStr, today)
 			dayCount, rerr := rdb.Incr(ctx, dayKey).Result()
@@ -163,11 +165,13 @@ func InsightRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 		userIDStr := userID.String()
 		today := time.Now().UTC().Format("2006-01-02")
 
+		log := logger.FromContext(ctx)
+
 		// ── 1. Global daily limit (Redis) ────────────────────────────────────
 		globalKey := fmt.Sprintf("ratelimit:insight:global:%s", today)
 		globalCount, err := rdb.Incr(ctx, globalKey).Result()
 		if err != nil {
-			log.Printf("[RateLimit] Redis error on insight global check: %v", err)
+			log.Warn("Redis error on insight global check", "error", err)
 		} else {
 			if globalCount == 1 {
 				rdb.Expire(ctx, globalKey, 25*time.Hour)
@@ -185,7 +189,7 @@ func InsightRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 		userKey := fmt.Sprintf("ratelimit:insight:%s:%s", userIDStr, today)
 		userCount, err := rdb.Incr(ctx, userKey).Result()
 		if err != nil {
-			log.Printf("[RateLimit] Redis error on insight user check: %v", err)
+			log.Warn("Redis error on insight user check", "error", err)
 		} else {
 			if userCount == 1 {
 				rdb.Expire(ctx, userKey, 25*time.Hour)

@@ -7,17 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/logger"
 	"github.com/korsana/backend/internal/metrics"
 	"github.com/korsana/backend/internal/models"
-	"github.com/redis/go-redis/v9"
 )
 
 // CoachService handles AI coaching logic
@@ -33,12 +35,13 @@ type CoachService struct {
 
 // NewCoachService creates a new coach service
 func NewCoachService(db *database.DB, rdb *redis.Client, cfg *config.Config, goalsService *GoalsService, calendarService *CalendarService, userProfileService *UserProfileService) *CoachService {
-	if cfg.GeminiAPIKey != "" {
-		log.Printf("[Coach] Gemini API key configured (length: %d)", len(cfg.GeminiAPIKey))
-	} else if cfg.ClaudeAPIKey != "" {
-		log.Printf("[Coach] Claude API key configured (length: %d)", len(cfg.ClaudeAPIKey))
-	} else {
-		log.Printf("[Coach] WARNING: No AI API key configured — coach will not work")
+	switch {
+	case cfg.GeminiAPIKey != "":
+		slog.Info("[Coach] Gemini API key configured", "key_length", len(cfg.GeminiAPIKey))
+	case cfg.ClaudeAPIKey != "":
+		slog.Info("[Coach] Claude API key configured", "key_length", len(cfg.ClaudeAPIKey))
+	default:
+		slog.Warn("[Coach] No AI API key configured — coach will not work")
 	}
 
 	return &CoachService{
@@ -410,7 +413,8 @@ func (s *CoachService) persistCoachStateAsync(ctx context.Context, userID uuid.U
 	go func() {
 		defer cancel()
 		if err := s.updateCoachState(persistCtx, userID, response); err != nil {
-			log.Printf("[Coach] Failed to update coach_state for user %s: %v", userID, err)
+			logger.FromContext(persistCtx).Error("[Coach] Failed to update coach_state",
+				"user_id", userID, "error", err)
 		}
 	}()
 }
@@ -610,7 +614,7 @@ func extractArtifact(response string) (string, *ArtifactResult) {
 	// Parse artifact type from JSON
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(artifactJSON), &raw); err != nil {
-		log.Printf("[Coach] Artifact JSON parse error: %v", err)
+		slog.Warn("[Coach] Artifact JSON parse error", "error", err)
 		return cleanResponse, nil
 	}
 	typeBytes, ok := raw["type"]
@@ -626,7 +630,8 @@ func extractArtifact(response string) (string, *ArtifactResult) {
 		return cleanResponse, nil
 	}
 	if err := validateArtifactPayload(artifactType, []byte(artifactJSON)); err != nil {
-		log.Printf("[Coach] Artifact validation error (%s): %v", artifactType, err)
+		slog.Warn("[Coach] Artifact validation error",
+			"artifact_type", artifactType, "error", err)
 		return cleanResponse, nil
 	}
 
@@ -709,21 +714,24 @@ Current runner's context:
 Provide concise, actionable advice. Keep responses to 2-3 paragraphs unless the runner asks for more detail.%s`,
 		trainingContext, modeInstruction, coachRuleLayer, artifactInstr)
 
+	log := logger.FromContext(ctx)
 	var response string
 	if s.config.GeminiAPIKey != "" {
-		log.Printf("[Coach] Calling Gemini API with %d messages (mode=%s, intent=%q)", len(messages), normalizedMode, intent)
+		log.Info("[Coach] Calling Gemini API",
+			"messages", len(messages), "mode", normalizedMode, "intent", intent)
 		response, err = s.callGeminiAPI(messages, systemPrompt)
 	} else if s.config.ClaudeAPIKey != "" {
-		log.Printf("[Coach] Calling Claude API with %d messages (mode=%s, intent=%q)", len(messages), normalizedMode, intent)
+		log.Info("[Coach] Calling Claude API",
+			"messages", len(messages), "mode", normalizedMode, "intent", intent)
 		response, err = s.callClaudeAPI(messages, systemPrompt)
 	} else {
 		return "", nil, nil, "", errors.New("no AI API key configured — please set GEMINI_API_KEY in your .env file")
 	}
 	if err != nil {
-		log.Printf("[Coach] ERROR from AI API: %v", err)
+		log.Error("[Coach] AI API error", "error", err)
 		return "", nil, nil, "", err
 	}
-	log.Printf("[Coach] Got response (%d chars)", len(response))
+	log.Info("[Coach] Got response", "chars", len(response))
 
 	// Extract structured artifact from response (strips artifact block from stored text)
 	cleanResponse, artifact := extractArtifact(response)
@@ -797,14 +805,15 @@ func (s *CoachService) callClaudeAPI(messages []ChatMessage, systemPrompt string
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		log.Printf("[Coach] HTTP request to Claude failed: %v", err)
+		slog.Error("[Coach] HTTP request to Claude failed", "error", err)
 		return "", fmt.Errorf("failed to reach AI service: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("[Coach] Claude API returned status %d: %s", resp.StatusCode, string(body))
+		slog.Error("[Coach] Claude API non-OK status",
+			"status", resp.StatusCode, "body", string(body))
 		return "", fmt.Errorf("AI service error (status %d)", resp.StatusCode)
 	}
 
@@ -860,14 +869,15 @@ func (s *CoachService) callGeminiAPI(messages []ChatMessage, systemPrompt string
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		log.Printf("[Coach] HTTP request to Gemini failed: %v", err)
+		slog.Error("[Coach] HTTP request to Gemini failed", "error", err)
 		return "", fmt.Errorf("failed to reach AI service: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Printf("[Coach] Gemini API returned status %d: %s", resp.StatusCode, string(body))
+		slog.Error("[Coach] Gemini API non-OK status",
+			"status", resp.StatusCode, "body", string(body))
 		return "", fmt.Errorf("AI service error (status %d)", resp.StatusCode)
 	}
 
@@ -1380,7 +1390,8 @@ Dates to plan:
 	// Parse JSON response
 	var planResp PlanResponse
 	if err := json.Unmarshal([]byte(response), &planResp); err != nil {
-		log.Printf("[Coach] Failed to parse plan JSON: %v\nRaw response: %s", err, response)
+		logger.FromContext(ctx).Error("[Coach] Failed to parse plan JSON",
+			"error", err, "raw_response", response)
 		return nil, fmt.Errorf("failed to parse AI plan response: %v", err)
 	}
 
@@ -1414,7 +1425,8 @@ func (s *CoachService) WritePlanToCalendar(ctx context.Context, userID uuid.UUID
 		}
 
 		if _, err := s.calendarService.CreateEntry(ctx, userID, calEntry); err != nil {
-			log.Printf("[Coach] Failed to write calendar entry for %s: %v", entry.Date, err)
+			logger.FromContext(ctx).Error("[Coach] Failed to write calendar entry",
+				"date", entry.Date, "error", err)
 		}
 	}
 

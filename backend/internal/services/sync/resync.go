@@ -2,10 +2,11 @@ package sync
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/korsana/backend/internal/logger"
 	"github.com/korsana/backend/internal/models"
 )
 
@@ -37,7 +38,11 @@ func UpgradeHistoricalActivities(
 	for _, a := range activities {
 		if err := UpsertActivity(ctx, db, userID, a); err != nil {
 			// Log and continue — a partial re-sync is better than none.
-			log.Printf("sync: failed to upsert activity %s from %s: %v", a.SourceID, a.Source, err)
+			logger.FromContext(ctx).Warn("sync: failed to upsert activity",
+				"source_id", a.SourceID,
+				"source", a.Source,
+				"error", err,
+			)
 		}
 	}
 

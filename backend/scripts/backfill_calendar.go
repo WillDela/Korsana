@@ -2,25 +2,32 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/joho/godotenv"
+
 	"github.com/korsana/backend/internal/config"
 	"github.com/korsana/backend/internal/database"
+	"github.com/korsana/backend/internal/logger"
 )
 
 func main() {
 	_ = godotenv.Load()
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
 	}
+
+	log := logger.Init(cfg.Environment, nil)
 
 	db, err := database.NewPostgresDB(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
-	defer db.Close() // this actually just defers closing a pool if it was a connection, but NewPostgresDB handles it cleanly
+	defer db.Close()
 
 	ctx := context.Background()
 	query := `
@@ -31,10 +38,10 @@ func main() {
 		)
 		SELECT
 			gen_random_uuid(), user_id, date_trunc('day', start_time),
-			CASE 
-				WHEN activity_type = 'run' THEN 'easy' 
-				WHEN activity_type = 'recovery' THEN 'recovery' 
-				ELSE 'cross_train' 
+			CASE
+				WHEN activity_type = 'run' THEN 'easy'
+				WHEN activity_type = 'recovery' THEN 'recovery'
+				ELSE 'cross_train'
 			END AS workout_type,
 			name,
 			CASE WHEN activity_type = 'run' THEN distance_meters ELSE NULL END AS planned_distance_meters,
@@ -52,9 +59,10 @@ func main() {
 
 	res, err := db.ExecContext(ctx, query)
 	if err != nil {
-		log.Fatalf("Failed to execute sync script: %v", err)
+		log.Error("Failed to execute sync script", "error", err)
+		os.Exit(1)
 	}
 
 	rows, _ := res.RowsAffected()
-	log.Printf("Successfully injected %d missing Strava activities into the Calendar!", rows)
+	log.Info("Backfilled missing Strava activities into the calendar", "rows", rows)
 }
