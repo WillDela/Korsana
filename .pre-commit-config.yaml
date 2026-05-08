@@ -1,0 +1,54 @@
+# Pre-commit hooks for Korsana.
+# Install with: pipx install prek (or pip install pre-commit)
+# Activate with: prek install
+# Run on all files: prek run --all-files
+#
+# Frontend ESLint and Prettier are intentionally not wired up here yet — the
+# repo has a backlog of existing lint errors that need a dedicated cleanup
+# sweep before they can block commits. Lint runs in CI as advisory only.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^backend/\.gomodcache/
+      - id: end-of-file-fixer
+        exclude: ^backend/\.gomodcache/
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-yaml
+      - id: check-json
+        exclude: ^frontend/package-lock\.json$
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        exclude: ^backend/\.gomodcache/
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt
+        entry: gofmt -l -w
+        language: system
+        types: [go]
+        pass_filenames: true
+
+      - id: go-vet
+        name: go vet ./...
+        entry: bash -c 'cd backend && go vet ./...'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: go-build
+        name: go build ./...
+        entry: bash -c 'cd backend && go build ./...'
+        language: system
+        types: [go]
+        pass_filenames: false
