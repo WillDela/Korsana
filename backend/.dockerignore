@@ -1,0 +1,31 @@
+# Secrets — never bake into image layers.
+.env
+.env.*
+!.env.example
+
+# Local Go caches — large, never needed inside the image.
+.gocache/
+.gomodcache/
+
+# Build artifacts and crash dumps from local dev.
+server.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.stackdump
+
+# Editor / OS noise.
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Migration runner config (compose-only).
+docker-compose.yml
+
+# Documentation that doesn't need to ship in the image.
+indexes.txt
