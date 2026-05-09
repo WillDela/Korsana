@@ -20,11 +20,7 @@ import (
 //	    return
 //	}
 func RequireUserID(c *gin.Context) (uuid.UUID, bool) {
-	val, exists := c.Get("userID")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return uuid.Nil, false
-	}
+	val, _ := c.Get("userID")
 	userID, ok := val.(uuid.UUID)
 	if !ok {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})

@@ -227,10 +227,7 @@ func InsightRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 }
 
 func setRateLimitHeaders(c *gin.Context, used, limit int) {
-	remaining := limit - used
-	if remaining < 0 {
-		remaining = 0
-	}
+	remaining := max(0, limit-used)
 	reset := time.Now().UTC().Truncate(24*time.Hour).Add(24 * time.Hour).Unix()
 	c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
 	c.Header("X-RateLimit-Used", strconv.Itoa(used))

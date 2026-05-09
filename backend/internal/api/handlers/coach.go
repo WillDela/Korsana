@@ -194,10 +194,7 @@ func (h *CoachHandler) GetQuota(c *gin.Context) {
 	if err != nil {
 		used, limit = 0, 10
 	}
-	remaining := limit - used
-	if remaining < 0 {
-		remaining = 0
-	}
+	remaining := max(0, limit-used)
 	reset := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour).Unix()
 	c.JSON(http.StatusOK, gin.H{
 		"used": used, "limit": limit, "remaining": remaining, "reset_at": reset,
