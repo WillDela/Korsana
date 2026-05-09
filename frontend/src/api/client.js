@@ -60,6 +60,9 @@ api.interceptors.response.use(
 );
 
 export const getErrorMessage = (error) => {
+  if (error.code === 'ECONNABORTED') {
+    return 'Request timed out. Please try again.';
+  }
   if (error.response) {
     return error.response.data?.error || error.response.data?.message || `Error: ${error.response.status}`;
   } else if (error.request) {
