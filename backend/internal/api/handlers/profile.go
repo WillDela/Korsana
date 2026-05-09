@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/models"
 	"github.com/korsana/backend/internal/services"
 )
@@ -39,12 +39,10 @@ func NewProfileHandler(
 
 // GetProfile returns aggregated user profile data
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	user, _ := h.authService.GetUserByID(c.Request.Context(), userID)
 
@@ -103,8 +101,10 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 
 // UpdateProfile accepts a partial JSON body and merges it into the existing profile.
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	// Load current profile so unset fields aren't zeroed out.
 	current, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
@@ -174,8 +174,10 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 }
 
 func (h *ProfileHandler) SendTestNotification(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	var req struct {
 		Type string `json:"type" binding:"required"`
@@ -215,8 +217,10 @@ func (h *ProfileHandler) SendTestNotification(c *gin.Context) {
 }
 
 func (h *ProfileHandler) RequestIntegrationInterest(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 	source := c.Param("source")
 
 	request, err := h.integrationsService.UpsertInterestRequest(c.Request.Context(), userID, source)
@@ -237,8 +241,10 @@ func (h *ProfileHandler) RequestIntegrationInterest(c *gin.Context) {
 
 // UploadAvatar
 func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	file, err := c.FormFile("avatar")
 	if err != nil {
@@ -268,8 +274,10 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 
 // GetPersonalRecords
 func (h *ProfileHandler) GetPersonalRecords(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	prs, err := h.userProfileService.GetPersonalRecords(c.Request.Context(), userID)
 	if err != nil {
@@ -282,8 +290,10 @@ func (h *ProfileHandler) GetPersonalRecords(c *gin.Context) {
 
 // UpsertPersonalRecord
 func (h *ProfileHandler) UpsertPersonalRecord(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 	label := c.Param("label")
 
 	var pr models.PersonalRecord
@@ -304,8 +314,10 @@ func (h *ProfileHandler) UpsertPersonalRecord(c *gin.Context) {
 
 // DeletePersonalRecord
 func (h *ProfileHandler) DeletePersonalRecord(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 	label := c.Param("label")
 
 	if err := h.userProfileService.DeletePersonalRecord(c.Request.Context(), userID, label); err != nil {
@@ -318,8 +330,10 @@ func (h *ProfileHandler) DeletePersonalRecord(c *gin.Context) {
 
 // DetectPRsFromStrava
 func (h *ProfileHandler) DetectPRsFromStrava(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	count, err := h.userProfileService.DetectPRsFromStrava(c.Request.Context(), userID)
 	if err != nil {
@@ -336,8 +350,10 @@ func (h *ProfileHandler) DetectPRsFromStrava(c *gin.Context) {
 
 // GetTrainingZones
 func (h *ProfileHandler) GetTrainingZones(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 	zoneType := c.Query("type")
 
 	if zoneType != "hr" && zoneType != "pace" {
@@ -356,8 +372,10 @@ func (h *ProfileHandler) GetTrainingZones(c *gin.Context) {
 
 // CalculateZones rebuilds HR or Pace zones from current profile data and PRs.
 func (h *ProfileHandler) CalculateZones(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 
 	zoneType := c.Query("type")
 	if zoneType != "hr" && zoneType != "pace" {
@@ -376,8 +394,10 @@ func (h *ProfileHandler) CalculateZones(c *gin.Context) {
 
 // UpdateTrainingZones
 func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID := userIDVal.(uuid.UUID)
+	userID, ok := RequireUserID(c)
+	if !ok {
+		return
+	}
 	zoneType := c.Query("type")
 
 	if zoneType != "hr" && zoneType != "pace" {
@@ -402,12 +422,10 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 
 // UpdateEmail verifies the current password then changes the user's email.
 func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req struct {
 		CurrentPassword string `json:"current_password" binding:"required"`
@@ -432,12 +450,10 @@ func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
 
 // ChangePassword verifies the current password then updates to the new one.
 func (h *ProfileHandler) ChangePassword(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req struct {
 		CurrentPassword string `json:"current_password" binding:"required"`
@@ -462,12 +478,10 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 
 // DeleteAccount deletes the user account
 func (h *ProfileHandler) DeleteAccount(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	err := h.authService.DeleteUser(c.Request.Context(), userID)
 	if err != nil {
@@ -480,12 +494,10 @@ func (h *ProfileHandler) DeleteAccount(c *gin.Context) {
 
 // ExportData exports all user data as JSON
 func (h *ProfileHandler) ExportData(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	user, _ := h.authService.GetUserByID(c.Request.Context(), userID)
 	profile, _ := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)

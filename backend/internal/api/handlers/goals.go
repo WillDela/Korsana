@@ -28,12 +28,10 @@ type createGoalRequest struct {
 }
 
 func (h *GoalsHandler) CreateGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req createGoalRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -75,12 +73,10 @@ func (h *GoalsHandler) CreateGoal(c *gin.Context) {
 }
 
 func (h *GoalsHandler) GetGoals(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goals, err := h.goalsService.GetUserGoals(c.Request.Context(), userID)
 	if err != nil {
@@ -94,12 +90,10 @@ func (h *GoalsHandler) GetGoals(c *gin.Context) {
 }
 
 func (h *GoalsHandler) GetActiveGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goal, err := h.goalsService.GetActiveGoal(c.Request.Context(), userID)
 	if err != nil {
@@ -113,12 +107,10 @@ func (h *GoalsHandler) GetActiveGoal(c *gin.Context) {
 }
 
 func (h *GoalsHandler) GetGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -146,12 +138,10 @@ type updateGoalRequest struct {
 }
 
 func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -198,12 +188,10 @@ func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
 }
 
 func (h *GoalsHandler) SetActive(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -232,12 +220,10 @@ type logResultRequest struct {
 }
 
 func (h *GoalsHandler) LogResult(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -265,12 +251,10 @@ func (h *GoalsHandler) LogResult(c *gin.Context) {
 }
 
 func (h *GoalsHandler) DeleteGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

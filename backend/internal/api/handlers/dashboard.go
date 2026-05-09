@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/services"
 )
 
@@ -20,12 +20,10 @@ func NewDashboardHandler(metricsService *services.MetricsService) *DashboardHand
 
 // Get handles GET /api/dashboard
 func (h *DashboardHandler) Get(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	data, err := h.metricsService.ComputeDashboard(c.Request.Context(), userID)
 	if err != nil {

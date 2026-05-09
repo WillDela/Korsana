@@ -36,7 +36,11 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
-		userID := userIDVal.(uuid.UUID)
+		userID, ok := userIDVal.(uuid.UUID)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
 		userIDStr := userID.String()
 		today := time.Now().UTC().Format("2006-01-02")
 
@@ -97,29 +101,39 @@ func CoachRateLimiter(rdb *redis.Client, db *database.DB) gin.HandlerFunc {
 		).Scan(&newCount)
 		if err != nil {
 			log.Warn("PG quota check error", "user_id", userIDStr, "error", err)
-			// Fail open only on genuine DB error — Redis daily key is fallback
+			// Postgres is unavailable. Try the Redis daily counter as a fallback;
+			// if Redis is also down, fail closed — without either backend we
+			// cannot enforce the quota and would burn the AI budget instantly.
 			dayKey := fmt.Sprintf("ratelimit:coach:%s:%s", userIDStr, today)
 			dayCount, rerr := rdb.Incr(ctx, dayKey).Result()
-			if rerr == nil {
-				if dayCount == 1 {
-					rdb.Expire(ctx, dayKey, 25*time.Hour)
-				}
-				if dayCount > dailyUserLimit {
-					rdb.Decr(ctx, dayKey)
-					rdb.Decr(ctx, hourKey)
-					rdb.Decr(ctx, globalKey)
-					c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-						"error": fmt.Sprintf(
-							"You've used all %d AI questions for today. Check back tomorrow.", dailyUserLimit,
-						),
-						"limit":     dailyUserLimit,
-						"used":      dayCount - 1,
-						"remaining": 0,
-					})
-					return
-				}
-				setRateLimitHeaders(c, int(dayCount), dailyUserLimit)
+			if rerr != nil {
+				log.Error("Both Postgres and Redis unavailable for rate limiting",
+					"user_id", userIDStr, "pg_error", err, "redis_error", rerr)
+				rdb.Decr(ctx, hourKey)
+				rdb.Decr(ctx, globalKey)
+				c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
+					"error": "AI coach is temporarily unavailable. Please try again shortly.",
+				})
+				return
 			}
+			if dayCount == 1 {
+				rdb.Expire(ctx, dayKey, 25*time.Hour)
+			}
+			if dayCount > dailyUserLimit {
+				rdb.Decr(ctx, dayKey)
+				rdb.Decr(ctx, hourKey)
+				rdb.Decr(ctx, globalKey)
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+					"error": fmt.Sprintf(
+						"You've used all %d AI questions for today. Check back tomorrow.", dailyUserLimit,
+					),
+					"limit":     dailyUserLimit,
+					"used":      dayCount - 1,
+					"remaining": 0,
+				})
+				return
+			}
+			setRateLimitHeaders(c, int(dayCount), dailyUserLimit)
 			c.Next()
 			return
 		}
@@ -161,7 +175,11 @@ func InsightRateLimiter(rdb *redis.Client) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
-		userID := userIDVal.(uuid.UUID)
+		userID, ok := userIDVal.(uuid.UUID)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
 		userIDStr := userID.String()
 		today := time.Now().UTC().Format("2006-01-02")
 

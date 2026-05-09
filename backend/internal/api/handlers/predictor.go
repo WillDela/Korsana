@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/database"
 )
 
@@ -27,12 +27,10 @@ type saveManualReq struct {
 
 // SaveManual handles POST /api/predictor/manual (upsert)
 func (h *PredictorHandler) SaveManual(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req saveManualReq
 	if err := c.ShouldBindJSON(&req); err != nil {

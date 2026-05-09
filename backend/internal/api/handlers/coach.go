@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/services"
 )
@@ -23,7 +24,7 @@ func NewCoachHandler(coachService *services.CoachService, db *database.DB) *Coac
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
 func (h *CoachHandler) CreateSession(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -36,7 +37,7 @@ func (h *CoachHandler) CreateSession(c *gin.Context) {
 }
 
 func (h *CoachHandler) GetSessions(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -49,7 +50,7 @@ func (h *CoachHandler) GetSessions(c *gin.Context) {
 }
 
 func (h *CoachHandler) GetSessionMessages(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -75,7 +76,7 @@ type sendMessageRequest struct {
 }
 
 func (h *CoachHandler) SendMessage(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -119,7 +120,7 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 }
 
 func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -139,7 +140,7 @@ type generatePlanRequest struct {
 }
 
 func (h *CoachHandler) GeneratePlan(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -166,7 +167,7 @@ func (h *CoachHandler) GeneratePlan(c *gin.Context) {
 }
 
 func (h *CoachHandler) GetInsight(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -181,7 +182,7 @@ func (h *CoachHandler) GetInsight(c *gin.Context) {
 // ── Quota ─────────────────────────────────────────────────────────────────────
 
 func (h *CoachHandler) GetQuota(c *gin.Context) {
-	userID, ok := mustUserID(c)
+	userID, ok := RequireUserID(c)
 	if !ok {
 		return
 	}
@@ -204,13 +205,3 @@ func (h *CoachHandler) GetQuota(c *gin.Context) {
 	})
 }
 
-// ── Helper ────────────────────────────────────────────────────────────────────
-
-func mustUserID(c *gin.Context) (uuid.UUID, bool) {
-	val, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return uuid.UUID{}, false
-	}
-	return val.(uuid.UUID), true
-}

@@ -42,12 +42,10 @@ func NewStravaHandler(
 // Accepts an optional ?return_to=/path query param so the callback can redirect
 // back to the page the user connected from (e.g. /dashboard, /calendar).
 func (h *StravaHandler) AuthURL(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	// Only accept simple internal paths to avoid open-redirect abuse.
 	returnTo := c.Query("return_to")
@@ -117,12 +115,10 @@ func withRedirectParam(dest, key, value string) string {
 
 // SyncActivities syncs activities from Strava for the authenticated user.
 func (h *StravaHandler) SyncActivities(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 90*time.Second)
 	defer cancel()
@@ -185,12 +181,10 @@ func (h *StravaHandler) maybeSendSyncFailureNotification(c *gin.Context, userID 
 
 // GetActivities retrieves the user's synced activities with pagination.
 func (h *StravaHandler) GetActivities(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	perPage, _ := strconv.Atoi(c.DefaultQuery("per_page", "30"))
@@ -219,12 +213,10 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 
 // Disconnect removes the Strava connection for the authenticated user.
 func (h *StravaHandler) Disconnect(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	if err := h.stravaService.DisconnectStrava(c.Request.Context(), userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to disconnect Strava"})

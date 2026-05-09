@@ -22,12 +22,10 @@ func NewCrossTrainingGoalsHandler(
 
 // GetGoals handles GET /api/cross-training-goals
 func (h *CrossTrainingGoalsHandler) GetGoals(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goals, progress, err := h.svc.GetGoalsWithProgress(
 		c.Request.Context(), userID,
@@ -48,12 +46,10 @@ func (h *CrossTrainingGoalsHandler) GetGoals(c *gin.Context) {
 
 // UpsertGoal handles PUT /api/cross-training-goals
 func (h *CrossTrainingGoalsHandler) UpsertGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req struct {
 		ActivityType    string `json:"activity_type"`
@@ -78,12 +74,10 @@ func (h *CrossTrainingGoalsHandler) UpsertGoal(c *gin.Context) {
 
 // DeleteGoal handles DELETE /api/cross-training-goals/:id
 func (h *CrossTrainingGoalsHandler) DeleteGoal(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	goalID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

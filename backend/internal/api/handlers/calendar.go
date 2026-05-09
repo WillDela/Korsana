@@ -23,12 +23,10 @@ func NewCalendarHandler(calendarService *services.CalendarService) *CalendarHand
 // GetWeek returns calendar entries for a 7-day period
 // GET /api/calendar/week?start=2026-02-09
 func (h *CalendarHandler) GetWeek(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	startStr := c.Query("start")
 	if startStr == "" {
@@ -65,12 +63,10 @@ func (h *CalendarHandler) GetWeek(c *gin.Context) {
 // GetRange returns calendar entries for an arbitrary date range
 // GET /api/calendar/range?start=2026-02-01&end=2026-02-28
 func (h *CalendarHandler) GetRange(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	startStr := c.Query("start")
 	endStr := c.Query("end")
@@ -124,12 +120,10 @@ type calendarEntryRequest struct {
 }
 
 func (h *CalendarHandler) parseEntryRequest(c *gin.Context) (uuid.UUID, *models.CalendarEntry, bool) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return uuid.Nil, nil, false
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req calendarEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -235,12 +229,10 @@ func (h *CalendarHandler) UpdateEntry(c *gin.Context) {
 // DeleteEntry deletes a calendar entry
 // DELETE /api/calendar/entry/:id
 func (h *CalendarHandler) DeleteEntry(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	entryID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -267,12 +259,10 @@ type updateStatusRequest struct {
 // UpdateStatus updates the status of a calendar entry
 // PATCH /api/calendar/entry/:id/status
 func (h *CalendarHandler) UpdateStatus(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	entryID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

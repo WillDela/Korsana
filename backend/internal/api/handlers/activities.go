@@ -23,12 +23,10 @@ func NewActivitiesHandler(
 
 // CreateActivity handles POST /api/activities
 func (h *ActivitiesHandler) CreateActivity(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req services.CreateActivityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,12 +47,10 @@ func (h *ActivitiesHandler) CreateActivity(c *gin.Context) {
 
 // GetActivities handles GET /api/activities
 func (h *ActivitiesHandler) GetActivities(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	activityType := c.Query("type")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -85,12 +81,10 @@ func (h *ActivitiesHandler) GetActivities(c *gin.Context) {
 
 // DeleteActivity handles DELETE /api/activities/:id
 func (h *ActivitiesHandler) DeleteActivity(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	activityIDStr := c.Param("id")
 	activityID, err := uuid.Parse(activityIDStr)

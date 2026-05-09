@@ -32,12 +32,10 @@ type createCTSessionReq struct {
 
 // List handles GET /api/crosstraining
 func (h *CrossTrainingHandler) List(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	weeks, _ := strconv.Atoi(c.DefaultQuery("weeks", "4"))
 	if weeks < 1 || weeks > 52 {
@@ -62,12 +60,10 @@ func (h *CrossTrainingHandler) List(c *gin.Context) {
 
 // Create handles POST /api/crosstraining
 func (h *CrossTrainingHandler) Create(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req createCTSessionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -97,12 +93,10 @@ func (h *CrossTrainingHandler) Create(c *gin.Context) {
 
 // Delete handles DELETE /api/crosstraining/:id
 func (h *CrossTrainingHandler) Delete(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	sessionID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

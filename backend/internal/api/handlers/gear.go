@@ -40,12 +40,10 @@ type updateShoeReq struct {
 
 // ListShoes handles GET /api/gear/shoes
 func (h *GearHandler) ListShoes(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var shoes []services.GearShoe
 	err := h.db.SelectContext(c.Request.Context(), &shoes, `
@@ -64,12 +62,10 @@ func (h *GearHandler) ListShoes(c *gin.Context) {
 
 // AddShoe handles POST /api/gear/shoes
 func (h *GearHandler) AddShoe(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	var req addShoeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -105,12 +101,10 @@ func (h *GearHandler) AddShoe(c *gin.Context) {
 
 // UpdateShoe handles PUT /api/gear/shoes/:id
 func (h *GearHandler) UpdateShoe(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	shoeID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -145,12 +139,10 @@ func (h *GearHandler) UpdateShoe(c *gin.Context) {
 
 // DeleteShoe handles DELETE /api/gear/shoes/:id
 func (h *GearHandler) DeleteShoe(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, ok := RequireUserID(c)
+	if !ok {
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
 
 	shoeID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
