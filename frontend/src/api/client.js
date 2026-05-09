@@ -9,12 +9,13 @@ const api = axios.create({
   },
 });
 
-// Navigator function injected by <RouterNavigator /> so this non-React module
-// can perform client-side redirects without forcing a full page reload (which
-// races with in-flight setState calls on unmounting components).
-let navigator = null;
+// React Router navigate fn injected by <RouterNavigator /> so this non-React
+// module can perform client-side redirects without forcing a full page reload
+// (which races with in-flight setState calls on unmounting components).
+// Named `apiNavigator` to avoid shadowing the global `window.navigator`.
+let apiNavigator = null;
 export const setApiNavigator = (fn) => {
-  navigator = fn;
+  apiNavigator = fn;
 };
 
 // Attach the live Supabase JWT to every request
@@ -43,12 +44,14 @@ api.interceptors.response.use(
         try {
           await supabase.auth.signOut();
         } finally {
-          if (navigator) {
-            navigator('/login', { replace: true });
+          if (apiNavigator) {
+            apiNavigator('/login', { replace: true });
           } else {
             window.location.href = '/login';
           }
-          // Reset on next tick so subsequent 401s after re-login still work.
+          // Defer the reset to the next macrotask so any 401-rejected
+          // requests still draining the same microtask queue see the flag
+          // as true and skip the duplicate signOut + navigate.
           setTimeout(() => {
             redirectInFlight = false;
           }, 0);
