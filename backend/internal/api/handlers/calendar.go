@@ -50,7 +50,7 @@ func (h *CalendarHandler) GetWeek(c *gin.Context) {
 
 	entries, err := h.calendarService.GetWeekEntries(c.Request.Context(), userID, weekStart)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load week entries", err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *CalendarHandler) GetRange(c *gin.Context) {
 
 	entries, err := h.calendarService.GetRangeEntries(c.Request.Context(), userID, start, end)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load calendar entries", err)
 		return
 	}
 
@@ -194,7 +194,7 @@ func (h *CalendarHandler) CreateEntry(c *gin.Context) {
 		c.Request.Context(), userID, entry,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to create entry", err)
 		return
 	}
 
@@ -209,9 +209,8 @@ func (h *CalendarHandler) UpdateEntry(c *gin.Context) {
 		return
 	}
 
-	entryID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid entry ID"})
+	entryID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -219,7 +218,7 @@ func (h *CalendarHandler) UpdateEntry(c *gin.Context) {
 		c.Request.Context(), userID, entryID, entry,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to update entry", err)
 		return
 	}
 
@@ -234,15 +233,13 @@ func (h *CalendarHandler) DeleteEntry(c *gin.Context) {
 		return
 	}
 
-	entryID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid entry ID"})
+	entryID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	err = h.calendarService.DeleteEntry(c.Request.Context(), userID, entryID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.calendarService.DeleteEntry(c.Request.Context(), userID, entryID); err != nil {
+		RespondError(c, http.StatusInternalServerError, "failed to delete entry", err)
 		return
 	}
 
@@ -264,9 +261,8 @@ func (h *CalendarHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	entryID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid entry ID"})
+	entryID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -288,7 +284,7 @@ func (h *CalendarHandler) UpdateStatus(c *gin.Context) {
 
 	entry, err := h.calendarService.UpdateStatus(c.Request.Context(), userID, entryID, req.Status, activityID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to update entry status", err)
 		return
 	}
 

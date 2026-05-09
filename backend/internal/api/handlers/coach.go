@@ -30,7 +30,7 @@ func (h *CoachHandler) CreateSession(c *gin.Context) {
 	}
 	session, err := h.coachService.CreateSession(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to create coach session", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"session": session})
@@ -43,7 +43,7 @@ func (h *CoachHandler) GetSessions(c *gin.Context) {
 	}
 	sessions, err := h.coachService.GetSessions(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load coach sessions", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"sessions": sessions})
@@ -54,14 +54,13 @@ func (h *CoachHandler) GetSessionMessages(c *gin.Context) {
 	if !ok {
 		return
 	}
-	sessionID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+	sessionID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 	messages, err := h.coachService.GetSessionMessages(c.Request.Context(), userID, sessionID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load session messages", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"messages": messages})
@@ -103,7 +102,7 @@ func (h *CoachHandler) SendMessage(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to send coach message", err)
 		return
 	}
 	result := gin.H{"response": response}
@@ -126,7 +125,7 @@ func (h *CoachHandler) GetConversationHistory(c *gin.Context) {
 	}
 	messages, err := h.coachService.GetConversationHistory(c.Request.Context(), userID, 50)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load conversation history", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"messages": messages})
@@ -154,12 +153,12 @@ func (h *CoachHandler) GeneratePlan(c *gin.Context) {
 
 	plan, err := h.coachService.GeneratePlan(c.Request.Context(), userID, req.Days)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to generate plan", err)
 		return
 	}
 	if req.Confirm {
 		if err := h.coachService.WritePlanToCalendar(c.Request.Context(), userID, plan.Plan); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Plan generated but failed to save: " + err.Error()})
+			RespondError(c, http.StatusInternalServerError, "plan generated but failed to save to calendar", err)
 			return
 		}
 	}
@@ -173,7 +172,7 @@ func (h *CoachHandler) GetInsight(c *gin.Context) {
 	}
 	insight, err := h.coachService.GenerateInsight(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to generate insight", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"insight": insight})

@@ -125,7 +125,7 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 
 	result, err := h.stravaService.SyncActivities(ctx, userID)
 	if err != nil {
-		if err.Error() == "strava connection not found" {
+		if errors.Is(err, services.ErrStravaConnectionNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Strava is not connected. Connect it from Settings first."})
 			return
 		}
@@ -135,7 +135,7 @@ func (h *StravaHandler) SyncActivities(c *gin.Context) {
 			return
 		}
 		h.maybeSendSyncFailureNotification(c, userID, err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to sync activities", err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *StravaHandler) GetActivities(c *gin.Context) {
 
 	activities, total, err := h.stravaService.GetUserActivities(c.Request.Context(), userID, perPage, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load Strava activities", err)
 		return
 	}
 

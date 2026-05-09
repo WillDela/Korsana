@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/services"
 )
 
@@ -31,10 +31,7 @@ func (h *CrossTrainingGoalsHandler) GetGoals(c *gin.Context) {
 		c.Request.Context(), userID,
 	)
 	if err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "failed to fetch goals"},
-		)
+		RespondError(c, http.StatusInternalServerError, "failed to fetch goals", err)
 		return
 	}
 
@@ -79,9 +76,8 @@ func (h *CrossTrainingGoalsHandler) DeleteGoal(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 

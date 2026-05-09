@@ -53,7 +53,7 @@ func (h *GearHandler) ListShoes(c *gin.Context) {
 		ORDER BY is_primary DESC, created_at ASC
 	`, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch shoes"})
+		RespondError(c, http.StatusInternalServerError, "failed to fetch shoes", err)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *GearHandler) AddShoe(c *gin.Context) {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`, id, userID, req.Name, req.Brand, maxMiles, datePurchased, req.IsPrimary, req.UsageLabel)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add shoe"})
+		RespondError(c, http.StatusInternalServerError, "failed to add shoe", err)
 		return
 	}
 
@@ -106,9 +106,8 @@ func (h *GearHandler) UpdateShoe(c *gin.Context) {
 		return
 	}
 
-	shoeID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid shoe id"})
+	shoeID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -118,7 +117,7 @@ func (h *GearHandler) UpdateShoe(c *gin.Context) {
 		return
 	}
 
-	_, err = h.db.ExecContext(c.Request.Context(), `
+	_, err := h.db.ExecContext(c.Request.Context(), `
 		UPDATE gear_shoes SET
 			name = COALESCE($1, name),
 			brand = COALESCE($2, brand),
@@ -130,7 +129,7 @@ func (h *GearHandler) UpdateShoe(c *gin.Context) {
 		WHERE id = $7 AND user_id = $8
 	`, req.Name, req.Brand, req.MaxMiles, req.IsPrimary, req.UsageLabel, req.IsActive, shoeID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update shoe"})
+		RespondError(c, http.StatusInternalServerError, "failed to update shoe", err)
 		return
 	}
 
@@ -144,16 +143,15 @@ func (h *GearHandler) DeleteShoe(c *gin.Context) {
 		return
 	}
 
-	shoeID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid shoe id"})
+	shoeID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
 	result, err := h.db.ExecContext(c.Request.Context(),
 		"DELETE FROM gear_shoes WHERE id = $1 AND user_id = $2", shoeID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete shoe"})
+		RespondError(c, http.StatusInternalServerError, "failed to delete shoe", err)
 		return
 	}
 	rows, _ := result.RowsAffected()

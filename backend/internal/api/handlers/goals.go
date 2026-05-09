@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/services"
 )
 
@@ -63,7 +64,7 @@ func (h *GoalsHandler) CreateGoal(c *gin.Context) {
 
 	goal, err := h.goalsService.CreateGoal(c.Request.Context(), userID, req.RaceName, raceDate, distanceMeters, req.TargetTimeSeconds, req.GoalType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to create goal", err)
 		return
 	}
 
@@ -80,7 +81,7 @@ func (h *GoalsHandler) GetGoals(c *gin.Context) {
 
 	goals, err := h.goalsService.GetUserGoals(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load goals", err)
 		return
 	}
 
@@ -112,9 +113,8 @@ func (h *GoalsHandler) GetGoal(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -143,9 +143,8 @@ func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -178,7 +177,7 @@ func (h *GoalsHandler) UpdateGoal(c *gin.Context) {
 
 	goal, err := h.goalsService.UpdateGoal(c.Request.Context(), userID, goalID, req.RaceName, raceDate, distanceMeters, req.TargetTimeSeconds, req.GoalType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to update goal", err)
 		return
 	}
 
@@ -193,19 +192,18 @@ func (h *GoalsHandler) SetActive(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
 	goal, err := h.goalsService.SetActiveGoal(c.Request.Context(), userID, goalID)
 	if err != nil {
-		if err.Error() == "goal not found" {
+		if errors.Is(err, services.ErrGoalNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "goal not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to set active goal", err)
 		return
 	}
 
@@ -225,9 +223,8 @@ func (h *GoalsHandler) LogResult(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
@@ -239,11 +236,11 @@ func (h *GoalsHandler) LogResult(c *gin.Context) {
 
 	goal, err := h.goalsService.LogResult(c.Request.Context(), userID, goalID, req.ResultTimeSeconds, req.IsPR)
 	if err != nil {
-		if err.Error() == "goal not found" {
+		if errors.Is(err, services.ErrGoalNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "goal not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to log result", err)
 		return
 	}
 
@@ -256,15 +253,13 @@ func (h *GoalsHandler) DeleteGoal(c *gin.Context) {
 		return
 	}
 
-	goalID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid goal ID"})
+	goalID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	err = h.goalsService.DeleteGoal(c.Request.Context(), userID, goalID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.goalsService.DeleteGoal(c.Request.Context(), userID, goalID); err != nil {
+		RespondError(c, http.StatusInternalServerError, "failed to delete goal", err)
 		return
 	}
 

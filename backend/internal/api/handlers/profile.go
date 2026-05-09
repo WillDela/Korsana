@@ -66,7 +66,7 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 
 	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
+		RespondError(c, http.StatusInternalServerError, "failed to load profile", err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	// Load current profile so unset fields aren't zeroed out.
 	current, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
+		RespondError(c, http.StatusInternalServerError, "failed to load profile", err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 
 	updated, err := h.userProfileService.UpdateProfile(c.Request.Context(), current)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to update profile", err)
 		return
 	}
 
@@ -189,27 +189,27 @@ func (h *ProfileHandler) SendTestNotification(c *gin.Context) {
 
 	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user email"})
+		RespondError(c, http.StatusInternalServerError, "failed to load user email", err)
 		return
 	}
 
 	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"})
+		RespondError(c, http.StatusInternalServerError, "failed to load profile", err)
 		return
 	}
 
 	goal, _ := h.goalsService.GetActiveGoal(c.Request.Context(), userID)
 	delivery, err := h.notificationService.SendTestNotification(c.Request.Context(), user, profile, goal, req.Type)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if errors.Is(err, services.ErrNotificationTypeUnsupported) {
-			status = http.StatusBadRequest
+		switch {
+		case errors.Is(err, services.ErrNotificationTypeUnsupported):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "delivery": delivery})
+		case errors.Is(err, services.ErrEmailNotConfigured):
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error(), "delivery": delivery})
+		default:
+			RespondError(c, http.StatusInternalServerError, "failed to send notification", err)
 		}
-		if errors.Is(err, services.ErrEmailNotConfigured) {
-			status = http.StatusServiceUnavailable
-		}
-		c.JSON(status, gin.H{"error": err.Error(), "delivery": delivery})
 		return
 	}
 
@@ -229,7 +229,7 @@ func (h *ProfileHandler) RequestIntegrationInterest(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record integration interest"})
+		RespondError(c, http.StatusInternalServerError, "failed to record integration interest", err)
 		return
 	}
 
@@ -254,18 +254,18 @@ func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
 
 	urlPath, err := h.userProfileService.SaveAvatar(c.Request.Context(), userID, file)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save avatar"})
+		RespondError(c, http.StatusInternalServerError, "failed to save avatar", err)
 		return
 	}
 
 	profile, err := h.userProfileService.GetOrCreateProfile(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile for update"})
+		RespondError(c, http.StatusInternalServerError, "failed to load profile for update", err)
 		return
 	}
 	profile.ProfilePictureURL = &urlPath
 	if _, err := h.userProfileService.UpdateProfile(c.Request.Context(), profile); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save avatar URL"})
+		RespondError(c, http.StatusInternalServerError, "failed to save avatar URL", err)
 		return
 	}
 
@@ -281,7 +281,7 @@ func (h *ProfileHandler) GetPersonalRecords(c *gin.Context) {
 
 	prs, err := h.userProfileService.GetPersonalRecords(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load personal records", err)
 		return
 	}
 
@@ -305,7 +305,7 @@ func (h *ProfileHandler) UpsertPersonalRecord(c *gin.Context) {
 	pr.Label = label
 
 	if err := h.userProfileService.UpsertPersonalRecord(c.Request.Context(), &pr); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to upsert personal record", err)
 		return
 	}
 
@@ -321,7 +321,7 @@ func (h *ProfileHandler) DeletePersonalRecord(c *gin.Context) {
 	label := c.Param("label")
 
 	if err := h.userProfileService.DeletePersonalRecord(c.Request.Context(), userID, label); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to delete personal record", err)
 		return
 	}
 
@@ -337,7 +337,7 @@ func (h *ProfileHandler) DetectPRsFromStrava(c *gin.Context) {
 
 	count, err := h.userProfileService.DetectPRsFromStrava(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to detect PRs", err)
 		return
 	}
 
@@ -363,7 +363,7 @@ func (h *ProfileHandler) GetTrainingZones(c *gin.Context) {
 
 	zones, err := h.userProfileService.GetTrainingZones(c.Request.Context(), userID, zoneType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load training zones", err)
 		return
 	}
 
@@ -385,7 +385,7 @@ func (h *ProfileHandler) CalculateZones(c *gin.Context) {
 
 	zones, err := h.userProfileService.CalculateAndSaveZones(c.Request.Context(), userID, zoneType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to calculate training zones", err)
 		return
 	}
 
@@ -411,9 +411,8 @@ func (h *ProfileHandler) UpdateTrainingZones(c *gin.Context) {
 		return
 	}
 
-	err := h.userProfileService.SaveManualZones(c.Request.Context(), userID, zoneType, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.userProfileService.SaveManualZones(c.Request.Context(), userID, zoneType, req); err != nil {
+		RespondError(c, http.StatusInternalServerError, "failed to save training zones", err)
 		return
 	}
 
@@ -441,7 +440,7 @@ func (h *ProfileHandler) UpdateEmail(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is incorrect"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update email"})
+		RespondError(c, http.StatusInternalServerError, "failed to update email", err)
 		return
 	}
 
@@ -469,7 +468,7 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "current password is incorrect"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change password"})
+		RespondError(c, http.StatusInternalServerError, "failed to change password", err)
 		return
 	}
 
@@ -483,9 +482,8 @@ func (h *ProfileHandler) DeleteAccount(c *gin.Context) {
 		return
 	}
 
-	err := h.authService.DeleteUser(c.Request.Context(), userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+	if err := h.authService.DeleteUser(c.Request.Context(), userID); err != nil {
+		RespondError(c, http.StatusInternalServerError, "failed to delete account", err)
 		return
 	}
 

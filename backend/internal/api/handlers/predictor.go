@@ -59,7 +59,7 @@ func (h *PredictorHandler) SaveManual(c *gin.Context) {
 			date_recorded = EXCLUDED.date_recorded
 	`, userID, req.DistanceLabel, req.TimeSeconds, date)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save entry"})
+		RespondError(c, http.StatusInternalServerError, "failed to save entry", err)
 		return
 	}
 

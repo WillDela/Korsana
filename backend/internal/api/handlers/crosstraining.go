@@ -51,7 +51,7 @@ func (h *CrossTrainingHandler) List(c *gin.Context) {
 		ORDER BY date DESC
 	`, userID, cutoff)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch sessions"})
+		RespondError(c, http.StatusInternalServerError, "failed to fetch sessions", err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *CrossTrainingHandler) Create(c *gin.Context) {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual')
 	`, id, userID, req.Type, date, req.DurationMinutes, req.Intensity, req.DistanceMeters, req.Notes)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create session"})
+		RespondError(c, http.StatusInternalServerError, "failed to create session", err)
 		return
 	}
 
@@ -98,16 +98,15 @@ func (h *CrossTrainingHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	sessionID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session id"})
+	sessionID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
 	result, err := h.db.ExecContext(c.Request.Context(),
 		"DELETE FROM cross_training_sessions WHERE id = $1 AND user_id = $2", sessionID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete session"})
+		RespondError(c, http.StatusInternalServerError, "failed to delete session", err)
 		return
 	}
 	rows, _ := result.RowsAffected()

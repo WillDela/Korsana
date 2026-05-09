@@ -10,6 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrGoalNotFound is returned when no race goal matches the requested ID
+// for a given user.
+var ErrGoalNotFound = errors.New("goal not found")
+
 // GoalsService handles race goal business logic
 type GoalsService struct {
 	db *database.DB
@@ -70,7 +74,7 @@ func (s *GoalsService) GetGoalByID(ctx context.Context, userID uuid.UUID, goalID
 	var goal models.RaceGoal
 	err := s.db.GetContext(ctx, &goal, "SELECT * FROM race_goals WHERE id = $1 AND user_id = $2", goalID, userID)
 	if err != nil {
-		return nil, errors.New("goal not found")
+		return nil, ErrGoalNotFound
 	}
 	return &goal, nil
 }
@@ -99,7 +103,7 @@ func (s *GoalsService) UpdateGoal(ctx context.Context, userID uuid.UUID, goalID 
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return nil, errors.New("goal not found")
+		return nil, ErrGoalNotFound
 	}
 
 	return s.GetGoalByID(ctx, userID, goalID)
@@ -125,7 +129,7 @@ func (s *GoalsService) SetActiveGoal(ctx context.Context, userID uuid.UUID, goal
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return nil, errors.New("goal not found")
+		return nil, ErrGoalNotFound
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -149,7 +153,7 @@ func (s *GoalsService) LogResult(ctx context.Context, userID, goalID uuid.UUID, 
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return nil, errors.New("goal not found")
+		return nil, ErrGoalNotFound
 	}
 
 	return s.GetGoalByID(ctx, userID, goalID)
@@ -164,7 +168,7 @@ func (s *GoalsService) DeleteGoal(ctx context.Context, userID uuid.UUID, goalID 
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return errors.New("goal not found")
+		return ErrGoalNotFound
 	}
 
 	return nil

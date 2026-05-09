@@ -12,6 +12,10 @@ import (
 	"github.com/korsana/backend/internal/models"
 )
 
+// ErrActivityNotFound is returned when an activity does not exist or
+// belongs to a different user.
+var ErrActivityNotFound = errors.New("activity not found or unauthorized")
+
 // ActivityService handles manual activity creation and retrieval
 type ActivityService struct {
 	db *database.DB
@@ -244,7 +248,7 @@ func (s *ActivityService) DeleteActivity(ctx context.Context, userID uuid.UUID, 
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("activity not found or unauthorized")
+		return ErrActivityNotFound
 	}
 
 	return nil

@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+
 	"github.com/korsana/backend/internal/services"
 )
 
@@ -67,7 +68,7 @@ func (h *ActivitiesHandler) GetActivities(c *gin.Context) {
 		c.Request.Context(), userID, activityType, perPage, offset,
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		RespondError(c, http.StatusInternalServerError, "failed to load activities", err)
 		return
 	}
 
@@ -86,19 +87,16 @@ func (h *ActivitiesHandler) DeleteActivity(c *gin.Context) {
 		return
 	}
 
-	activityIDStr := c.Param("id")
-	activityID, err := uuid.Parse(activityIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid activity id format"})
+	activityID, ok := ParseUUIDParam(c, "id")
+	if !ok {
 		return
 	}
 
-	err = h.activityService.DeleteActivity(c.Request.Context(), userID, activityID)
-	if err != nil {
-		if err.Error() == "activity not found or unauthorized" {
+	if err := h.activityService.DeleteActivity(c.Request.Context(), userID, activityID); err != nil {
+		if errors.Is(err, services.ErrActivityNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete activity"})
+			RespondError(c, http.StatusInternalServerError, "failed to delete activity", err)
 		}
 		return
 	}

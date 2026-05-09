@@ -60,7 +60,15 @@ const (
 	stravaRateLimitMaxBackoff   = 8 * time.Second
 )
 
-var ErrStravaRateLimited = errors.New("strava sync is temporarily rate limited")
+var (
+	// ErrStravaRateLimited is returned when Strava replies with a 429.
+	ErrStravaRateLimited = errors.New("strava sync is temporarily rate limited")
+
+	// ErrStravaConnectionNotFound is returned when the user has no Strava
+	// connection on record (or the lookup failed in a way that's
+	// indistinguishable from absence).
+	ErrStravaConnectionNotFound = errors.New("strava connection not found")
+)
 
 // StravaService handles Strava business logic
 type StravaService struct {
@@ -280,7 +288,7 @@ func (s *StravaService) GetConnection(ctx context.Context, userID uuid.UUID) (*m
 	var conn models.StravaConnection
 	err := s.db.GetContext(ctx, &conn, "SELECT * FROM strava_connections WHERE user_id = $1", userID)
 	if err != nil {
-		return nil, errors.New("strava connection not found")
+		return nil, ErrStravaConnectionNotFound
 	}
 	return &conn, nil
 }
