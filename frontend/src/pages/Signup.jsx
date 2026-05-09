@@ -28,7 +28,7 @@ const Signup = () => {
         setConfirmationSent(true);
       }
     } catch (err) {
-      setServerError(err);
+      setServerError(err?.message || 'Sign up failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

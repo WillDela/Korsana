@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error.message;
+    if (error) throw error;
     return {
       id: data.user.id,
       email: data.user.email,
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
-    if (error) throw error.message;
+    if (error) throw error;
     return data;
   };
 

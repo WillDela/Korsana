@@ -9,6 +9,14 @@ const api = axios.create({
   },
 });
 
+// Navigator function injected by <RouterNavigator /> so this non-React module
+// can perform client-side redirects without forcing a full page reload (which
+// races with in-flight setState calls on unmounting components).
+let navigator = null;
+export const setApiNavigator = (fn) => {
+  navigator = fn;
+};
+
 // Attach the live Supabase JWT to every request
 api.interceptors.request.use(
   async (config) => {
@@ -21,13 +29,31 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// On 401, sign out and redirect to login
+// On 401, sign the user out and redirect to /login. The error is annotated
+// with `isAuthRedirect: true` so callers can short-circuit before calling
+// setState on components that are about to unmount.
+let redirectInFlight = false;
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await supabase.auth.signOut();
-      window.location.href = '/login';
+      error.isAuthRedirect = true;
+      if (!redirectInFlight) {
+        redirectInFlight = true;
+        try {
+          await supabase.auth.signOut();
+        } finally {
+          if (navigator) {
+            navigator('/login', { replace: true });
+          } else {
+            window.location.href = '/login';
+          }
+          // Reset on next tick so subsequent 401s after re-login still work.
+          setTimeout(() => {
+            redirectInFlight = false;
+          }, 0);
+        }
+      }
     }
     return Promise.reject(error);
   }

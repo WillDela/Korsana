@@ -1,6 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UnitsProvider } from './context/UnitsContext';
+import { setApiNavigator } from './api/client';
 import AppLayout from './components/AppLayout';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -27,6 +29,15 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/onboarding" replace />;
   }
   return children;
+};
+
+const RouterNavigator = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setApiNavigator(navigate);
+    return () => setApiNavigator(null);
+  }, [navigate]);
+  return null;
 };
 
 const AppRoutes = () => {
@@ -60,6 +71,7 @@ function App() {
     <Router>
       <AuthProvider>
         <UnitsProvider>
+          <RouterNavigator />
           <AppRoutes />
         </UnitsProvider>
       </AuthProvider>

@@ -20,7 +20,7 @@ const Login = () => {
       const result = await login(data.email, data.password);
       navigate(result.onboarded ? '/dashboard' : '/onboarding');
     } catch (err) {
-      setServerError(err);
+      setServerError(err?.message || 'Sign in failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
