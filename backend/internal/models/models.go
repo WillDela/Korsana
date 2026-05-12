@@ -62,7 +62,10 @@ type Activity struct {
 	AverageCadence          *float64       `json:"average_cadence" db:"average_cadence"`
 	SufferScore             *int           `json:"suffer_score" db:"suffer_score"`
 	SyncedAt                time.Time      `json:"synced_at" db:"synced_at"`
-	CustomFields            map[string]any `json:"custom_fields,omitempty" db:"-"`
+	// LocalDate is the calendar date in the athlete's timezone. Populated by
+	// later phases of the timezone unification work; nullable on legacy rows.
+	LocalDate    *time.Time     `json:"local_date,omitempty" db:"local_date"`
+	CustomFields map[string]any `json:"custom_fields,omitempty" db:"-"`
 }
 
 // ConnectedIntegration tracks a user's OAuth connection to an external data source.
@@ -155,6 +158,7 @@ type UserProfile struct {
 	RestingHeartRate         *int      `json:"resting_heart_rate" db:"resting_heart_rate"`
 	WeeklyDistanceGoalMeters *int      `json:"weekly_distance_goal_meters" db:"weekly_distance_goal_meters"`
 	UnitsPreference          string    `json:"units_preference" db:"units_preference"`
+	Timezone                 string    `json:"timezone" db:"timezone"`
 	NotifyWeeklySummary      bool      `json:"notify_weekly_summary" db:"notify_weekly_summary"`
 	NotifyGoalReminders      bool      `json:"notify_goal_reminders" db:"notify_goal_reminders"`
 	NotifySyncFailures       bool      `json:"notify_sync_failures" db:"notify_sync_failures"`

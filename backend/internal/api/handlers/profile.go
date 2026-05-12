@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -129,6 +130,18 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		if s, ok := v.(string); ok {
 			current.UnitsPreference = s
 		}
+	}
+	if v, ok := patch["timezone"]; ok {
+		s, isString := v.(string)
+		if !isString {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "timezone must be a string"})
+			return
+		}
+		if _, err := time.LoadLocation(s); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid IANA timezone"})
+			return
+		}
+		current.Timezone = s
 	}
 	if v, ok := patch["notify_weekly_summary"]; ok {
 		if b, ok := v.(bool); ok {

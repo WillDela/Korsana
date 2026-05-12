@@ -44,6 +44,7 @@ func (s *UserProfileService) GetOrCreateProfile(ctx context.Context, userID uuid
 				ID:                  uuid.New(),
 				UserID:              userID,
 				UnitsPreference:     "imperial",
+				Timezone:            "UTC",
 				NotifyWeeklySummary: true,
 				NotifyGoalReminders: true,
 				NotifySyncFailures:  true,
@@ -51,8 +52,8 @@ func (s *UserProfileService) GetOrCreateProfile(ctx context.Context, userID uuid
 				UpdatedAt:           time.Now(),
 			}
 			insertQuery := `
-				INSERT INTO user_profiles (id, user_id, units_preference, notify_weekly_summary, notify_goal_reminders, notify_sync_failures, created_at, updated_at)
-				VALUES (:id, :user_id, :units_preference, :notify_weekly_summary, :notify_goal_reminders, :notify_sync_failures, :created_at, :updated_at)
+				INSERT INTO user_profiles (id, user_id, units_preference, timezone, notify_weekly_summary, notify_goal_reminders, notify_sync_failures, created_at, updated_at)
+				VALUES (:id, :user_id, :units_preference, :timezone, :notify_weekly_summary, :notify_goal_reminders, :notify_sync_failures, :created_at, :updated_at)
 			`
 			if _, e := s.db.NamedExecContext(ctx, insertQuery, profile); e != nil {
 				return nil, e
@@ -68,8 +69,8 @@ func (s *UserProfileService) GetOrCreateProfile(ctx context.Context, userID uuid
 func (s *UserProfileService) UpdateProfile(ctx context.Context, profile *models.UserProfile) (*models.UserProfile, error) {
 	profile.UpdatedAt = time.Now()
 	query := `
-		INSERT INTO user_profiles (id, user_id, display_name, profile_picture_url, max_heart_rate, resting_heart_rate, weekly_distance_goal_meters, units_preference, notify_weekly_summary, notify_goal_reminders, notify_sync_failures, created_at, updated_at)
-		VALUES (:id, :user_id, :display_name, :profile_picture_url, :max_heart_rate, :resting_heart_rate, :weekly_distance_goal_meters, :units_preference, :notify_weekly_summary, :notify_goal_reminders, :notify_sync_failures, :created_at, :updated_at)
+		INSERT INTO user_profiles (id, user_id, display_name, profile_picture_url, max_heart_rate, resting_heart_rate, weekly_distance_goal_meters, units_preference, timezone, notify_weekly_summary, notify_goal_reminders, notify_sync_failures, created_at, updated_at)
+		VALUES (:id, :user_id, :display_name, :profile_picture_url, :max_heart_rate, :resting_heart_rate, :weekly_distance_goal_meters, :units_preference, :timezone, :notify_weekly_summary, :notify_goal_reminders, :notify_sync_failures, :created_at, :updated_at)
 		ON CONFLICT(user_id) DO UPDATE SET
 			display_name = EXCLUDED.display_name,
 			profile_picture_url = EXCLUDED.profile_picture_url,
@@ -77,6 +78,7 @@ func (s *UserProfileService) UpdateProfile(ctx context.Context, profile *models.
 			resting_heart_rate = EXCLUDED.resting_heart_rate,
 			weekly_distance_goal_meters = EXCLUDED.weekly_distance_goal_meters,
 			units_preference = EXCLUDED.units_preference,
+			timezone = EXCLUDED.timezone,
 			notify_weekly_summary = EXCLUDED.notify_weekly_summary,
 			notify_goal_reminders = EXCLUDED.notify_goal_reminders,
 			notify_sync_failures = EXCLUDED.notify_sync_failures,
