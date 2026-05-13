@@ -123,19 +123,42 @@ func (s *CoachService) CreateSession(ctx context.Context, userID uuid.UUID) (*mo
 	return session, nil
 }
 
-// GetSessions returns the user's coaching sessions, newest first.
-func (s *CoachService) GetSessions(ctx context.Context, userID uuid.UUID) ([]models.CoachSession, error) {
+// coachListRowCap caps any service-layer limit at this ceiling so a caller
+// passing a runaway value can't pull unbounded rows. Matches the handler
+// MaxPageSize constant; duplicated to avoid an import cycle.
+const coachListRowCap = 200
+
+// GetSessions returns a page of the user's coaching sessions, newest first,
+// along with the total row count for pagination UI. Limit is clamped to
+// coachListRowCap; offset is clamped to >= 0.
+func (s *CoachService) GetSessions(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.CoachSession, int, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > coachListRowCap {
+		limit = coachListRowCap
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	var total int
+	if err := s.db.GetContext(ctx, &total,
+		`SELECT COUNT(*) FROM coach_sessions WHERE user_id = $1`, userID); err != nil {
+		return nil, 0, err
+	}
+
 	var sessions []models.CoachSession
 	err := s.db.SelectContext(ctx, &sessions, `
 		SELECT * FROM coach_sessions
 		WHERE user_id = $1
 		ORDER BY created_at DESC
-		LIMIT 50
-	`, userID)
+		LIMIT $2 OFFSET $3
+	`, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return sessions, nil
+	return sessions, total, nil
 }
 
 // GetSessionMessages returns messages belonging to a specific session.
@@ -1450,10 +1473,15 @@ func stripCodeFences(s string) string {
 	return strings.TrimSpace(result)
 }
 
-// GetConversationHistory retrieves the conversation history for a user
+// GetConversationHistory retrieves the conversation history for a user.
+// Limit is clamped to coachListRowCap so a runaway caller can't pull
+// unbounded rows.
 func (s *CoachService) GetConversationHistory(ctx context.Context, userID uuid.UUID, limit int) ([]models.CoachConversation, error) {
-	if limit == 0 {
+	if limit <= 0 {
 		limit = 50
+	}
+	if limit > coachListRowCap {
+		limit = coachListRowCap
 	}
 
 	var messages []models.CoachConversation

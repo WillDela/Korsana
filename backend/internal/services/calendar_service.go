@@ -169,6 +169,11 @@ func NewCalendarService(db *database.DB) *CalendarService {
 	}
 }
 
+// calendarRowCap is a defensive ceiling on per-request calendar rows. A
+// realistic month maxes out around ~150 entries (5 weeks × ~6/day); 500
+// leaves headroom while keeping a single misbehaving query bounded.
+const calendarRowCap = 500
+
 // GetWeekEntries retrieves calendar entries for a 7-day period starting from weekStart
 func (s *CalendarService) GetWeekEntries(ctx context.Context, userID uuid.UUID, weekStart time.Time) ([]models.CalendarEntry, error) {
 	weekEnd := weekStart.AddDate(0, 0, 7)
@@ -178,8 +183,9 @@ func (s *CalendarService) GetWeekEntries(ctx context.Context, userID uuid.UUID, 
 		SELECT * FROM training_calendar
 		WHERE user_id = $1 AND date >= $2 AND date < $3
 		ORDER BY date ASC
+		LIMIT $4
 	`
-	err := s.db.SelectContext(ctx, &entries, query, userID, weekStart, weekEnd)
+	err := s.db.SelectContext(ctx, &entries, query, userID, weekStart, weekEnd, calendarRowCap)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +199,9 @@ func (s *CalendarService) GetRangeEntries(ctx context.Context, userID uuid.UUID,
 		SELECT * FROM training_calendar
 		WHERE user_id = $1 AND date >= $2 AND date <= $3
 		ORDER BY date ASC
+		LIMIT $4
 	`
-	err := s.db.SelectContext(ctx, &entries, query, userID, start, end)
+	err := s.db.SelectContext(ctx, &entries, query, userID, start, end, calendarRowCap)
 	if err != nil {
 		return nil, err
 	}

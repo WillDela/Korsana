@@ -41,12 +41,18 @@ func (h *CoachHandler) GetSessions(c *gin.Context) {
 	if !ok {
 		return
 	}
-	sessions, err := h.coachService.GetSessions(c.Request.Context(), userID)
+	p := ParsePagination(c)
+	sessions, total, err := h.coachService.GetSessions(c.Request.Context(), userID, p.PerPage, p.Offset)
 	if err != nil {
 		RespondError(c, http.StatusInternalServerError, "failed to load coach sessions", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"sessions": sessions})
+	c.JSON(http.StatusOK, gin.H{
+		"sessions": sessions,
+		"page":     p.Page,
+		"per_page": p.PerPage,
+		"total":    total,
+	})
 }
 
 func (h *CoachHandler) GetSessionMessages(c *gin.Context) {
