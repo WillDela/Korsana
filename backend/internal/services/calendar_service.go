@@ -25,7 +25,14 @@ func (s *CalendarService) AutoMatchActivity(
 	userID uuid.UUID,
 	activity *models.Activity,
 ) error {
-	date := activity.StartTime.UTC().Truncate(24 * time.Hour)
+	// Prefer the athlete's local_date for calendar bucketing; fall back to
+	// the UTC truncation only for legacy rows that haven't been re-synced.
+	var date time.Time
+	if activity.LocalDate != nil {
+		date = *activity.LocalDate
+	} else {
+		date = activity.StartTime.UTC().Truncate(24 * time.Hour)
+	}
 
 	// Find all planned entries on this date and match the first compatible one.
 	var planned []models.CalendarEntry

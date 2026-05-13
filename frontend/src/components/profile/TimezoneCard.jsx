@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { userProfileAPI } from '../../api/userProfile';
 import { detectBrowserTimezone } from '../../hooks/useTimezoneSync';
+import { setUserTimezone } from '../../lib/userTimezone';
 
 // Fallback list for browsers without Intl.supportedValuesOf (older Safari).
 // Common zones spanning every continent so users can still pick something
@@ -76,6 +77,7 @@ const TimezoneCard = ({ profileData, onUpdate }) => {
     setSaving(true);
     try {
       await userProfileAPI.updateProfile({ timezone: tz });
+      setUserTimezone(tz);
       if (onUpdate) onUpdate();
     } catch (err) {
       setValue(stored);

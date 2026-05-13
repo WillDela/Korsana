@@ -379,12 +379,29 @@ func mapStravaType(stravaType, sportType string) string {
 	}
 }
 
+// parseStravaActivityTime returns the activity's UTC start instant.
+// start_date is proper UTC. start_date_local is the athlete's wall clock
+// with a fake Z suffix — never use it for time storage; use it only via
+// localDateFromStrava to derive the calendar bucket.
 func parseStravaActivityTime(act strava.Activity) (time.Time, error) {
+	candidate := act.StartDate
+	if candidate == "" {
+		candidate = act.StartDateLocal
+	}
+	return time.Parse(time.RFC3339, candidate)
+}
+
+// localDateFromStrava extracts the athlete's local calendar date (YYYY-MM-DD)
+// from start_date_local, ignoring the bogus Z suffix Strava appends.
+func localDateFromStrava(act strava.Activity) (time.Time, error) {
 	candidate := act.StartDateLocal
 	if candidate == "" {
 		candidate = act.StartDate
 	}
-	return time.Parse(time.RFC3339, candidate)
+	if len(candidate) < 10 {
+		return time.Time{}, fmt.Errorf("strava activity has no parseable start date: %q", candidate)
+	}
+	return time.Parse("2006-01-02", candidate[:10])
 }
 
 func stravaRateLimitBackoff(attempt int, retryAfter time.Duration) time.Duration {
@@ -566,8 +583,6 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 	insertFailCount := 0
 
 	for _, act := range activities {
-		// Use local date so calendar bucketing matches the athlete's timezone.
-		// start_date_local is formatted as RFC3339 but represents local time.
 		startTime, err := parseStravaActivityTime(act)
 		if err != nil {
 			logger.FromContext(ctx).Warn("strava sync: skipping activity, bad date format",
@@ -576,6 +591,18 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 				"error", err,
 			)
 			continue
+		}
+
+		// local_date is the athlete's calendar bucket; downstream queries
+		// (calendar, weekly summaries) prefer it over start_time::date.
+		var localDatePtr *time.Time
+		if ld, ldErr := localDateFromStrava(act); ldErr == nil {
+			localDatePtr = &ld
+		} else {
+			logger.FromContext(ctx).Warn("strava sync: missing local date",
+				"activity_id", act.ID,
+				"error", ldErr,
+			)
 		}
 
 		internalType := mapStravaType(act.Type, act.SportType)
@@ -624,6 +651,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 			DistanceMeters:          act.Distance,
 			DurationSeconds:         act.MovingTime,
 			StartTime:               startTime,
+			LocalDate:               localDatePtr,
 			AveragePaceSecondsPerKm: avgPace,
 			AverageHeartRate:        avgHR,
 			MaxHeartRate:            maxHR,
@@ -636,12 +664,12 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 		query := `
 			INSERT INTO activities (
 				id, user_id, source, source_activity_id, activity_type, name,
-				distance_meters, duration_seconds, start_time, average_pace_seconds_per_km,
+				distance_meters, duration_seconds, start_time, local_date, average_pace_seconds_per_km,
 				average_heart_rate, max_heart_rate, elevation_gain_meters,
 				average_cadence, suffer_score, synced_at
 			) VALUES (
 				:id, :user_id, :source, :source_activity_id, :activity_type, :name,
-				:distance_meters, :duration_seconds, :start_time, :average_pace_seconds_per_km,
+				:distance_meters, :duration_seconds, :start_time, :local_date, :average_pace_seconds_per_km,
 				:average_heart_rate, :max_heart_rate, :elevation_gain_meters,
 				:average_cadence, :suffer_score, :synced_at
 			)
@@ -651,6 +679,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 				distance_meters = EXCLUDED.distance_meters,
 				duration_seconds = EXCLUDED.duration_seconds,
 				start_time = EXCLUDED.start_time,
+				local_date = EXCLUDED.local_date,
 				average_pace_seconds_per_km = EXCLUDED.average_pace_seconds_per_km,
 				average_heart_rate = EXCLUDED.average_heart_rate,
 				max_heart_rate = EXCLUDED.max_heart_rate,
@@ -698,6 +727,12 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 			if act.Distance > 0 {
 				distPtr = &act.Distance
 			}
+			// Bucket by the athlete's local calendar date so cross-training
+			// rows line up with the user's run history regardless of UTC offset.
+			ctDate := startTime.UTC().Truncate(24 * time.Hour)
+			if localDatePtr != nil {
+				ctDate = *localDatePtr
+			}
 			_, _ = s.db.ExecContext(ctx, `
 				INSERT INTO cross_training_sessions
 					(id, user_id, type, date, duration_minutes, distance_meters, source, strava_activity_id)
@@ -707,7 +742,7 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 					date = EXCLUDED.date,
 					duration_minutes = EXCLUDED.duration_minutes,
 					distance_meters = EXCLUDED.distance_meters
-			`, uuid.New(), userID, ctType, startTime.Truncate(24*time.Hour), durationMins, distPtr, stravaIDStr)
+			`, uuid.New(), userID, ctType, ctDate, durationMins, distPtr, stravaIDStr)
 		}
 
 		syncedCount++
@@ -731,14 +766,26 @@ func (s *StravaService) SyncActivities(ctx context.Context, userID uuid.UUID) (*
 	return &result, nil
 }
 
-// computeWeeklySummaries aggregates activity data into weekly_summaries
+// computeWeeklySummaries aggregates activity data into weekly_summaries.
+// Buckets by local_date so totals match the calendar week as the athlete
+// lived it. Legacy rows without local_date fall back to start_time::date.
 func (s *StravaService) computeWeeklySummaries(ctx context.Context, userID uuid.UUID) error {
 	query := `
+		WITH bucketed AS (
+			SELECT
+				user_id,
+				distance_meters,
+				duration_seconds,
+				date_trunc('week', COALESCE(local_date, start_time::date))::date AS week_start
+			FROM activities
+			WHERE user_id = $1
+				AND COALESCE(local_date, start_time::date) >= (CURRENT_DATE - INTERVAL '8 weeks')
+		)
 		INSERT INTO weekly_summaries (id, user_id, week_start, total_distance_meters, total_duration_seconds, run_count, average_pace_seconds_per_km, longest_run_meters, updated_at)
 		SELECT
 			gen_random_uuid(),
 			user_id,
-			date_trunc('week', start_time)::date AS week_start,
+			week_start,
 			SUM(distance_meters) AS total_distance_meters,
 			SUM(duration_seconds) AS total_duration_seconds,
 			COUNT(*) AS run_count,
@@ -748,10 +795,8 @@ func (s *StravaService) computeWeeklySummaries(ctx context.Context, userID uuid.
 			END AS average_pace_seconds_per_km,
 			MAX(distance_meters) AS longest_run_meters,
 			NOW()
-		FROM activities
-		WHERE user_id = $1
-			AND start_time >= NOW() - INTERVAL '8 weeks'
-		GROUP BY user_id, date_trunc('week', start_time)
+		FROM bucketed
+		GROUP BY user_id, week_start
 		ON CONFLICT (user_id, week_start) DO UPDATE SET
 			total_distance_meters = EXCLUDED.total_distance_meters,
 			total_duration_seconds = EXCLUDED.total_duration_seconds,

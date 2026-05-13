@@ -8,6 +8,7 @@ import { dashboardAPI } from '../api/dashboard';
 import { ACTIVITY_CONFIGS } from '../constants/activityTypes';
 import { useUnits } from '../context/UnitsContext';
 import { formatDistance, formatPace } from '../utils/units';
+import { formatDateInTZ, weeksUntilInTZ } from '../lib/userTimezone';
 import ActiveGoalHero from '../components/goals/ActiveGoalHero';
 import EvidenceCard from '../components/ui/EvidenceCard';
 
@@ -45,11 +46,10 @@ const derivePace = (targetSeconds, distanceMeters, unit) => {
   return formatPace(secPerKm, unit);
 };
 
-const weeksUntil = (dateStr) =>
-  Math.max(0, Math.ceil((new Date(dateStr) - new Date()) / (7 * 24 * 3600 * 1000)));
+const weeksUntil = (dateStr) => weeksUntilInTZ(dateStr);
 
 const fmtDate = (d) =>
-  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  formatDateInTZ(d, { month: 'short', day: 'numeric', year: 'numeric' });
 
 const timeDiffSec = (targetSec, resultSec) => {
   const diff = targetSec - resultSec;

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userProfileAPI } from '../api/userProfile';
+import { setUserTimezone } from '../lib/userTimezone';
 
 const SYNC_FLAG_KEY = 'korsana_tz_sync_done';
 
@@ -37,6 +38,9 @@ export const useTimezoneSync = () => {
         const detected = detectBrowserTimezone();
         if (stored === 'UTC' && detected !== 'UTC') {
           await userProfileAPI.updateProfile({ timezone: detected });
+          setUserTimezone(detected);
+        } else {
+          setUserTimezone(stored);
         }
       } catch (err) {
         console.error('Timezone auto-sync failed:', err);

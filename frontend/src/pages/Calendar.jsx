@@ -12,6 +12,7 @@ import MetricStrip from '../components/ui/MetricStrip';
 import WorkoutCard from '../components/ui/WorkoutCard';
 import { useUnits } from '../context/UnitsContext';
 import { formatDistance, distanceLabel } from '../utils/units';
+import { todayKeyInTZ, formatDateInTZ } from '../lib/userTimezone';
 import {
   getStravaRedirectState,
   clearStravaRedirectParams,
@@ -462,44 +463,40 @@ const Calendar = () => {
     goalsAPI.getActiveGoal().then(setActiveGoal).catch(() => {});
   }, []);
 
-  // Current week bounds (Mon–Sun)
-  const currentWeekStart = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
-    d.setHours(0, 0, 0, 0);
-    return d;
+  // Week bounds as YYYY-MM-DD strings in the user's timezone. Strings avoid
+  // every browser-local Date pitfall: entries carry server-side local_date
+  // strings (already user-TZ), so string compare === user-TZ compare.
+  const weekKeys = useMemo(() => {
+    const today = todayKeyInTZ();
+    // Parse as UTC midnight to do pure integer-day arithmetic.
+    const base = new Date(`${today}T00:00:00Z`);
+    const dow = base.getUTCDay(); // 0=Sun..6=Sat
+    const monOffset = dow === 0 ? -6 : 1 - dow;
+    const shift = (anchor, days) => {
+      const d = new Date(anchor);
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+    const current = shift(base, monOffset);
+    const currentBase = new Date(`${current}T00:00:00Z`);
+    return {
+      currentStart: current,
+      currentEnd: shift(currentBase, 6),
+      lastStart: shift(currentBase, -7),
+      lastEnd: shift(currentBase, -1),
+    };
   }, []);
-
-  const currentWeekEnd = useMemo(() => {
-    const d = new Date(currentWeekStart);
-    d.setDate(d.getDate() + 6);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [currentWeekStart]);
-
-  const lastWeekStart = useMemo(() => {
-    const d = new Date(currentWeekStart);
-    d.setDate(d.getDate() - 7);
-    return d;
-  }, [currentWeekStart]);
-
-  const lastWeekEnd = useMemo(() => {
-    const d = new Date(currentWeekStart);
-    d.setDate(d.getDate() - 1);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }, [currentWeekStart]);
 
   // Hero stats derived from the loaded month entries
   const heroData = useMemo(() => {
-    const thisWeek = entries.filter((e) => {
-      const d = new Date((e.date || '').slice(0, 10) + 'T12:00:00');
-      return d >= currentWeekStart && d <= currentWeekEnd;
-    });
-    const lastWeek = entries.filter((e) => {
-      const d = new Date((e.date || '').slice(0, 10) + 'T12:00:00');
-      return d >= lastWeekStart && d <= lastWeekEnd;
-    });
+    const entryKey = (e) => (e.date || '').slice(0, 10);
+    const within = (key, start, end) => key >= start && key <= end;
+    const thisWeek = entries.filter((e) =>
+      within(entryKey(e), weekKeys.currentStart, weekKeys.currentEnd),
+    );
+    const lastWeek = entries.filter((e) =>
+      within(entryKey(e), weekKeys.lastStart, weekKeys.lastEnd),
+    );
     const plannedVol = thisWeek.reduce((s, e) => s + (e.planned_distance_meters || 0), 0);
     const keyWorkout = thisWeek.reduce((best, e) => {
       if (!best || (e.planned_distance_meters || 0) > (best.planned_distance_meters || 0)) return e;
@@ -513,7 +510,7 @@ const Calendar = () => {
       ? Math.round((lastWeekDone / lastWeekTracked) * 100)
       : null;
     return { plannedVol, keyWorkout, execScore };
-  }, [entries, currentWeekStart, currentWeekEnd, lastWeekStart, lastWeekEnd]);
+  }, [entries, weekKeys]);
 
   const weeksToRace = useMemo(() => {
     if (!activeGoal?.race_date) return null;
@@ -530,13 +527,17 @@ const Calendar = () => {
   }, [weeksToRace]);
 
   const heroSubtitle = useMemo(() => {
-    const weekLabel = currentWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const weekLabel = formatDateInTZ(
+      `${weekKeys.currentStart}T12:00:00Z`,
+      { month: 'short', day: 'numeric' },
+      'UTC',
+    );
     return [
       `Week of ${weekLabel}`,
       trainingPhase && `${trainingPhase} phase`,
       weeksToRace !== null && `${weeksToRace} week${weeksToRace !== 1 ? 's' : ''} to race`,
     ].filter(Boolean).join(' · ');
-  }, [currentWeekStart, trainingPhase, weeksToRace]);
+  }, [weekKeys.currentStart, trainingPhase, weeksToRace]);
 
   const keyWorkoutBadge = heroData.keyWorkout
     ? { label: heroData.keyWorkout.title || 'Key Workout', variant: 'neutral', size: 'sm' }
