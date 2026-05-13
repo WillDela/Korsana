@@ -14,6 +14,7 @@ import ConnectedServicesCard from '../components/profile/ConnectedServicesCard';
 import ChangePasswordForm from '../components/profile/ChangePasswordForm';
 
 import UnitsPreferenceCard from '../components/profile/UnitsPreferenceCard';
+import TimezoneCard from '../components/profile/TimezoneCard';
 import NotificationsCard from '../components/profile/NotificationsCard';
 import DataExportCard from '../components/profile/DataExportCard';
 import DeleteAccountCard from '../components/profile/DeleteAccountCard';
@@ -138,6 +139,7 @@ const Settings = () => {
           >
             <ProfileBanner profileData={profileData} onUpdate={handleProfileUpdate} />
             <UnitsPreferenceCard profileData={profileData} onUpdate={handleProfileUpdate} />
+            <TimezoneCard profileData={profileData} onUpdate={handleProfileUpdate} />
           </motion.div>
         )}
 

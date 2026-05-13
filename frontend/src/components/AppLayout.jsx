@@ -1,9 +1,12 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
+import { useTimezoneSync } from '../hooks/useTimezoneSync';
 
 const AppLayout = () => {
   const { pathname } = useLocation();
   const isCoach = pathname === '/coach';
+
+  useTimezoneSync();
 
   return (
     <div className="min-h-screen bg-bg-app">
