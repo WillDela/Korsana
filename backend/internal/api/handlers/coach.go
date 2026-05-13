@@ -200,4 +200,3 @@ func (h *CoachHandler) GetQuota(c *gin.Context) {
 		"used": used, "limit": limit, "remaining": remaining, "reset_at": reset,
 	})
 }
-

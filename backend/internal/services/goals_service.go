@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/korsana/backend/internal/database"
 	"github.com/korsana/backend/internal/models"
-	"github.com/google/uuid"
 )
 
 // ErrGoalNotFound is returned when no race goal matches the requested ID

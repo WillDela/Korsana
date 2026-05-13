@@ -46,22 +46,22 @@ type RaceGoal struct {
 
 // Activity represents a running activity synced from external sources
 type Activity struct {
-	ID                      uuid.UUID      `json:"id" db:"id"`
-	UserID                  uuid.UUID      `json:"user_id" db:"user_id"`
-	Source                  string         `json:"source" db:"source"` // "strava", "garmin", "manual"
-	SourceActivityID        string         `json:"source_activity_id" db:"source_activity_id"`
-	ActivityType            string         `json:"activity_type" db:"activity_type"` // "run", "long_run", "workout", "race"
-	Name                    string         `json:"name" db:"name"`
-	DistanceMeters          float64        `json:"distance_meters" db:"distance_meters"`
-	DurationSeconds         int            `json:"duration_seconds" db:"duration_seconds"`
-	StartTime               time.Time      `json:"start_time" db:"start_time"`
-	AveragePaceSecondsPerKm float64        `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
-	AverageHeartRate        *int           `json:"average_heart_rate" db:"average_heart_rate"`
-	MaxHeartRate            *int           `json:"max_heart_rate" db:"max_heart_rate"`
-	ElevationGainMeters     *float64       `json:"elevation_gain_meters" db:"elevation_gain_meters"`
-	AverageCadence          *float64       `json:"average_cadence" db:"average_cadence"`
-	SufferScore             *int           `json:"suffer_score" db:"suffer_score"`
-	SyncedAt                time.Time      `json:"synced_at" db:"synced_at"`
+	ID                      uuid.UUID `json:"id" db:"id"`
+	UserID                  uuid.UUID `json:"user_id" db:"user_id"`
+	Source                  string    `json:"source" db:"source"` // "strava", "garmin", "manual"
+	SourceActivityID        string    `json:"source_activity_id" db:"source_activity_id"`
+	ActivityType            string    `json:"activity_type" db:"activity_type"` // "run", "long_run", "workout", "race"
+	Name                    string    `json:"name" db:"name"`
+	DistanceMeters          float64   `json:"distance_meters" db:"distance_meters"`
+	DurationSeconds         int       `json:"duration_seconds" db:"duration_seconds"`
+	StartTime               time.Time `json:"start_time" db:"start_time"`
+	AveragePaceSecondsPerKm float64   `json:"average_pace_seconds_per_km" db:"average_pace_seconds_per_km"`
+	AverageHeartRate        *int      `json:"average_heart_rate" db:"average_heart_rate"`
+	MaxHeartRate            *int      `json:"max_heart_rate" db:"max_heart_rate"`
+	ElevationGainMeters     *float64  `json:"elevation_gain_meters" db:"elevation_gain_meters"`
+	AverageCadence          *float64  `json:"average_cadence" db:"average_cadence"`
+	SufferScore             *int      `json:"suffer_score" db:"suffer_score"`
+	SyncedAt                time.Time `json:"synced_at" db:"synced_at"`
 	// LocalDate is the calendar date in the athlete's timezone. Populated by
 	// later phases of the timezone unification work; nullable on legacy rows.
 	LocalDate    *time.Time     `json:"local_date,omitempty" db:"local_date"`
