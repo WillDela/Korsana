@@ -19,6 +19,7 @@ import NotificationsCard from '../components/profile/NotificationsCard';
 import DataExportCard from '../components/profile/DataExportCard';
 import DeleteAccountCard from '../components/profile/DeleteAccountCard';
 import ChangeEmailForm from '../components/profile/ChangeEmailForm';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -77,13 +78,7 @@ const Settings = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="h-40 bg-border-light rounded-xl animate-pulse" />
-        <div className="h-10 w-48 bg-border-light rounded-lg animate-pulse" />
-        <div className="h-64 bg-border-light rounded-xl animate-pulse" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (

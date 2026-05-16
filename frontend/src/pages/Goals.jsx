@@ -11,6 +11,7 @@ import { formatDistance, formatPace } from '../utils/units';
 import { formatDateInTZ, weeksUntilInTZ } from '../lib/userTimezone';
 import ActiveGoalHero from '../components/goals/ActiveGoalHero';
 import EvidenceCard from '../components/ui/EvidenceCard';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -434,11 +435,7 @@ const Goals = () => {
   }, [dashData, active, unit]);
 
   if (loading) {
-    return (
-      <div className="card text-center py-12">
-        <p className="text-text-secondary">Loading goals...</p>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const totalUpcoming = (active ? 1 : 0) + upcoming.length;

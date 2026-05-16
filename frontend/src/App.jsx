@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { UnitsProvider } from './context/UnitsContext';
 import { setApiNavigator } from './api/client';
 import AppLayout from './components/AppLayout';
+import { FullPageSkeleton } from './components/PageSkeleton';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -23,7 +24,7 @@ import './App.css';
 const ProtectedRoute = ({ children }) => {
   const { user, isOnboarded, loading } = useAuth();
   const location = useLocation();
-  if (loading) return null;
+  if (loading) return <FullPageSkeleton />;
   if (!user) return <Navigate to="/login" replace />;
   if (!isOnboarded && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;

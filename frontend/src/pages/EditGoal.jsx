@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { goalsAPI } from '../api/goals';
+import { PageSkeleton } from '../components/PageSkeleton';
 
 const DISTANCES = [
   { label: '5K', km: 5.0 },
@@ -104,13 +105,7 @@ const EditGoal = () => {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-[600px] mx-auto">
-        <div className="card text-center py-12">
-          <p className="text-text-secondary">Loading goal...</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
