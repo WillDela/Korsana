@@ -12,6 +12,7 @@ import { formatDateInTZ, weeksUntilInTZ } from '../lib/userTimezone';
 import ActiveGoalHero from '../components/goals/ActiveGoalHero';
 import EvidenceCard from '../components/ui/EvidenceCard';
 import { PageSkeleton } from '../components/PageSkeleton';
+import { useToast } from '../context/ToastContext';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -256,6 +257,7 @@ const LogResultModal = ({ goal, onClose, onSave }) => {
 
 const Goals = () => {
   const { unit } = useUnits();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [settingActiveId, setSettingActiveId] = useState(null);
@@ -265,13 +267,7 @@ const Goals = () => {
   const [completedPage, setCompletedPage] = useState(0);
   const [ctGoals, setCtGoals] = useState([]);
   const [ctProgress, setCtProgress] = useState({});
-  const [toast, setToast] = useState({ visible: false, msg: '' });
   const [dashData, setDashData] = useState(null);
-
-  const showToast = (msg) => {
-    setToast({ visible: true, msg });
-    setTimeout(() => setToast({ visible: false, msg: '' }), 2800);
-  };
 
   const fetchGoals = async () => {
     try {
@@ -279,7 +275,7 @@ const Goals = () => {
       const response = await goalsAPI.getGoals();
       setGoals(response.goals || []);
     } catch (err) {
-      console.error('Failed to fetch goals:', err);
+      toastError(err, 'Failed to load goals');
     } finally {
       setLoading(false);
     }
@@ -291,7 +287,7 @@ const Goals = () => {
       setCtGoals(data.goals || []);
       setCtProgress(data.weekly_progress || {});
     } catch (err) {
-      console.error('Failed to fetch CT goals:', err);
+      toastError(err, 'Failed to load cross-training goals');
     }
   };
 
@@ -307,7 +303,7 @@ const Goals = () => {
       await goalsAPI.setActive(goalId);
       await fetchGoals();
     } catch (err) {
-      console.error('Failed to set active:', err);
+      toastError(err, 'Could not set active goal');
     } finally {
       setSettingActiveId(null);
     }
@@ -318,7 +314,7 @@ const Goals = () => {
       await goalsAPI.updateGoal(goalId, { is_active: false });
       await fetchGoals();
     } catch (err) {
-      console.error('Failed to deactivate:', err);
+      toastError(err, 'Could not deactivate goal');
     }
   };
 
@@ -331,10 +327,10 @@ const Goals = () => {
         : parts[0] * 60 + (parts[1] || 0);
       await goalsAPI.logResult(logGoal.id, { result_time_seconds: secs, is_pr: pr });
       setLogGoal(null);
-      showToast('Result logged!');
+      toastSuccess('Result logged');
       await fetchGoals();
     } catch (err) {
-      console.error('Failed to log result:', err);
+      toastError(err, 'Failed to log result');
     }
   };
 
@@ -342,10 +338,10 @@ const Goals = () => {
     try {
       await crossTrainingGoalsAPI.upsertGoal(type, sessions);
       setShowCrossModal(false);
-      showToast('Target added!');
+      toastSuccess('Target added');
       await fetchCTGoals();
     } catch (err) {
-      console.error('Failed to add CT goal:', err);
+      toastError(err, 'Failed to add cross-training target');
     }
   };
 
@@ -354,7 +350,7 @@ const Goals = () => {
       await crossTrainingGoalsAPI.deleteGoal(id);
       await fetchCTGoals();
     } catch (err) {
-      console.error('Failed to delete CT goal:', err);
+      toastError(err, 'Failed to delete cross-training target');
     }
   };
 
@@ -1011,18 +1007,6 @@ const Goals = () => {
       {/* Modals */}
       {showCrossModal && <CrossTargetModal onClose={() => setShowCrossModal(false)} onSave={handleAddCT} />}
       {logGoal && <LogResultModal goal={logGoal} onClose={() => setLogGoal(null)} onSave={handleLogResult} />}
-
-      {/* Toast */}
-      <div style={{
-        position: 'fixed', bottom: 28, left: '50%',
-        transform: `translateX(-50%) translateY(${toast.visible ? 0 : 16}px)`,
-        opacity: toast.visible ? 1 : 0, transition: 'all 0.3s ease',
-        background: 'var(--color-sage)', color: '#fff', borderRadius: 12,
-        padding: '9px 20px', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600,
-        boxShadow: '0 4px 20px rgba(91,140,62,0.3)', zIndex: 999, pointerEvents: 'none',
-      }}>
-        ✓ {toast.msg}
-      </div>
     </div>
   );
 };

@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UnitsProvider } from './context/UnitsContext';
+import { ToastProvider } from './context/ToastContext';
 import { setApiNavigator } from './api/client';
 import AppLayout from './components/AppLayout';
 import { FullPageSkeleton } from './components/PageSkeleton';
+import PageErrorBoundary from './components/PageErrorBoundary';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -69,14 +71,18 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <UnitsProvider>
-          <RouterNavigator />
-          <AppRoutes />
-        </UnitsProvider>
-      </AuthProvider>
-    </Router>
+    <PageErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <UnitsProvider>
+            <ToastProvider>
+              <RouterNavigator />
+              <AppRoutes />
+            </ToastProvider>
+          </UnitsProvider>
+        </AuthProvider>
+      </Router>
+    </PageErrorBoundary>
   );
 }
 
